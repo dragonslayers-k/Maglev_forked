@@ -1,5 +1,5 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { StyleSheet, Text } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ytdlpEngine, type YtdlpInfo, type YtdlpFormat, type YtdlpProgress, type YtdlpCompletion, type YtdlpFailure } from 'ytdlp-engine';
 import { useTheme } from '../context/ThemeContext';
@@ -24,7 +24,7 @@ export default function YouTubeDownloadScreen() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [progress, setProgress] = useState<YtdlpProgress | null>(null);
-  const [completed, setCompleted] = useState<YtdlpCompletion | null>(null);
+  const [completed, setCompleted] = useState<YtdlpCompletion | null>(null);\n  const busyRef = useRef<string | null>(null);\n  busyRef.current = busy;
 
   useEffect(() => {
     if (!ytdlpEngine.available) { setError('yt-dlp 모듈이 설치된 빌드가 아닙니다.'); setLoading(false); return; }
@@ -42,10 +42,10 @@ export default function YouTubeDownloadScreen() {
     if (!url) { setError('YouTube 링크가 없습니다.'); setLoading(false); }
     else void load();
     const p = ytdlpEngine.onProgress(e => { if (alive) setProgress(e); });
-    const c = ytdlpEngine.onCompleted(e => { if (alive && e.id === busy) { setCompleted(e); setBusy(null); haptic('done'); } });
-    const f = ytdlpEngine.onFailed(e => { if (alive && e.id === busy) { setError(e.message); setBusy(null); } });
+    const c = ytdlpEngine.onCompleted(e => { if (alive && e.id === busyRef.current) { setCompleted(e); setBusy(null); haptic('done'); } });
+    const f = ytdlpEngine.onFailed(e => { if (alive && e.id === busyRef.current) { setError(e.message); setBusy(null); } });
     return () => { alive = false; p.remove(); c.remove(); f.remove(); };
-  }, [url, busy]);
+  }, [url]);
 
   const back = useCallback(() => { if (router.canGoBack()) router.back(); else router.replace('/'); }, [router]);
   const start = useCallback(async (f: YtdlpFormat) => {
