@@ -54,6 +54,10 @@ async function main() {
   assert.match(youtubeAdapter, /RETRY_INTERVAL_MS = 6 \* 60 \* 60 \* 1000L/, 'failed update checks must retry later');
   assert.match(youtubeAdapter, /safeDiagnostic\(e\)/, 'extractor errors must surface a sanitized diagnostic');
 
+  const nativeModuleSource = fs.readFileSync(path.join(root, 'modules/maglev-engine/android/src/main/java/com/maglev/engine/MaglevEngineModule.kt'), 'utf8');
+  assert.ok(nativeModuleSource.includes('Native IO call failed:'), 'native IO failures must be logged with exception type');
+  assert.ok(nativeModuleSource.includes('cause=${root.javaClass.name}'), 'native IO failures must expose the root cause type');
+  assert.ok(nativeModuleSource.includes('root.message ?: root.javaClass.simpleName'), 'native IO failures must not collapse to generic Engine call failed');
   console.log('test-youtube-intents: all assertions passed');
 }
 main().catch((e) => { console.error(e); process.exit(1); });

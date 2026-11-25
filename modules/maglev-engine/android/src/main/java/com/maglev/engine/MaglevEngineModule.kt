@@ -3,6 +3,7 @@ package com.maglev.engine
 import android.Manifest
 import android.app.Activity
 import android.content.Context
+import android.util.Log
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
@@ -69,7 +70,15 @@ class MaglevEngineModule : Module() {
             val result = try {
                 block()
             } catch (t: Throwable) {
-                Json.failure("INTERNAL", t.message ?: "Engine call failed")
+                val root = generateSequence(t) { it.cause }.lastOrNull() ?: t
+                val rawMessage = root.message ?: root.javaClass.simpleName
+                val safeMessage = rawMessage
+                    .replace(Regex("https?://[^\\\\s]+", RegexOption.IGNORE_CASE), "[URL]")
+                    .take(180)
+                // Keep the exception type and root cause visible. Previously an empty Throwable.message
+                // collapsed native/yt-dlp failures into the unhelpful "Engine call failed" text.
+                Log.e("MaglevEngine", "Native IO call failed: ${t.javaClass.name}; cause=${root.javaClass.name}")
+                Json.failure("INTERNAL", "${t.javaClass.simpleName} (cause=${root.javaClass.simpleName}): ${safeMessage}")
             }
             promise.resolve(Json.camelize(result))
         }
