@@ -1,0 +1,12 @@
+const fs = require('fs');
+const assert = require('assert');
+const p = 'modules/ytdlp-engine';
+for (const f of ['package.json','expo-module.config.json','src/index.ts','android/build.gradle','android/src/main/AndroidManifest.xml','android/src/main/java/com/maglev/ytdlp/YtdlpEngineModule.kt']) assert(fs.existsSync(p+'/'+f), 'missing '+f);
+const cfg = JSON.parse(fs.readFileSync(p+'/expo-module.config.json','utf8'));
+assert(cfg.android.modules.includes('com.maglev.ytdlp.YtdlpEngineModule'));
+const ts = fs.readFileSync(p+'/src/index.ts','utf8');
+for (const api of ['init','getInfo','download','cancel','update','onProgress','onCompleted','onFailed']) assert(ts.includes(api), 'missing API '+api);
+const kt = fs.readFileSync(p+'/android/src/main/java/com/maglev/ytdlp/YtdlpEngineModule.kt','utf8');
+for (const event of ['onProgress','onCompleted','onFailed','destroyProcessById','versionName']) assert(kt.includes(event), 'missing native contract '+event);
+assert(!kt.includes('EngineHost'), 'standalone module must not couple to Maglev EngineHost');
+console.log('PASS: standalone ytdlp-engine package and API contract');
