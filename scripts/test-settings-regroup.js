@@ -23,10 +23,10 @@ async function main() {
   const at = (s) => list.indexOf(s);
 
   // Main list: groups, order, rows.
-  const groups = ['App', 'General', '콘텐츠 찾기', 'Transfers', 'Network and power'];
+  const groups = ['앱', '일반', '콘텐츠 찾기', '전송', '네트워크 및 전원'];
   const gpos = groups.map((g) => at(`<SectionHeader title="${g}"`));
   check('all five group titles exist', gpos.every((p) => p > 0));
-  check('groups run App, General, 콘텐츠 찾기, Transfers, Network and power', gpos.every((p, i) => i === 0 || p > gpos[i - 1]));
+  check('groups run 앱, 일반, 콘텐츠 찾기, 전송, 네트워크 및 전원', gpos.every((p, i) => i === 0 || p > gpos[i - 1]));
   check('no leftover "Connection" group', !/SectionHeader title="Connection"/.test(list));
   const end = at('</ScrollView>');
   const jsx = groups.map((g, i) => list.slice(gpos[i], i + 1 < groups.length ? gpos[i + 1] : end));
@@ -40,20 +40,20 @@ async function main() {
     check(`${g} renders ${listName}`, jsx[groups.indexOf(g)].includes(`${listName}.map`));
     check(`${g} rows are ${expected.join(', ')}`, JSON.stringify(rows) === JSON.stringify(expected), rows.join(', '));
   };
-  orderOf('General', 'generalRows', ['Appearance', 'Assistant', 'Notifications', 'Backup and restore']);
-  orderOf('콘텐츠 찾기', 'findRows', ['Search sources', 'Auto-download', 'Subtitles']);
-  orderOf('Network and power', 'networkRows', ['Network', 'Power', 'Browser']);
-  orderOf('App', 'appRows', ['About', 'Updates']);
+  orderOf('일반', 'generalRows', ['화면 모양', '도우미', '알림', '백업 및 복원']);
+  orderOf('콘텐츠 찾기', 'findRows', ['검색 사이트', '자동 다운로드', '자막']);
+  orderOf('네트워크 및 전원', 'networkRows', ['네트워크', '전원', '브라우저']);
+  orderOf('앱', 'appRows', ['앱 정보', '업데이트']);
   {
-    const d = jsx[groups.indexOf('Transfers')];
+    const d = jsx[groups.indexOf('전송')];
     const p = ['{...downloadsRow}', '{...speedRow}', '<StorageRow', '{...scheduleRow}', '{...watchRow}'].map((x) => d.indexOf(x));
-    check('Downloads renders Downloads, Speed and sharing, Storage, Scheduling, Watches in order', p.every((x, i) => x >= 0 && (i === 0 || x > p[i - 1])));
+    check('전송은 추가 및 완료, 속도 및 공유, 저장 공간, 예약, 관심 항목 순서로 표시', p.every((x, i) => x >= 0 && (i === 0 || x > p[i - 1])));
   }
-  check('Adding and finishing row opens settings/downloads', /title: 'Adding and finishing'[^}]*route: 'downloads'/.test(listOf('downloadsRow')));
+  check('Adding and finishing row opens settings/downloads', /title: '추가 및 완료'[^}]*route: 'downloads'/.test(listOf('downloadsRow')));
   const icons = [...list.matchAll(/icon: '([a-z-]+)', title: 'Adding and finishing'/g)].map((m) => m[1]);
   const gen = read('components/icons.generated.ts');
   check('Downloads row icon exists in the icon set', icons.length === 1 && gen.includes(`"${icons[0]}":`), icons.join());
-  check('Speed row is titled Speed and sharing', /title: 'Speed and sharing'.*route: 'speed'/.test(listOf('speedRow')));
+  check('Speed row is titled Speed and sharing', /title: '속도 및 공유'.*route: 'speed'/.test(listOf('speedRow')));
   check('Watches row sits with Downloads, not Finding things', !listOf('findRows').includes('watchCopy'));
 
   // Downloads page.
