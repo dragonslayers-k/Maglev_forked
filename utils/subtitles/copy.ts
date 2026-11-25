@@ -2,10 +2,10 @@
  * Plain-English subtitle copy, in one place (docs/NATIVE_CONTRACT.md section 36.10). Each error has one sentence and
  * one action. Pure.
  */
-import { languageName } from './languages.ts';
+import { languageInfo, languageName } from './languages.ts';
 import type { SubtitleErrorCode } from './payload.ts';
 
-export interface ErrorCopy {
+const localizedLanguage = (code: string): string => languageInfo(code)?.native ?? languageName(code);\n\nexport interface ErrorCopy {
   message: string;
   action: string;
 }
@@ -53,7 +53,7 @@ export const NOTICE_NOT_NOW = '나중에';
 
 /** Shown instead of "No English subtitles found." when a subtitle in that language already sits next to the video. */
 export function alreadyHasCopy(language: string): string {
-  return `이 동영상에는 이미 ${languageName(language)} 자막이 있습니다.`;
+  return `이 동영상에는 이미 ${localizedLanguage(language)} 자막이 있습니다.`;
 }
 
 /** One-time notice before the first lookup. `names` are the sources that are on. */
@@ -92,7 +92,7 @@ export function errorCopy(code: SubtitleErrorCode, a: CopyArgs = {}): ErrorCopy 
     case 'limit':
       return { message: `${source}의 오늘 사용 한도에 도달했습니다.`, action: '다른 검색 사이트 사용' };
     case 'nothing':
-      return { message: a.language ? `${languageName(a.language)} 자막을 찾지 못했습니다.` : '자막을 찾지 못했습니다.', action: '다른 언어' };
+      return { message: a.language ? `${localizedLanguage(a.language)} 자막을 찾지 못했습니다.` : '자막을 찾지 못했습니다.', action: '다른 언어' };
     case 'missing':
       return { message: '동영상 파일을 찾을 수 없습니다.', action: '닫기' };
     case 'CANT_WRITE':
