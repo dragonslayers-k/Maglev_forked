@@ -69,6 +69,7 @@ import {
 import { DOWNLOAD_HELD_ACTION, DOWNLOAD_HELD_NOTICE, FOUND_HINT_MS, foundHintDue, foundHintText, opensSaveSheet } from '../utils/browser/hardening';
 import { hostAllowed, type PopupRequest, type PopupsState } from '../utils/browser/popups';
 import { hostOf, isAllowedHost, noticeAllowed, siteKey, toBrowserUrl, toggleAllowedHost } from '../utils/browserUrl';
+import { parseYouTubeIntent } from '../utils/browser/youtube';
 
 /** A quiet notice for these, at most one every 5 seconds. */
 const QUIET_NOTICE: Partial<Record<BrowserRefusalReason, string>> = {
@@ -271,12 +272,17 @@ export default function BrowserScreen({ inTab = false }: { inTab?: boolean }) {
 
   const go = useCallback(
     (text: string) => {
+      const youtube = parseYouTubeIntent(text);
+      if (youtube) {
+        router.push({ pathname: '/youtube-download', params: { url: youtube.canonicalUrl } });
+        return;
+      }
       const t = toBrowserUrl(text, prefs.searchEngine);
       if (t.kind === 'empty') return;
       if (t.kind === 'magnet') return toAddTorrent(t.uri);
       open(t.url);
     },
-    [prefs.searchEngine, open, toAddTorrent],
+    [prefs.searchEngine, open, toAddTorrent, router],
   );
 
   // `url` comes from this app (Add download, Open in browser) and opens in a new active tab (the active one when it is blank).
@@ -289,6 +295,11 @@ export default function BrowserScreen({ inTab = false }: { inTab?: boolean }) {
     handled.current = key;
     const cur = tabs.ref.current ? activeTab(tabs.ref.current) : null;
     if (typeof params.url === 'string' && params.url.trim()) {
+      const youtube = parseYouTubeIntent(params.url);
+      if (youtube) {
+        router.push({ pathname: '/youtube-download', params: { url: youtube.canonicalUrl } });
+        return;
+      }
       const t = toBrowserUrl(params.url, prefs.searchEngine);
       if (t.kind === 'magnet') return toAddTorrent(t.uri);
       if (t.kind === 'empty') return;
@@ -298,7 +309,7 @@ export default function BrowserScreen({ inTab = false }: { inTab?: boolean }) {
       if (cur && !isBlank(cur)) openTabChecked({});
       setPrefillText(params.prefill);
     }
-  }, [ready, params.url, params.prefill, params.open, params.newTab, prefs.searchEngine, open, openTabChecked, toAddTorrent, tabs.ref]);
+  }, [ready, params.url, params.prefill, params.open, params.newTab, prefs.searchEngine, open, openTabChecked, toAddTorrent, tabs.ref, router]);
 
   // ---- tabs ----
   const closeWithUndo = useCallback(
