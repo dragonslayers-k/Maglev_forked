@@ -151,3 +151,26 @@ Provider는 파일을 독립 큐에 저장하지 않는다. 최종 byte transfer
 ## 11. Current status
 
 This is a revised architecture and upstream capability-growth policy. It does not claim HLS Live, MSE capture, full yt-dlp site coverage, current YouTube runtime, or Galaxy E2E are implemented. Existing PR #1 remains Draft and must pass current build/device gates before release or accepted baseline.
+
+
+## 12. 현재 소스 직접 대조 결과 (2026-11-26)
+
+대상은 PR #1 branch feature/p1-video-detection-observer의 현재 소스이며, 아래 SHA는 파일 blob SHA다. 이 내용은 해당 commit의 소스 구조를 확인한 결과이며 Galaxy E2E 통과를 뜻하지 않는다.
+
+| 파일 | 확인 결과 | 설계 의미 |
+|---|---|---|
+| modules/maglev-engine/android/src/main/java/com/maglev/engine/youtube/YoutubeDownload.kt — 97d7d85dd120ba8063bfff851acd85ad0d9692e9 | yt-dlp init, 일정 주기 stable update check, YouTube client 목록 web_safari/android_vr/web_embedded, YouTube 외 HTTP(S) generic extractor, format metadata, sanitized diagnostics | 현재 updater는 yt-dlp binary update 중심. Python/JS/ejs/curl-cffi/POT provider 전체 package lifecycle을 보장하지 않음. runtime matrix와 update rollback 필요 |
+| modules/maglev-engine/android/src/main/java/com/maglev/engine/MaglevEngineModule.kt — 5ea20ecee97ab5fd3750f0e44c782c68d68e297d | getYouTubeInfo/addYouTubeDownload native API가 EngineHost/Transfers로 연결 | 현재 YouTube/generic route를 provider contract로 확장하되 shared queue 유지 |
+| modules/maglev-engine/android/src/main/java/com/maglev/engine/browser/PageScan.kt — 5f274346d99bc98323054f23c38fa9ee7d670d35 | video/audio DOM, lazy attributes, Resource Timing, fetch/XHR observation, blob/EME signals, dedupe/candidate reporting | 이미 감지 관찰 기반이 있음. LJ-inspired request context/probe 및 MSE byte capture는 별도 gap |
+| modules/maglev-engine/android/src/main/java/com/maglev/engine/browser/MaglevBrowserView.kt — 4436e5110d6177d166664db3bbb2533f9b550e0b | WebView request observer와 process-wide ServiceWorker request observer | MPMux식 감지를 처음부터 만들지 말고 observer를 확장/정밀화. request body/response를 소비하거나 페이지 동작을 바꾸지 않음 |
+| native/maglev-core/src/http_dl/stream/hls.rs — f41dfafeb31299efe91dc44fbe3fb9c225407ec7 | HLS VOD parser, BYTERANGE/MAP, AES-128 identity, protected/live explicit errors | VOD parser는 보존. Live는 별도 state machine |
+| modules/maglev-engine/android/src/main/java/com/maglev/engine/storage/StreamMuxer.kt — ebff9628b03468f49597865c853211debc780e9a | Android MediaExtractor/MediaMuxer로 저장된 분리 A/V 트랙 병합 | 공통 post-process/mux service 후보. MSE capture는 timestamp/codec continuity를 별도 검증 |
+
+### Upstream snapshot
+
+- Maglev official repository README (2026-11-26 check): Android download manager, browser, torrent, HLS/m3u8 and DASH, resume, subtitles, queue, storage are existing upstream strengths. It explicitly distinguishes unsupported YouTube-style players and live streams in the current public product description. URL: https://github.com/Kaos599/Maglev
+- YTDLnis download page showed stable v1.9.0, released 2026-09-07, with Python 3.14, curl-cffi and BGUtils PO Token provider notes. URL: https://ytdlnis.org/download
+- yt-dlp releases page showed release 2026.06.09 and runtime/downloader changes, including native fragment concurrency direction for HLS/DASH. Re-check before every update. URL: https://github.com/yt-dlp/yt-dlp/releases
+- yt-dlp current README states Python 3.11+ and highlights FFmpeg/ffprobe, yt-dlp-ejs and supported JavaScript runtime for full YouTube support. URL: https://github.com/yt-dlp/yt-dlp
+
+These versions are a dated observation, not permanent pins. The project must compare the installed wrapper/runtime and its exact bundled versions before adopting an upstream update.
