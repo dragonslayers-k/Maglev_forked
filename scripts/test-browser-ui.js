@@ -18,6 +18,7 @@ const read = (rel) => fs.readFileSync(path.join(root, rel), 'utf8');
 
 async function main() {
   const u = await import('../utils/browserUrl.ts');
+  const yt = await import('../utils/browser/youtube.ts');
   const prefs = await import('../utils/prefs/browser.ts');
   const f = await import('../components/browser/foundFilter.ts');
 
@@ -45,6 +46,13 @@ async function main() {
   check('allowed covers subdomains', u.isAllowedHost(['example.com'], 'a.b.example.com') && !u.isAllowedHost(['example.com'], 'notexample.com'));
   check('notice rate limit', u.noticeAllowed(0, 100) && !u.noticeAllowed(1000, 5999) && u.noticeAllowed(1000, 6000));
 
+  console.log('YouTube share URL recognition');
+  check('youtu.be short link canonicalizes', yt.parseYouTubeLink('https://youtu.be/AbCdEf12345?t=1m20s')?.canonicalUrl === 'https://www.youtube.com/watch?v=AbCdEf12345&t=80s');
+  check('watch and playlist retained', yt.parseYouTubeLink('https://youtube.com/watch?v=AbCdEf12345&list=PLabcdefghij&index=4')?.canonicalUrl === 'https://www.youtube.com/watch?v=AbCdEf12345&list=PLabcdefghij');
+  check('shorts, live, embed forms', ['shorts','live','embed'].every((kind) => yt.parseYouTubeLink(`https://youtube.com/${kind}/AbCdEf12345`)?.videoId === 'AbCdEf12345'));
+  check('host and ID validation', !yt.parseYouTubeLink('https://youtube.com.evil.test/watch?v=AbCdEf12345') && !yt.parseYouTubeLink('https://youtu.be/invalid'));
+  check('bad timestamp ignored and excessive input rejected', yt.parseYouTubeLink('https://youtube.com/watch?v=AbCdEf12345&t=999999')?.startSeconds === undefined && !yt.parseYouTubeLink('https://youtube.com/watch?v=AbCdEf12345'.repeat(100)));
+
   console.log('maglev://browser');
   const r = u.browserIntentRoute;
   check('url is prefilled, never loaded', r('/browser?url=' + encodeURIComponent('https://x.test/a')) === '/browser?prefill=' + encodeURIComponent('https://x.test/a'));
@@ -59,6 +67,7 @@ async function main() {
   {
     const src = read('app/+native-intent.tsx');
     check('native intent normalises the full url for dl_ too', /appPath\(raw\)/.test(src));
+    check('YouTube shares route to browser, not direct-download probe', /parseYouTubeLink\(raw\)[\s\S]*?\/browser\?url=/.test(src) && /return sharedDownloadRoute\(raw\)/.test(src));
   }
   check('other routes are left alone', r('/add-download?url=x') === null && r('/settings/browser') === null);
 
