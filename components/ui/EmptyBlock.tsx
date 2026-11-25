@@ -57,9 +57,9 @@ export function EmptyBlock({ icon, title, body, primary, secondary, error, testI
       </Animated.View>
       <Animated.View style={[styles.copy, { opacity: anim.copyOpacity, transform: [{ translateY: anim.copyY }] }]}>
         <Text style={styles.title} accessibilityRole="header">
-          {title}
+          {koUiText(title)}
         </Text>
-        {body ? <Text style={styles.body}>{body}</Text> : null}
+        {body ? <Text style={styles.body}>{koUiText(body)}</Text> : null}
         {primary || secondary ? (
           <View style={styles.actions}>
             {primary ? <Button label={primary.label} icon={primary.icon} onPress={primary.onPress} /> : null}
