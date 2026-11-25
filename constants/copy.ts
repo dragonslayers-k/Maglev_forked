@@ -111,7 +111,7 @@ export const notices = {
       const d = Number(duplicate);
       const f = Number(failed);
       if (a === 0 && d === 0) return `파일 ${f}개를 추가하지 못했습니다.`;
-      return [a > 0 ? `${a}개 추가` : '', d > 0 ? `이미 목록에 있는 파일 ${d}개` : '', f > 0 ? `실패 ${f}개` : ''].filter(Boolean).join(' · ');
+      return [a > 0 ? `${a}개 추가` : '', d > 0 ? `이미 목록에 있는 파일 ${d}개` : '', f > 0 ? `실패 ${f}개` : ''].filter(Boolean).join(' · ') + '.';
     },
     adsAllowed: (site: string | number) => `${toName(site)} 사이트의 광고를 허용했습니다.`,
     adsBlocked: (site: string | number) => `${toName(site)} 사이트의 광고를 차단합니다.`,
@@ -394,7 +394,7 @@ export const browserTabs = {
     blockedOnPage: (n: number | string) => `이 페이지에서 ${n}개 차단`,
     clearSiteRow: '이 사이트 데이터 삭제',
     clearSiteTitle: '이 사이트 데이터를 삭제하시겠습니까?',
-    clearSiteBody: `${'{host}'}에서 로그아웃됩니다.`,
+    clearSiteBody: (host: string) => `${host}에서 로그아웃됩니다.`,
     clearSiteAction: '삭제',
     clearSiteDone: '사이트 데이터를 삭제했습니다.',
   },
