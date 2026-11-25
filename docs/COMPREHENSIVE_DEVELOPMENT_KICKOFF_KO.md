@@ -481,3 +481,12 @@ This section supplements the original 2026-11-25 Claude analysis with a current 
 - G0 재점검: 현재 YouTube adapter `YoutubeDownload.kt`가 여전히 `modules/maglev-engine` 안에 있고 해당 모듈 Gradle이 `youtubedl-android:library:0.18.1`에 직접 의존한다. 목표 독립 `modules/ytdlp-engine` 구조와 불일치한다. 기존 add flow가 내부 `EngineHost`에 연결돼 있으므로 분리 시 transfer handoff/공통 목록 contract를 함께 설계해야 한다.
 - G1 상태: cold-start engine wait와 native exception/root-cause 진단 개선은 코드에 반영됐지만 실기기 테스트는 미수행이므로 `IN_PROGRESS` 유지.
 - 재개 순서: (1) G0 transfer/native contract audit → (2) G1 Galaxy init/version/getInfo/format smoke evidence → (3) G2 standalone module download/cancel/progress/update → (4) G3 shared Transfers persistence/foreground/background/restart → (5) G4 share/paste routing → (6) G5 app-wide Korean → (7) G6 LJ gap audit/implementation → (8) G7 parity → (9) G8 regression/release QA. Gate failure must be fixed before advancing.
+
+
+## Appendix G. Standalone engine scaffold / CI findings — 2026-11-25
+
+- Added `modules/ytdlp-engine` as a separate Expo local package; its Kotlin module does not reference `EngineHost`. Public TS API: init/getInfo/download/cancel/update plus progress/completed/failed events. Root dependency and lockfile updated.
+- CI run #152 exposed TS event emitter type errors; corrected by typing the emitter as a native event emitter bridge. The next run passed TypeScript typecheck.
+- CI run #154: standalone module contract tests and existing contract job passed; JS test suite then failed because generated `constants/licenses.generated.ts` did not yet list the newly added local runtime dependency. Added its GPL-3.0-only entry to the generated list.
+- Expo prebuild/autolinking step completed successfully on #154. APK Gradle compilation was still running when this correction was committed; run was superseded by the new commit. This is not a Kotlin compile pass.
+- This scaffold is intentionally not yet connected to the existing YouTube screen or Transfers. The legacy adapter remains until the separate engine-to-transfer handoff, durable queue and media finalization are implemented, to avoid breaking existing Maglev behavior prematurely.

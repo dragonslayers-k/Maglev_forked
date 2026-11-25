@@ -48,3 +48,9 @@ Maglev의 브라우저·토렌트·직접 링크·HLS/DASH·자막·전송 목�
 - CI 성공은 실기기 기능 합격이 아니다. Galaxy에서 init/version, 공개 영상 metadata/formats, 실제 download/save/playback 확인은 여전히 미수행.
 - G0 재점검에서 yt-dlp adapter와 dependency가 `modules/maglev-engine`에 결합되어 있음을 확인. 목표 `modules/ytdlp-engine` 독립화 및 기존 transfer handoff 정리 필요.
 - G1 실기기 evidence → G2 isolated engine → G3 persistent shared Transfers → G4 share/paste → G5 Korean audit → G6 LJ gaps → G7 parity → G8 regression/release QA 순서 유지. No release until G8 acceptance.
+
+
+## G2 scaffold progress (2026-11-25)
+- Standalone Expo package and Kotlin native bridge created. TS typecheck and contract test passed on the latest validation attempt; Expo prebuild/autolinking passed. APK compile remains pending.
+- Corrected the generated runtime license inventory for local `ytdlp-engine` package.
+- APIs currently stage downloads in app-private files and emit progress/completion/failure. This does not satisfy shared Transfers, foreground service, restart persistence, MediaStore/SAF finalization, FFmpeg postprocessing or physical-device QA. Keep G2/G3 open.
