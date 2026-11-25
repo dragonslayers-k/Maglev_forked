@@ -70,7 +70,7 @@ async function main() {
   check('copy has the card strings', m && /No link in what you shared/.test(m[0]) && /This is a web page, not a file/.test(m[0]) && /Added to Maglev/.test(m[0]));
   const text = read(ENGINE_KT + 'share/QuickShareText.kt');
   const plain = m ? m[0].slice(m[0].indexOf('gettingDetails')) : '';
-  const strings = [...plain.matchAll(/'([^'\n]{6,})'|"([^"\n]{6,})"/g)].map((x) => x[1] || x[2]).filter((s) => /^[A-Z]/.test(s));
+  const strings = [...plain.matchAll(/'([^'\n]{6,})'|"([^"\n]{6,})"/g)].map((x) => x[1] || x[2]).filter((s) => s.length > 0);
   const missing = strings.filter((s) => !text.includes(s));
   check('every plain copy string is mirrored in Kotlin', strings.length > 8 && missing.length === 0, missing.join(' | '));
 
@@ -169,7 +169,7 @@ async function main() {
   check('add path starts the engine and the service', /EngineHost\.ensureStarted\(\)/.test(add) && /BackgroundStart\.start\(/.test(add));
   check('EngineHost exposes ensureStarted', /fun ensureStarted\(/.test(read(ENGINE_KT + 'EngineHost.kt')));
   check('routes: browser prefill and free space', /maglev:\/\/browser\?url=/.test(act) && /maglev:\/\/free-space/.test(act));
-  check('Toast text', /Added to Maglev/.test(text));
+  check('Toast text uses Korean copy', /Maglev에 추가했습니다/.test(text));
   check('no Compose in the share code', !/androidx\.compose/.test(act + read(ENGINE_KT + 'share/QuickShareCard.kt')));
   check('no system monospace', !/Typeface\.MONOSPACE|"monospace"/.test(read(ENGINE_KT + 'share/QuickShareCard.kt')));
 
