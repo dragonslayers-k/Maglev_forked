@@ -39,6 +39,16 @@ async function main() {
     check('tray shows size through foundSizeLabel, not its own math', /foundSizeLabel\(/.test(src) && !/item\.size != null \? formatBytes/.test(src));
   }
 
+  console.log('late media evidence');
+  {
+    const early = mk('manifest', { url: 'https://cdn.test/playback/manifest?id=7', mime: null, ext: null, stream: null });
+    const later = mk('manifest', { url: early.url, mime: 'application/vnd.apple.mpegurl', ext: null, stream: 'hls' });
+    const upgraded = f.mergeFound([early], [later]);
+    check('same URL gains HLS identity when response MIME arrives later', upgraded.length === 1 && upgraded[0].stream === 'hls' && upgraded[0].mime === 'application/vnd.apple.mpegurl');
+    const partial = f.mergeFound(upgraded, [early]);
+    check('a later partial observation cannot erase MIME or stream identity', partial.length === 1 && partial[0].stream === 'hls' && partial[0].mime === 'application/vnd.apple.mpegurl');
+  }
+
   console.log('clear and remove');
   const items = [mk('a'), mk('b'), mk('c')];
   check('clearFound empties the list', Array.isArray(f.clearFound()) && f.clearFound().length === 0);
