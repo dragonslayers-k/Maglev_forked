@@ -18,14 +18,15 @@
 5. 미검증 구현은 완료로 승격하지 않는다. 기능 상태는 `NOT_STARTED`, `IN_PROGRESS`, `CI_PASS`, `DEVICE_PASS`, `ACCEPTED`, `BLOCKED` 중 하나로 기록한다.
 6. 원본 APK·소스 코드의 라이선스와 앱 이름/상표 조건을 보존한다. DRM 우회는 범위 밖이며 DRM 감지 시 명확한 미지원 메시지를 제공한다.
 
-### 0.2 현재 저장소 상태 — 2026-11-25 확인
-- PR #1은 열린 Draft 통합 PR이며 head SHA `da9e6518f7bf24b939fbbbfe7bec35045e651cc6`.
-- PR #3/#4는 중복/대체 작업으로 종료되었고, PR #5의 ARM64 패키징 변경은 PR #1 트랙에 반영된 상태로 기록되어 있다.
-- 기존 PR #1에 parser/share intent/yt-dlp 관련 변경이 누적되어 있으나, 사용자 실기기 기능 검증에서는 실패 보고가 있었다.
-- 진단 래퍼는 generic “Engine call failed” 대신 예외/근본 원인 타입을 반환하고, URL query string을 로그에서 가리도록 수정했다. 이 수정은 오류 원인을 밝히기 위한 관측성 개선이며 다운로드 기능 구현 완료가 아니다.
-- 이전 Actions에서 Rust tests exit 101, universal APK, Gradle/패키징 경고 등 실패 이력이 있다. 실패 기록은 삭제·은폐하지 않고 원인과 후속 수정에 연결한다.
-- 현재까지 독립 `ytdlp-engine` 모듈, 완전한 YouTube 다운로드, 전체 한국어 현지화, PO Token 지원, Galaxy 실기기 E2E는 완료로 판정되지 않았다.
-- 최근 작업 문서 `docs/INTEGRATED_PRODUCT_PLAN_KO.md`는 단계별 게이트의 간단한 계획이다. 본 문서는 이를 확장한 상세 기준서다.
+### 0.2 현재 저장소 상태 — 2026-11-26 확인
+- PR #1은 열린 Draft 통합 PR이며 base는 dev, head는 feature/p1-video-detection-observer입니다.
+- 최신 branch head: 84c52d6b83b99c3176828e5601df46f4fe8c9fa2.
+- #159 (45639676759)는 app/youtube-download.tsx:27의 리터럴 \n 구문 오류로 실패했습니다. commit 2458a27e6ee79ce511865d3d6864538e7013ed2e에서 구문과 View import를 수정했습니다.
+- commit 2a5d1b8fde95bff01e53eb367b9667fcaab2c871에서 YouTube 화면이 기존 Maglev의 getYouTubeInfo / addYouTubeDownload를 사용해 shared Transfers 큐에 작업을 추가하도록 연결했습니다.
+- commit 84c52d6b83b99c3176828e5601df46f4fe8c9fa2에서 MPMux 비교·제품 아키텍처·인계 문서를 갱신하고 standalone ytdlp-engine 프로토타입을 앱 dependency/autolinking에서 제거했습니다.
+- 최신 CI #162 (45644737221)는 최신 head를 대상으로 실행 중입니다. JS/typecheck, unit/contract tests, contract tests, Rust tests 및 ARM64 계획 단계는 통과했으나 최종 APK 빌드는 대기 중입니다.
+- 최근 사용자 설치 APK에서 한글화 및 YouTube 다운로드가 실패했던 이력은 유효합니다. 새 코드의 실기기 기능 검증은 아직 미완료입니다.
+- 일반 yt-dlp 지원 사이트 1,000+ 전체 라우팅, PO Token/JS runtime 호환성, Galaxy E2E, HLS Live, MSE byte capture, 전체 한국어 UI는 미완료입니다.
 
 ## 1. 제품 목표
 
@@ -89,8 +90,13 @@ Maglev는 Expo/React Native + TypeScript UI와 Rust 기반 다운로드 엔진(l
 
 Maglev README에서 미해결로 언급된 YouTube류, DRM, live 항목은 별도 검증 대상이다. “Maglev가 모든 스트림을 이미 처리한다”는 가정은 하지 않는다.
 
-### 3.3 기반에 대한 결정
-Maglev의 UI와 다운로드 관리자 경험을 유지한다. 기존 `maglev-engine`에 yt-dlp의 Python/native process를 억지로 섞지 않는다. YouTube 추출은 공개·명시적인 독립 `ytdlp-engine` API로 제공하고, 기존 엔진은 torrent/link/stream 책임을 유지한다.
+### 3.3 기반에 대한 결정 — 실제 코드 대조 후 갱신
+Maglev의 기존 UI·네이티브 다운로드 엔진·Transfers를 유지하고, 기능 중복보다 기존 API를 우선 활용합니다.
+- 저장소에는 이미 modules/maglev-engine/android/.../youtube/YoutubeDownload.kt가 있으며 yt-dlp Android adapter의 초기화, metadata/formats 조회, 선택한 format 재추출을 수행합니다.
+- MaglevEngineModule.kt가 JS에 getYouTubeInfo와 addYouTubeDownload를 공개합니다. 선택한 direct/HLS/DASH 미디어는 EngineHost.addDownload에 전달되므로 기존 Maglev 큐가 실제 다운로드·진행·취소·저장 상태를 소유합니다.
+- UI에서는 해당 공개 API를 사용하며 새 Python process manager/별도 큐를 만들지 않습니다.
+- 별도 modules/ytdlp-engine scaffold는 같은 youtubedl-android 런타임의 중복 연결, 별도 staging/상태 모델, 두 개의 다운로드 관리 경로를 만들기 때문에 제품 경로에서 제외했습니다. 실험 이력은 Git 과거 commit으로 보존합니다.
+- 현재 공개 adapter는 YouTube 중심입니다. yt-dlp 전체 지원 사이트를 자동으로 지원한다고 간주하지 않습니다. 일반 사이트의 explicit extract route는 별도 설계·구현·실기기 검증이 필요합니다.
 
 ## 4. LJ Video Downloader 분석 및 Maglev 이식 명세
 
@@ -169,159 +175,125 @@ YTDLnis의 Kotlin/XML UI는 Maglev UI로 복사하지 않는다. 사용자 기�
 
 검증 필수: 실제 artifact version의 callback signature, update enum, process cancel semantics, native libs ABI, Python runtime version, yt-dlp build, FFmpeg/aria2 integration, `extractNativeLibs`/legacy packaging, Android 10+ storage, 16 KB page alignment.
 
-### 5.3 독립 Expo 모듈
-목표 경로 `modules/ytdlp-engine/`:
-- Android Kotlin module: init/version/getInfo/download/cancel/update
-- TS wrapper: strongly typed result/options/events
-- events: progress, ETA, speed, output, done, error, cancelled
-- native process ID와 JS transfer ID를 명확히 매핑
-- process lifecycle, duplicate ID, cancellation race, module destroy 처리
-- URL/headers/cookies/logging 개인정보 보호
-- engine init 실패 원인을 사용자용 메시지와 상세 diagnostic으로 분리
-
-모듈은 기존 `maglev-engine` 내부 private host method에 의존하지 않는다. Expo autolinking/config plugin, package.json, Gradle dependency, manifest, Proguard/R8, ABI packaging을 함께 검증한다.
+### 5.3 현재 Maglev YouTube adapter 및 runtime 판단
+현재 구현은 별도 Expo module이 아니라 maglev-engine 안의 YouTube adapter를 사용합니다.
+- Gradle 의존성은 io.github.junkfood02.youtubedl-android:library:0.18.1로 확인했습니다.
+- getYouTubeInfo(url): adapter 초기화 후 영상 metadata와 formats를 조회합니다.
+- addYouTubeDownload(url, formatId, playerClient): 선택 client/format을 재추출한 뒤 direct media URL은 link transfer, HLS/DASH manifest는 stream transfer 경로로 넘깁니다. 공통 handoff는 EngineHost.addDownload입니다.
+- 화면은 maglevEngine.getYouTubeInfo / maglevEngine.addYouTubeDownload를 호출하고 성공 시 Transfers 화면으로 돌아갑니다.
+- 이 경로가 코드로 연결됐다는 것과 실기기 다운로드 성공은 다릅니다. cold start, process init, format ID/client 재추출, stream manifest, queue persistence, 저장/재생을 Galaxy에서 확인해야 합니다.
 
 ### 5.4 PO Token / JS runtime / 사이트 변화
-YouTube 추출은 yt-dlp extractor와 YouTube 정책/사이트 변경에 영향을 받는다. PO Token provider, JS runtime, player client 요구사항은 현 시점의 yt-dlp 문서/릴리스 기준으로 조사 후 구현한다. 단순 “yt-dlp가 들어있다”는 것으로 YouTube 지원을 보장하지 않는다. yt-dlp 업데이트 채널은 stable 기본, nightly는 선택/진단으로 둔다. 업데이트 실패 시 마지막 정상 버전을 보존하고 rollback을 제공한다.
+현재 youtubedl-android README에 기재된 번들 Python 버전과 yt-dlp 최신 upstream의 요구 Python/JS runtime/yt-dlp-ejs/PO Token 요건 사이에 호환성 위험이 있습니다. exact runtime에서 재현 테스트를 해야 하며, getInfo 한 번 성공으로 YouTube 전 사이트 호환을 선언하지 않습니다. 실패 시 실제 예외/exit code/진단을 수집하고 접근 제어를 우회하지 않습니다.
 
 ## 6. 통합 아키텍처와 URL routing
 
-```
 Maglev React Native UI
- ├─ URL classifier / intent parser
- ├─ Existing maglev-engine
+ ├─ URL classifier / Android share-intent parser
+ ├─ existing maglev-engine (single queue owner)
  │   ├─ torrent / magnet
- │   ├─ direct file / attachment
- │   └─ HLS / DASH / browser detected stream
- ├─ New ytdlp-engine (Expo Kotlin module)
- │   ├─ yt-dlp + bundled Python
- │   ├─ FFmpeg / aria2c (only verified compatible)
- │   └─ metadata / formats / download / cancel / update
- ├─ Browser detection adapter
+ │   ├─ direct link
+ │   ├─ HLS / DASH VOD
+ │   └─ YouTube adapter → yt-dlp metadata/format → EngineHost.addDownload
+ ├─ browser media detection (existing observers first)
  │   ├─ WebView request observer
- │   ├─ ServiceWorker request observer
- │   ├─ LJ-derived headers + probe
- │   └─ site-specific rule registry
- └─ Shared transfer repository + foreground notification/service
-```
+ │   ├─ active-tab ServiceWorker observer
+ │   ├─ DOM / fetch / XHR / Resource Timing
+ │   └─ only verified gaps from LJ/MPMux analysis
+ └─ one Transfers list + existing notification/storage lifecycle
 
 ### 6.1 Routing table
 | 입력 유형 | 엔진 | 정책 |
 |---|---|---|
-| magnet: / .torrent | maglev-engine | 기존 torrent route 유지 |
-| 확장자 파일 URL / Content-Disposition attachment | maglev-engine | 직접 링크 우선 |
-| .m3u8 / .mpd 직접 URL | maglev-engine | 기존 HLS/DASH 우선, 실패 시 사용자 선택으로 yt-dlp fallback |
-| yt-dlp 지원 도메인 (youtube.com, youtu.be 등) | ytdlp-engine | 도메인/URL parser를 테스트로 검증 |
-| 공유 intent의 plain text/URL | classifier | URL 추출·정규화·중복 제거 |
-| unknown web page | browser | 페이지 열기 + “yt-dlp로 분석/다운로드” 명시 버튼 |
-| browser detected media | stream/link | header-preserving transfer로 전송 |
-| googlevideo URL | policy | 직접 감지에 의존하지 않고 YouTube URL을 yt-dlp route로 처리 |
+| magnet: / .torrent | maglev-engine | 기존 torrent route |
+| 확장자 direct file / attachment | maglev-engine | direct link |
+| M3U8 / MPD | maglev-engine | HLS/DASH VOD 우선 |
+| YouTube watch / youtu.be / Shorts / Live URL | existing YouTube adapter | getYouTubeInfo → format selection → addYouTubeDownload → EngineHost.addDownload |
+| 기타 yt-dlp 지원 후보 | browser / explicit future route | 현재 일반 사이트 자동 라우팅 완료 아님. 사용자 선택과 별도 검증 후 지원 |
+| 공유 intent / clipboard | classifier | URL normalize 후 위 라우팅 |
+| unknown web page | browser | 페이지 열기; 무조건 yt-dlp 자동 실행 금지 |
+| browser detected direct/HLS/DASH | maglev-engine | 기존 headers/cookie context 전달 |
 
-도메인 목록에 없는 모든 페이지에 yt-dlp getInfo를 자동 실행하지 않는다. 분석은 사용자가 명시적으로 선택했을 때만 실행해 응답 지연과 불필요한 process startup을 줄인다.
-
-### 6.2 공유/URL 처리 수용
-- `https://youtu.be/<id>`, `youtube.com/watch?v=`, `/shorts/`, `/live/`, playlist URL, URL query/fragment, trailing punctuation.
-- Android ACTION_SEND, ACTION_VIEW, clipboard paste, in-app browser menu.
-- host parsing은 subdomain과 scheme normalization을 처리하며, `www.youtube.com` 포함.
-- intent가 여러 URL을 포함할 때 preview/selection; invalid URL은 Korean error.
-- intent URL의 query string은 로그/analytics에서 redact.
+YouTube raw googlevideo.com URL 감지에 의존하지 않습니다. YouTube 원본 페이지 URL을 기준으로 추출하며 로그에서는 query/token을 제거합니다. 도메인 목록에 없는 페이지에 extractor를 자동 실행하지 않습니다.
 
 ## 7. 공통 Transfers 모델
 
-각 작업은 최소한 다음 정보를 저장한다.
-- id, source (`torrent | link | stream | ytdlp`), originalUrl (보안 저장/로그 redact), title, thumbnail, mime/ext
-- status (`queued | preparing | downloading | merging | completed | failed | cancelled`)
-- progress, totalBytes, downloadedBytes, speed, ETA
-- outputUri/path, createdAt, updatedAt, retryCount, lastErrorCode, userFacingError
-- engine-specific options (versioned schema), selected format, playlist index
-- resumability flag, headers/cookie reference (secure reference, not raw logs)
-
-큐는 영속 저장하며 앱 재시작 후 상태를 재구성한다. 완료 후 앱 전용 staging 폴더에서 MediaStore/SAF Download/Maglev로 이동하고 갤러리 숨김 옵션을 존중한다. 파일 이동 실패 시 원본 staging 파일을 삭제하지 않고 재시도 안내한다.
+모든 다운로드 작업의 영속 상태는 기존 maglev-engine의 다운로드 기록과 Maglev Transfers 화면이 소유합니다. 별도 ytdlp 목록이나 별도 progress store를 추가하지 않습니다.
+- Torrent는 기존 torrent record, direct/YouTube media는 실제 media URL 및 stream 여부에 맞춰 기존 link/stream record로 추가합니다.
+- YouTube metadata/format 선택은 추가 전 UI 단계입니다. 실제 queue에 등록된 이후의 id/progress/pause/resume/retry/remove/output은 기존 엔진 API와 Transfers가 담당합니다.
+- UI는 새 전송 레코드를 임의로 만들거나 별도 완료 목록을 보유하지 않습니다.
+- 세션 cookie/header는 엔진의 기존 보안 경로를 사용하며 로그에 raw cookie, auth, signed URL/query를 남기지 않습니다.
+- 앱 재시작 이후 복구 가능 여부는 기존 native record와 작업 종류에 따라 결정합니다. YouTube direct download와 HLS/DASH stream은 각각 별도 resume behavior를 검증합니다.
+- 독립 foreground service가 필요한 새 엔진은 기존 알림/서비스와 lifecycle 설계가 검증된 뒤에만 추가합니다. 별도 queue/service를 먼저 도입하지 않습니다.
 
 ## 8. 상세 작업 패키지와 게이트
 
 ### G0 — Baseline / repository audit
-- [ ] PR #1 head와 dev base SHA 기록
-- [ ] package.json, Expo module autolinking, maglev-engine contract, existing browser detection, transfer model, foreground service map
-- [ ] Actions workflow/branches/releases/artifacts inventory; delete only reviewed obsolete items
-- [ ] clean build + existing torrent/direct/HLS baseline
-**Gate:** baseline commit/Actions/functional evidence captured.
+- [x] PR #1, branch, base, package/Expo autolinking, YouTube adapter, existing Transfers contracts 조사
+- [x] MPMux 및 현재 Maglev Range/HLS/Browser 구현 대조
+- [x] standalone ytdlp scaffold를 제품 dependency에서 제거
+**Gate:** G0 문서/source audit 기록 완료. device 기능 승인은 아님.
 
-### G1 — Native yt-dlp engine smoke test
-- [ ] Confirm upstream artifact/version/API and license
-- [ ] Create minimal isolated module spike, no UI yet
-- [ ] init → version → getInfoJson on known public test URL
-- [ ] capture exact root exception, process exit code, stderr, redacted URL
-- [ ] check ABI/native library load and APK size
-**Gate:** real device returns metadata/formats; not merely Kotlin compile.
+### G1 — YouTube native smoke (device)
+- [ ] Galaxy cold-start에서 YoutubeDL init/version
+- [ ] 알려진 공개 영상 1개 getInfo metadata/formats
+- [ ] 선택한 player client/format으로 실제 media extraction
+- [ ] PO Token/JS runtime/age/login/지역 오류를 구분한 sanitized diagnostic
+**Gate:** 실제 Galaxy 기기에서 metadata/formats와 선택 format extraction 성공.
 
-### G2 — Standalone `ytdlp-engine`
-- [ ] stable API and TS types
-- [ ] progress/ETA/speed/error/done/cancel events
-- [ ] lifecycle/cancel/retry process safety
-- [ ] stable/nightly updater with rollback
-- [ ] config plugin, manifest, extractNativeLibs, ABI packaging
-**Gate:** test download, cancel, repeat, app background, no crash/leaked process.
+### G2 — YouTube UI / shared Transfers
+- [x] YouTube screen을 기존 getYouTubeInfo/addYouTubeDownload API에 연결
+- [x] 기존 EngineHost.addDownload 경로로 handoff하는 회귀 assertion 추가
+- [ ] YouTube app/Chrome/Samsung Internet share/paste → 포맷 → Transfers → saved file → playback
+- [ ] pause/resume/retry/remove/background/restart recovery
+**Gate:** 같은 Transfers 카드에서 작업 제어 및 저장/재생 성공.
 
-### G3 — Shared queue / persistence / storage
-- [ ] shared transfer schema and source discriminator
-- [ ] queue concurrency limits and retry policy
-- [ ] foreground service/notification integration
-- [ ] persisted queue, app restart recovery
-- [ ] staging-to-MediaStore/SAF move, storage permission UX
-**Gate:** background and restart tests pass.
+### G3 — Korean localization
+- [ ] 앱 전역 string inventory; changed screen/error/loading/empty 상태 포함
+- [ ] hard-coded English 사용자 문구 제거, Korean line wrap/accessibility 검토
+**Gate:** 전체 화면 언어 감사와 Galaxy 확인.
 
-### G4 — URL and intent routing
-- [ ] YouTube host/path test matrix incl youtu.be and www
-- [ ] share from YouTube app/Chrome/Samsung Internet
-- [ ] paste, ACTION_VIEW, browser action
-- [ ] playlist and invalid/multi-URL behavior
-**Gate:** all accepted URLs route to correct engine, no generic engine-call failure.
+### G4 — Existing downloader regression
+- [ ] direct link / Range split 1·2·8 segment fixture / no-range fallback / 429·503
+- [ ] HLS VOD variant, separate audio, MAP/BYTERANGE, AES-128 identity, mux
+- [ ] DASH VOD, torrent, browser observer, notifications, storage
+**Gate:** 회귀 없음과 파일 hash/재생 검사.
 
-### G5 — Full Korean localization
-- [ ] string inventory across app/, components/, settings, dialogs, errors, loading/empty states
-- [ ] remove user-facing hardcoded English; preserve technical identifiers only
-- [ ] Korean font/spacing/line wrapping; TalkBack labels
-- [ ] screenshots across primary screens and error paths
-**Gate:** no untranslated user-facing strings in full UI audit.
+### G5 — MPMux Static / HLS VOD benchmark
+- [x] Maglev에 이미 있는 정적 Range 및 HLS VOD 경로 확인
+- [ ] MPMux 비교 fixture/성능/오류 행태를 기존 Maglev 경로로 검증
+**Gate:** 신규 중복 downloader 없이 동작·성능 확인.
 
-### G6 — LJ media detection gap closure
-- [ ] determine actual WebView implementation and hook points
-- [ ] ServiceWorker request observation if missing
-- [ ] preserve original headers, add only missing context headers
-- [ ] static resource filtering and googlevideo policy
-- [ ] MediaMetadataRetriever probe with authenticated headers
-- [ ] URL dedupe/update and accurate detected item count
-- [ ] site-specific rule schema, versioning/cache/rollback
-- [ ] HLS AES-128 and separated audio tests; FFmpeg remux fallback
-**Gate:** local test server and known public media cases pass; false positives measured.
+### G6 — HLS Live
+- [ ] live playlist state machine, media sequence cursor, target duration polling
+- [ ] MAP/BYTERANGE/DISCONTINUITY/key rotation/timestamp
+- [ ] Stop/Finalize, file rotation, storage quota, sidecar and restart policy
+- [ ] 기존 Transfers, notification, MediaStore 연결
+**Gate:** controlled live fixture와 Galaxy live source에서 출력 검증.
 
-### G7 — YTDLnis P0 parity
-- [ ] format selector (video/audio/custom)
-- [ ] best quality, 1080p, 720p, MP3, M4A presets
-- [ ] playlist item selection and batch format
-- [ ] queue concurrency, retry, progress, cancel
-- [ ] yt-dlp version/update UI
-**Gate:** all P0 workflows complete on device.
+### G7 — MediaSource Buffer Capture
+- [ ] 브라우저 UI에서 사용자 opt-in start/stop
+- [ ] SourceBuffer init/media fragment, MIME, track, timestamp, changeType 관찰
+- [ ] bounded native binary writer/backpressure/rotation/recovery
+- [ ] A/V remux, EME/DRM rejection, supported codec/device playback
+**Gate:** VOD/live MSE fixtures와 Galaxy playback; memory/storage bounded.
 
-### G8 — P1/P2 feature scope
-P1: subtitle/thumbnail/metadata embed, cookie import, filename template, aria2c, SponsorBlock, backup/restore.  
-P2: custom command/template/terminal, chapter split/trim, scheduled download, incognito.
-Each feature is implemented only after P0 stability and each has its own tests. Do not mark the whole feature tier complete from a UI mock.
+### G8 — yt-dlp site compatibility and feature parity
+- [ ] YouTube watch/youtu.be/Shorts/live share route matrix
+- [ ] other yt-dlp supported site explicit extraction path (currently not implemented as general route)
+- [ ] audio/playlist/subtitles/cookies/metadata/embed/update capability by priority
+**Gate:** site-by-site evidence; generic “1000+” claim 금지.
 
 ### G9 — Release validation
-- [ ] CI unit/contract/JS/Rust tests
-- [ ] ARM64 APK, package/version identity, signature, size, 16 KB alignment
+- [ ] JS/typecheck/unit/contract, Rust tests/lint, Kotlin tests
+- [ ] ARM64 APK, version/appId, signing cert, APK size/hash, 16 KB alignment
 - [ ] emulator install/launch/navigation smoke
-- [ ] Galaxy physical device end-to-end
-- [ ] YouTube single video 1080p mp4 download/save/play
-- [ ] audio extraction MP3 + thumbnail metadata
-- [ ] playlist selection and batch download
-- [ ] background, cancel, retry, app restart recovery
-- [ ] torrent/direct/HLS/DASH regression
-- [ ] Korean localization audit
-- [ ] artifact SHA-256 equals installed/tested artifact
-**Gate:** only then release/merge and provide installation link.
+- [ ] Galaxy physical device E2E; tested artifact SHA equals delivered APK SHA
+- [ ] YouTube video/audio save+play; background/cancel/retry/restart
+- [ ] static Range, HLS VOD/live, MSE, DASH, torrent/direct and Korean UI regression
+**Gate:** 모든 필수 기능과 증거 통과 전에는 final/merge/release 금지.
+
+
 
 ## 9. UI/UX scope
 - Reuse Maglev theme, OLED/Dim/Light and existing design tokens.
@@ -391,22 +363,24 @@ Every acceptance record includes:
 - Release cleanup: inventory assets and downloads; remove only after verified replacement and explicit approval.
 - Every implementation commit updates this document’s “Current status / resume pointer” section or a linked progress ledger.
 
-## 14. Current progress / resume pointer
-**At document creation**
-- [x] PR #1 established as single active implementation PR.
-- [x] Prior parser/share/yt-dlp work consolidated on PR #1.
-- [x] Integrated product plan added.
-- [x] Native error wrapper improved to expose sanitized root-cause type.
-- [x] URL query redaction assertion added.
-- [ ] Independent ytdlp-engine module — not complete.
-- [ ] Real device init/getInfo/download — not complete.
-- [ ] Full Korean UI — not complete.
-- [ ] PO Token / runtime verification — not complete.
-- [ ] LJ detection gap implementation — not complete.
-- [ ] Galaxy E2E — not complete.
-- [ ] Release acceptance — not complete.
+## 14. Current progress / resume pointer — 2026-11-26
+- [x] PR #1 single integration track; current feature branch/head recorded.
+- [x] YouTube screen now calls existing native getYouTubeInfo and addYouTubeDownload; selected format goes through EngineHost.addDownload to existing Transfers.
+- [x] Regression assertions verify shared transfer handoff and no second ytdlpEngine.download call.
+- [x] MPMux functional benchmark and Maglev source audit added.
+- [x] Static Range/HLS VOD duplication avoided by reusing existing engine.
+- [x] Standalone duplicate modules/ytdlp-engine product dependency/module files removed; experimental history preserved in Git.
+- [ ] Galaxy G1 init/version/getInfo/format extraction.
+- [ ] Galaxy G2 actual download/queue/pause/retry/save/play/restart.
+- [ ] Full Korean localization.
+- [ ] HLS Live implementation.
+- [ ] MediaSource SourceBuffer capture implementation.
+- [ ] General yt-dlp non-YouTube site routing.
+- [ ] G9 final release acceptance.
 
-**Resume order:** G0 → G1 → G2 → G3 → G4 → G5 → G6 → G7 → G8 → G9. If a gate fails, fix that gate and rerun it; do not jump to release or declare success from a downstream build.
+Latest known head at this record: 84c52d6b83b99c3176828e5601df46f4fe8c9fa2; CI #162 (45644737221) is the validation run for this head. See the MPMux benchmark and integrated product plan for current implementation decisions.
+
+**Resume order:** finish CI #162 and fix any build failure → G1 Galaxy native smoke → G2 shared queue E2E → G3 Korean audit → G4/G5 regression → G6 HLS Live → G7 MSE capture → G8 general-site compatibility and P0 features → G9 release QA. Do not label untested gates complete.
 
 ## 15. Reference sources
 - Maglev upstream: https://github.com/Kaos599/Maglev
@@ -532,3 +506,5 @@ This section supplements the original 2026-11-25 Claude analysis with a current 
 - commit `2a5d1b8fde95bff01e53eb367b9667fcaab2c871`에서 YouTube 화면의 shared Transfers 연결 및 source regression assertions 반영.
 - Run #161 / ID `45643449600`: JS/typecheck/tests, contract tests, Rust tests, ARM64 Rust build 및 16KB alignment는 성공. APK Gradle build는 확인 시점 진행 중이었음.
 - #161 최종 APK build result와 Galaxy 실기기 테스트는 이 부록 작성 시점에 별도 확인 필요. 이 기록만으로 최종/DEVICE_PASS를 선언하지 않음.
+
+- MPMux official feature pages: https://mpmux.com/staticdownloader ; https://mpmux.com/hlsdownloader ; https://mpmux.com/buffermuxer ; Chrome Web Store https://chromewebstore.google.com/detail/video-downloader-mpmux/mbflpfaamifmmmkdjkcmpofpccfmlmap?hl=en-US

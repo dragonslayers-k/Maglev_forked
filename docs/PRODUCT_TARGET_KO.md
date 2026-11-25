@@ -1,6 +1,6 @@
 # Maglev+ 최종 목표 제품 명세 및 작업 기준
 
-> 기준일: 2026-11-25 (KST). 제품 목표와 검수 기준을 정의하는 기준 문서. 요구사항 임의 축소 금지.
+> 기준일: 2026-11-26 (KST). 제품 목표와 검수 기준을 정의하는 기준 문서. 요구사항 임의 축소 금지.
 
 ## 1. 최종 목표
 **Maglev를 기반 앱/UI/다운로드 관리/브라우저/기존 기능의 기준으로 삼고, LJ Video Downloader 수준을 넘어서는 범용 미디어 자동 감지·다운로드 기능과 YTDLnis 계열 온라인 영상 추출·다운로드 기능을 통합한 완전 한국어 Android 다운로더 Maglev+를 개발한다.**
@@ -31,14 +31,14 @@ LJ를 기능 참고 기준으로 독립 구현하며 수동 URL 입력보다 자
 - 직접 URL 및 M3U8/MPD 수동 입력은 보조 기능
 
 ### C. YTDLnis 계열 기능 통합
-YTDLnis/yt-dlp 기능을 Maglev+ UX에 통합한다. 현재 wrapper dependency만 추가한 상태를 이식 완료로 보지 않는다.
+YTDLnis/yt-dlp의 사용자 기능을 Maglev+ UX에 단계적으로 통합한다. 현재 저장소에는 YouTube 전용 yt-dlp adapter가 있으며 일반적인 1,000+ 사이트 전체 라우팅은 미완료다. wrapper dependency나 metadata 화면만으로 이식 완료로 보지 않는다.
 - YouTube 도메인: youtube.com/www/m, youtu.be, Shorts, Live, 정상 공유 URL 인식
 - 앱 공유·외부 브라우저 공유·paste·내장 브라우저에서 전용 다운로드 흐름으로 전달
 - metadata: 제목, 썸네일, 작성자/채널, 길이, formats
 - video/audio-only/merge 가능한 format 분류
 - 해상도/품질/codec/container/가능한 filesize 선택
 - 허용된 콘텐츠 실제 다운로드, 속도/진행률/상태
-- Maglev queue/storage/notifications에 통합; pause/resume/cancel/retry/complete 관리
+- 기존 Maglev queue/storage/notifications에 통합; pause/resume/cancel/retry/complete 관리. YouTube adapter는 선택한 media를 EngineHost.addDownload로 넘기며 별도 queue를 두지 않음
 - yt-dlp/runtime init·extract·format listing·download lifecycle 안정화, 원인별 오류와 로그
 - cold-start 공유, URL parse, native bridge, format ID 전달, 저장 및 queue 전체 파이프라인 E2E
 - playlist/multi-URL은 별도 검증 후 지원
@@ -51,7 +51,7 @@ YTDLnis/yt-dlp 기능을 Maglev+ UX에 통합한다. 현재 wrapper dependency�
 Maglev upstream Release/commit/security/dependencies/features 월 1회 review 목표. 변경·영향·반영/미반영 사유를 기록하고 선택 반영(자동 merge 금지). upstream version/SHA와 적용 commit/date 기록. main은 안정 기준선, feature/PR/CI로 개발.
 
 ## 3. 설계 원칙
-Detector (browser/network observation), extractor (yt-dlp class), protocol download (HTTP/HLS/DASH), mux/post-process를 분리. 모든 결과는 공통 DownloadItem/Queue/Storage/Notification으로 통합. Pipeline: detect/parse → validate → details/format selection → job create → progress → file/metadata registration → completion/error. Session/context는 최소 권한; protection bypass 금지.
+Detector (browser/network observation), extractor (yt-dlp), protocol download (HTTP/HLS/DASH), mux/post-process를 역할별로 분리하되 기존 Maglev engine/Transfers 큐를 단일 소유자로 유지합니다. YouTube extractor는 getYouTubeInfo / addYouTubeDownload를 통해 기존 EngineHost.addDownload로 handoff합니다. 별도 다운로드 큐·별도 저장소/알림 lifecycle을 중복 구현하지 않습니다. Pipeline: detect/parse → validate → details/format selection → existing transfer creation → progress → file/metadata registration → completion/error. Session/context는 최소 권한; DRM/유료 접근제어 우회 금지.
 
 ## 4. 완료 기준 (DoD)
 각 기능마다: automated tests/typecheck/build pass; Galaxy device install; Chrome + Samsung Internet share test; 실제 detect/extract/download 파일 생성 확인; file opens/plays and format/path/size verified; error/cancel/retry/resume tested; Maglev regression tests; Korean UI screen audit; CI SHA + APK SHA256 recorded. Release는 signing/version/license/security/SBOM 및 사용자 승인 후.
@@ -86,3 +86,11 @@ Detector (browser/network observation), extractor (yt-dlp class), protocol downl
 - 기본 APK는 ARM64 단일 APK이며 Universal APK 생성은 기본 비활성화한다. PR #5 패키징 변경은 feature 브랜치에 병합되었다.
 - Debug signing은 테스트용이다. 정식 배포/업데이트는 고정된 keystore 서명이 필요하다.
 - YouTube는 parser, dedicated route, extractor client fallback, HLS/DASH stream queue를 각각 검증한다. PO Token provider와 Galaxy E2E는 아직 완료 조건이다.
+
+
+## 9. MPMux 기능 비교 및 추가 범위 (2026-11-26)
+- Static Range split과 HLS VOD는 Maglev에 이미 존재하므로 신규 모듈을 만들지 않고 hash/회귀/성능 테스트로 확인합니다.
+- HLS Live recording은 현재 STREAM_LIVE로 거절되므로 신규 구현 대상입니다. playlist cursor/sequence/stop/finalize/rotation/기존 Transfers 통합이 필요합니다.
+- MediaSource buffer capture는 현재 실제 SourceBuffer bytes를 저장하지 않으므로 신규 구현 대상입니다. 기본 OFF, 사용자 opt-in, bounded native binary staging, backpressure, timestamp/track/A/V remux, EME/DRM 거절을 필수로 합니다.
+- MPMux 공개 문서와 현 소스 대조는 MPMUX_BENCHMARK_INTEGRATION_KO.md를 기준으로 합니다.
+- 완료 상태는 CI_PASS, DEVICE_PASS, ACCEPTED를 구분합니다. 브라우저 진입·metadata·CI 성공만으로 제품 완료를 선언하지 않습니다.

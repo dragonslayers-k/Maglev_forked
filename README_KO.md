@@ -12,9 +12,9 @@
 
 ## 최종 제품 목표
 
-상세 목표·필수 기능·완료 기준·단계별 작업 순서는 [최종 목표 제품 명세](docs/PRODUCT_TARGET_KO.md)를 기준으로 합니다. Maglev 기반의 기존 기능을 보존하면서 LJ Video Downloader 계열의 범용 자동 미디어 감지/다운로드와 YTDLnis/yt-dlp 계열 추출·실제 다운로드 기능을 통합하고, 앱 전체를 한국어화하며 upstream 업데이트를 지속 반영합니다.
+상세 목표·필수 기능·완료 기준·단계별 작업 순서는 [최종 목표 제품 명세](docs/PRODUCT_TARGET_KO.md)를 기준으로 합니다. Maglev 기존 기능과 하나의 Transfers 큐를 보존하면서 LJ/MPMux 기능 중 실제 누락된 미디어 감지·HLS Live·MediaSource buffer capture와 YouTube yt-dlp 다운로드를 통합합니다. 전체 한국어화 및 upstream 업데이트 검토도 진행합니다.
 
-**현재 실기기에서 전체 한국어화, YouTube 공유 URL 인식, YouTube 다운로드가 실패한 것으로 확인되어 미완료 상태입니다.** CI 성공은 자동 테스트와 빌드 통과를 뜻하며 이 기능들의 실기기 성공을 보증하지 않습니다.
+**이전 설치본에서는 한국어화와 YouTube 공유/다운로드 실패가 확인됐습니다.** 최신 코드에서 YouTube 화면을 기존 Maglev 추출기와 Transfers 큐에 연결했지만, 최신 APK 빌드와 Galaxy 실기기 다운로드·저장·재생은 아직 합격 판정 전입니다. CI 성공은 실제 사이트별 기능 성공을 보증하지 않습니다.
 
 **중요:** 모든 웹사이트의 모든 영상을 100% 저장할 수 있다고 보장하지 않습니다. DRM 보호, 서비스 정책, 로그인 세션, 만료된 URL, 사이트별 플레이어 구현, 브라우저 보안 경계에 따라 감지 또는 저장이 제한될 수 있습니다. DRM 우회 기능은 개발 범위에 포함하지 않습니다.
 
@@ -47,7 +47,7 @@
 | 다운로드 | 일시정지·재개, 재시도, 분할 스트림 처리 및 병합 |
 | 브라우저 연동 | 앱 내부 브라우저 및 외부 브라우저 공유 전달 |
 | 언어 | 앱 전체 사용자 노출 문자열 완전 한국어화 (현재 미완료/실기기 실패 확인) |
-| YouTube / yt-dlp | URL 공유·메타데이터 추출·품질/형식 선택·실제 다운로드·큐 통합 (현재 미완료/실기기 실패 확인) |
+| YouTube / yt-dlp | YouTube 전용 metadata/format adapter 및 shared Transfers handoff 연결 (실기기 E2E 미검증); 일반 yt-dlp 사이트 라우팅은 미완료 |
 | upstream | Maglev 원본 변경 월간 검토, 선택적 통합 및 regression 검증 |
 
 ## 현재 구현 진행 내용
@@ -61,8 +61,10 @@
 5. 동일 URL이 나중에 더 풍부한 정보(MIME, 스트림 종류, 크기, 해상도)를 제공하면 기존 감지 항목을 보강합니다.
 6. HLS/DASH 매니페스트를 확인한 뒤 알려진 세그먼트 URL이 파일 목록을 채우는 현상을 줄입니다.
 7. 감지 파일 목록과 스트림 다운로드의 핵심 화면 문구를 한국어로 바꿉니다.
+8. YouTube 포맷 선택은 기존 maglevEngine.getYouTubeInfo / addYouTubeDownload API를 사용해 새 별도 큐 없이 기존 Transfers로 전달합니다.
+9. MPMux 비교 결과 static Range/HLS VOD는 기존 엔진을 재사용하고, HLS Live 및 MediaSource byte capture를 신규 갭으로 분리했습니다.
 
-아직 빌드 성공·실기기 정상 동작을 확정한 릴리스가 아닙니다. PR CI와 Galaxy 실기기 시험이 통과되어야 다음 단계로 진행합니다.
+아직 최종 APK나 실기기 기능 합격을 선언하지 않습니다. 최신 branch head는 84c52d6b83b99c3176828e5601df46f4fe8c9fa2이며 CI #162를 검증 중입니다. HLS Live, MediaSource capture, 전체 한국어화 및 Galaxy E2E도 미완료입니다.
 
 ## 빌드 및 테스트
 
@@ -91,6 +93,8 @@
 - [Galaxy 실기기 검증 계획](docs/GALAXY_TEST_PLAN_KO.md)
 - [개발 로드맵](docs/ROADMAP.md)
 - [원본 Maglev 월간 업데이트 정책](docs/UPSTREAM_SYNC_POLICY_KO.md)
+- [MPMux 기능 벤치마크 및 Maglev 이식 설계](docs/MPMUX_BENCHMARK_INTEGRATION_KO.md)
+- [통합 개발 기준 및 현재 검증 게이트](docs/INTEGRATED_PRODUCT_PLAN_KO.md)
 
 ## 라이선스와 출처
 

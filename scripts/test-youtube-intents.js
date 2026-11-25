@@ -64,6 +64,10 @@ async function main() {
   assert.ok(screen.includes('maglevEngine.addYouTubeDownload'), 'selected formats must enter the shared native transfer queue');
   assert.ok(screen.includes('format.playerClient'), 'the selected extractor client must be preserved');
   assert.ok(!screen.includes('ytdlpEngine.download'), 'screen must not create a second standalone download queue');
+  const packageJson = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
+  assert.equal(packageJson.dependencies?.['ytdlp-engine'], undefined, 'do not install a second yt-dlp Expo module/queue');
+  assert.ok(!fs.existsSync(path.join(root, 'modules/ytdlp-engine')), 'the standalone duplicate prototype must stay out of the product tree');
+  assert.ok(screen.includes('maglevEngine.addYouTubeDownload'), 'YouTube formats must be added through the existing Maglev queue');
   console.log('test-youtube-intents: all assertions passed');
 }
 main().catch((e) => { console.error(e); process.exit(1); });
