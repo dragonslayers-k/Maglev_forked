@@ -91,3 +91,8 @@ MPMux는 정적/HLS VOD에 최대 3개 요청을 사용하고, live는 실시간
 - **검증 상태: CI run과 Release APK 아직 생성/확인되지 않았습니다.** Connector API commit은 PR head를 갱신했지만 현재 workflow-run 조회에서 새 run이 반환되지 않으며, connector는 Actions workflow_dispatch 실행 기능을 제공하지 않습니다. 이 commits는 아직 CI_PASS로 표기하지 않습니다.
 - 다음 gate: PR #1의 최신 head `8e6efd6f555ccf8c4a4d3148a4a15e043be35596` Release APK build → 설치 → cold init → yt-dlp version → metadata/formats → 실제 download. 오류가 계속되면 새 diagnostic stack/cause로 다음 원인을 확정.
 - CI와 실기기 검증이 끝날 때까지 release/accepted 금지.
+
+### Follow-up code correction (2026-11-26)
+
+- `f2eb6bdf`: diagnostics now escape the replacement marker correctly, and `LinkageError` is immediately propagated to the outer controlled-error handler instead of trying another player client and masking the original initializer failure.
+- Current code head at this note: `f2eb6bdf`. This is code-only status; no workflow run or APK has been verified for it.
