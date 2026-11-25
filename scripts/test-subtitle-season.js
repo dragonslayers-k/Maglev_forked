@@ -26,15 +26,15 @@ function check(name, cond) {
   const cand = (o = {}) => ({ p: 'os', id: 'a1', rel: 'The.Mentalist.S02E01.720p.HDTV.x264-CTU', l: 'en', t: 'The Mentalist', s: 2, e: 1, ...o });
 
   console.log('[46.1 plural rules]');
-  check('1 video / 2 videos', copy.multiTitle(1) === 'Subtitles for 1 video' && copy.multiTitle(2) === 'Subtitles for 2 videos');
-  check('1 episode / 23 episodes', copy.multiTitle(1, true) === 'Subtitles for 1 episode' && copy.multiTitle(23, true) === 'Subtitles for 23 episodes');
-  check('0 takes the plural', copy.multiTitle(0) === 'Subtitles for 0 videos');
-  check('1 subtitle / 3 subtitles', copy.groupFoundLine(1) === '1 subtitle' && copy.groupFoundLine(3) === '3 subtitles');
-  check('"1 needs you" / "2 need you" in the summary and the pack line', copy.statusSummary({ saved: 0, needsYou: 1, waiting: 0 }) === '1 needs you' && copy.rowPackLine({ saved: 0, total: 5, needYou: 1 }) === '0 of 5 saved · 1 needs you' && copy.statusSummary({ saved: 21, needsYou: 2, waiting: 0 }) === '21 saved · 2 need you');
-  check('non-video footnote follows the count', copy.nonVideoMany(2) === '2 other adds are not videos, so they get no subtitles.' && copy.nonVideoMany(1) === '1 other add is not a video, so it gets no subtitles.');
-  check('sources off: 1 source / 2 sources', copy.offSourcesTail(1) === '1 source off' && copy.offSourcesTail(2) === '2 sources off');
-  check('bulk copy: button, progress, result', copy.useBestMatchFor(18) === 'Use the best match for 18' && copy.bulkProgress(3, 18) === 'Saving 3 of 18…' && copy.USE_BEST_MATCH === 'Use best match');
-  check('bulk result: second part left out at 0, "1 still needs you" at 1', copy.bulkResult(18, 0) === 'Saved 18.' && copy.bulkResult(18, 5) === 'Saved 18. 5 still need you.' && copy.bulkResult(22, 1) === 'Saved 22. 1 still needs you.');
+  check('1 video / 2 videos', copy.multiTitle(1) === '1개 동영상 자막' && copy.multiTitle(2) === '2개 동영상 자막');
+  check('1 episode / 23 episodes', copy.multiTitle(1, true) === '1개 회차 자막' && copy.multiTitle(23, true) === '23개 회차 자막');
+  check('0 takes the plural', copy.multiTitle(0) === '0개 동영상 자막');
+  check('1 subtitle / 3 subtitles', copy.groupFoundLine(1) === '1개 자막' && copy.groupFoundLine(3) === '3개 자막');
+  check('"1 needs you" / "2 need you" in the summary and the pack line', copy.statusSummary({ saved: 0, needsYou: 1, waiting: 0 }) === '1개 선택 필요' && copy.rowPackLine({ saved: 0, total: 5, needYou: 1 }) === '5개 중 0개 저장 · 1개 선택 필요' && copy.statusSummary({ saved: 21, needsYou: 2, waiting: 0 }) === '21개 저장 · 2개 선택 필요');
+  check('non-video footnote follows the count', copy.nonVideoMany(2) === '동영상이 아닌 항목 2개는 자막을 검색하지 않습니다.' && copy.nonVideoMany(1) === '동영상이 아닌 항목 1개는 자막을 검색하지 않습니다.');
+  check('sources off: 1 source / 2 sources', copy.offSourcesTail(1) === '검색 사이트 1개 꺼짐' && copy.offSourcesTail(2) === '검색 사이트 2개 꺼짐');
+  check('bulk copy: button, progress, result', copy.useBestMatchFor(18) === '18개 항목에 가장 적합한 자막 사용' && copy.bulkProgress(3, 18) === 'Saving 3 of 18…' && copy.USE_BEST_MATCH === '가장 적합한 자막 사용');
+  check('bulk result: second part left out at 0, "1 still needs you" at 1', copy.bulkResult(18, 0) === '18개 저장했습니다.' && copy.bulkResult(18, 5) === '18개 저장했습니다. 5개 항목을 직접 선택해야 합니다.' && copy.bulkResult(22, 1) === '22개 저장했습니다. 1개 항목을 직접 선택해야 합니다.');
 
   console.log('[46.1 a pack gives one row per file]');
   const files = {
@@ -51,14 +51,14 @@ function check(name, cond) {
   check('rows that need you first, then the rest in episode order', rows.map((r) => r.main).join('|') === 'S02E01 · Redemption|S02E04|extras behind the scenes|S02E02|S02E03 · Red Tide');
   check('an unreadable name shows the file name without its extension', rows.some((r) => r.main === 'extras behind the scenes'));
   check('the title is dropped when the name has none, and release tags are not a title', S.episodeLabel('The.Mentalist.S02E02.720p.HDTV.x264-CTU.mkv') === 'S02E02' && S.episodeLabel('Show.S01E05-GRP.mkv') === 'S01E05' && S.episodeLabel('Show S01E05 Pilot.mkv') === 'S01E05 · Pilot');
-  check('second line: size, then the result in words', rows[0].detail === '1.0 GB · Close match · pick');
+  check('second line: size, then the result in words', rows[0].detail === '1.0 GB · 비슷한 자막 · 선택');
   check('saved names its language', rows.find((r) => r.phase === 'saved').detail.endsWith('Saved · English'));
-  check('result words: none, getting, waiting, failed', S.episodeWord('none', null) === 'None found · edit name' && S.episodeWord('searching', null) === 'Getting…' && S.episodeWord('queued', null) === 'Waiting for the file' && S.episodeWord('failed', null) === "Sources didn't answer");
+  check('result words: none, getting, waiting, failed', S.episodeWord('none', null) === '없음 · 이름 수정' && S.episodeWord('searching', null) === '검색 중…' && S.episodeWord('queued', null) === '파일 대기 중' && S.episodeWord('failed', null) === '검색 사이트 응답 없음');
   check('saved with no known language says "Saved"', S.episodeWord('saved', null) === 'Saved');
-  check('a row without a known size shows only the words', rows.find((r) => r.phase === 'queued').detail === 'Waiting for the file');
+  check('a row without a known size shows only the words', rows.find((r) => r.phase === 'queued').detail === '파일 대기 중');
   check('a tap opens results for needs-pick and saved, the name field for none, nothing while waiting', S.episodeStart('needs-pick') === 'results' && S.episodeStart('saved') === 'results' && S.episodeStart('none') === 'edit-name' && S.episodeStart('queued') === null && S.episodeStart('searching') === null);
   check('phase counts feed the summary', JSON.stringify(S.phaseCounts(rows.map((r) => r.phase))) === JSON.stringify({ saved: 1, needsYou: 1, waiting: 1 }));
-  check('23 files: 21 saved and 2 need you', copy.statusSummary(S.phaseCounts([...Array(21).fill('saved'), 'needs-pick', 'needs-pick'])) === '21 saved · 2 need you');
+  check('23 files: 21 saved and 2 need you', copy.statusSummary(S.phaseCounts([...Array(21).fill('saved'), 'needs-pick', 'needs-pick'])) === '21개 저장 · 2개 선택 필요');
 
   console.log('[46.3 qualification]');
   check('the right show, season, episode and language qualifies', S.qualifies(cand(), ctx));
@@ -100,11 +100,11 @@ function check(name, cond) {
   check('k >= 1: "Use best match"; k = 0: "See all"', S.pageRowAction(1) === 'use-best' && S.pageRowAction(5) === 'use-best' && S.pageRowAction(0) === 'see-all');
   const base = { fileListKnown: true, started: true, canOpenSheet: false, phase: 'needs-pick', pack: { total: 23, saved: 0, needYou: 23 } };
   let m = M.rowModel({ ...base, bestK: 4 });
-  check('a pack with a qualifying run: button "Use best match"', m.button.label === 'Use best match' && m.button.action === 'use-best');
-  check('"See all" stays one tap away', m.extra && m.extra.label === 'See all' && m.extra.action === 'see-all');
-  check('the line stays "{s} of {n} saved · {p} need you"', m.line === '0 of 23 saved · 23 need you');
+  check('a pack with a qualifying run: button "Use best match"', m.button.label === '가장 적합한 자막 사용' && m.button.action === 'use-best');
+  check('"See all" stays one tap away', m.extra && m.extra.label === '모두 보기' && m.extra.action === 'see-all');
+  check('the line stays "{s} of {n} saved · {p} need you"', m.line === '23개 중 0개 저장 · 23개 선택 필요');
   m = M.rowModel({ ...base, bestK: 0 });
-  check('a pack with none qualifying keeps "See all"', m.button.label === 'See all' && m.button.action === 'see-all' && !m.extra);
+  check('a pack with none qualifying keeps "See all"', m.button.label === '모두 보기' && m.button.action === 'see-all' && !m.extra);
   m = M.rowModel({ ...base });
   check('no bestK given: "See all"', m.button.action === 'see-all');
   m = M.rowModel({ ...base, bestK: 4, bulk: { done: 2, total: 4 } });
