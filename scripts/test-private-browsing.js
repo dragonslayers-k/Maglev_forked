@@ -170,9 +170,9 @@ const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
   // ---- settings ----
   check('settings row is a toggle on the browser page', /historyCopy\.settings\.private\}[\s\S]{0,200}prefs\.privateBrowsing/.test(read('app/settings/browser.tsx')));
   const idx = read('utils/settingsIndex.ts');
-  check('settings index entry exists with keywords', /"browser-private-browsing",\s*"Private browsing"/.test(idx) && /"incognito"/.test(idx) && /"don't save"/.test(idx));
+  check('Korean settings index entry exists with keywords', /"browser-private-browsing",\s*"비공개 브라우징"/.test(idx) && /"incognito"/.test(idx) && /"don't save"/.test(idx));
   const copy = read('constants/copy.ts');
-  check('copy says what it does and what it leaves', /Don't keep history or open tabs, and clear cookies and cached pages from sites you visit when you leave the browser\. Site storage and third-party cookies can stay\./.test(copy));
+  check('Korean copy says what it does and what it leaves', /방문 기록과 열린 탭을 저장하지 않습니다\. 브라우저를 닫으면 방문 사이트의 쿠키와 캐시를 삭제합니다\. 사이트 저장소와 일부 제3자 쿠키는 남을 수 있습니다\./.test(copy));
   check('SECURITY.md states the limit', /Private browsing[^\n]*(site storage|third-party)/i.test(read('SECURITY.md')));
   const kt2 = read('modules/maglev-engine/android/src/main/java/com/maglev/engine/MaglevEngineModule.kt');
   check('native clearCookies expires host-only and Domain forms with Max-Age=0 and path variants', /Max-Age=0; Path=\$path; Secure/.test(kt2) && /Domain=\.\$host; Max-Age=0; Path=\$path/.test(kt2));
