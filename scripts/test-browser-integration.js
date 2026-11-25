@@ -55,8 +55,8 @@ check('Kotlin: algorithmic darkening only when the feature is supported', /WebVi
 check('gradle: androidx.webkit dependency', /androidx\.webkit:webkit:/.test(gradle));
 check('pref: darkPages defaults on and only false turns it off', /darkPages: boolean;/.test(prefs) && /darkPages: true,/.test(prefs) && /darkPages: o\.darkPages !== false,/.test(prefs));
 check('screen: darkPages is the pref and the app being dark', /darkPages=\{prefs\.darkPages && dark\}/.test(scr) && /const \{ colors, dark \} = useTheme\(\)/.test(scr));
-check('settings: a Dark pages row with a caption', /browserTabs\.settings\.darkPages\}\s+subtitle=\{browserTabs\.settings\.darkPagesSubtitle\}/.test(settings) && /darkPages: 'Dark pages'/.test(copy) && /Darken pages that only have a light look, when Maglev is dark\./.test(copy));
-check('settings index: Dark pages with keywords', /"browser-dark-pages",\s*"Dark pages",\s*"browser",\s*"Browser",\s*\[[^\]]*"dark"[^\]]*"night"[^\]]*"pages"[^\]]*"websites"[^\]]*"theme"/.test(index));
+check('settings: a Korean dark-pages row with a caption', /browserTabs\.settings\.darkPages\}\s+subtitle=\{browserTabs\.settings\.darkPagesSubtitle\}/.test(settings) && /darkPages: '웹페이지 어둡게 표시'/.test(copy) && /어두운 테마에서 밝은 웹페이지를 어둡게 표시합니다\./.test(copy));
+check('settings index: Korean dark-pages title with English keywords', /"browser-dark-pages",\s*"웹페이지 어둡게 표시",\s*"browser",\s*"Browser",\s*\[[^\]]*"dark"[^\]]*"night"[^\]]*"pages"[^\]]*"websites"[^\]]*"theme"/.test(index));
 check('backup restores the pref through normalizeBrowserPrefs', /normalizeBrowserPrefs\(value\)/.test(read('utils/backup/io.ts')));
 
 // ---- clear this site's data ----
