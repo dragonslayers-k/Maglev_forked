@@ -311,14 +311,14 @@ export default function AddDownloadScreen() {
           body={errorView?.body}
           primary={
             notAFile
-              ? { label: 'Open in browser', onPress: () => openBrowser(router, { url: urlRef.current }, 'replace') }
+              ? { label: 'yt-dlp로 페이지 분석', onPress: () => router.replace({ pathname: '/youtube-download', params: { url: urlRef.current } }) }
               : errorView?.primary === 'pasteAnother'
                 ? { label: 'Paste another link', onPress: () => { setText(''); void handlePaste(); } }
                 : { label: 'Try again', onPress: () => void submit(urlRef.current) }
           }
           secondary={
             notAFile
-              ? { label: 'Paste another link', onPress: () => { setText(''); void handlePaste(); } }
+              ? { label: '브라우저에서 열기', onPress: () => openBrowser(router, { url: urlRef.current }, 'replace') }
               : { label: 'Back', onPress: () => setPhase('input') }
           }
         />

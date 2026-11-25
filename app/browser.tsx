@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useId, useMemo, useRef, useState, useSyncExternalStore } from 'react';
-import { AppState, BackHandler, Keyboard, Share, StyleSheet, Text, View } from 'react-native';
+import { AppState, BackHandler, Keyboard, Linking, Share, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect, useIsFocused, useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Clipboard from 'expo-clipboard';
@@ -157,6 +157,7 @@ export default function BrowserScreen({ inTab = false }: { inTab?: boolean }) {
   const [linkTarget, setLinkTarget] = useState<BrowserLongPressEvent | null>(null);
   const [mediaHit, setMediaHit] = useState<MediaHit | null>(null);
   const [clearSiteOpen, setClearSiteOpen] = useState(false);
+  const [mpmuxHelp, setMpmuxHelp] = useState<'drm' | 'buffer' | null>(null);
   const [target, setTarget] = useState<DownloadTarget | null>(null);
   const [batchItems, setBatchItems] = useState<FoundItem[] | null>(null);
   const [streamItem, setStreamItem] = useState<FoundItem | null>(null);
@@ -200,6 +201,7 @@ export default function BrowserScreen({ inTab = false }: { inTab?: boolean }) {
   useEffect(() => {
     setMediaHit(null);
     setClearSiteOpen(false);
+    setMpmuxHelp(null);
     setLinkTarget(null);
     setUndo(null);
   }, [activeId]);
@@ -575,7 +577,7 @@ export default function BrowserScreen({ inTab = false }: { inTab?: boolean }) {
       const d = getData(id);
       if (id !== activeIdRef.current || d.notes.has(e.note)) return;
       d.notes.add(e.note);
-      showNotice({ message: e.note === 'drm' ? notices.browser.drm : notices.browser.blob }, 5000);
+      setMpmuxHelp(e.note === 'drm' ? 'drm' : 'buffer');
     },
     onNewWindow: (id, e) => void openTabChecked({ url: e.url, opener: id }),
     onPopupRequest: (id, e) => setPopups((p) => popupsApi.request(p, id, { url: e.url, kind: e.kind, sourceUrl: e.sourceUrl })),
@@ -1057,6 +1059,17 @@ export default function BrowserScreen({ inTab = false }: { inTab?: boolean }) {
             if (page?.url) void copy(page.url);
           }}
         />
+        <ListRow
+          icon="download"
+          title="yt-dlp로 페이지 분석"
+          subtitle="지원 사이트의 동영상·오디오 형식 확인"
+          disabled={!/^https?:\/\//i.test(page?.url ?? '')}
+          onPress={() => {
+            const url = page?.url;
+            setMenuOpen(false);
+            if (url) router.push({ pathname: '/youtube-download', params: { url } });
+          }}
+        />
         <BookmarkToggle url={page?.url ?? tab?.url ?? ''} title={page?.title ?? tab?.title ?? ''} onDone={() => setMenuOpen(false)} />
         {/^https?:\/\//i.test(page?.url ?? '') ? (
           <ListRow
@@ -1108,6 +1121,31 @@ export default function BrowserScreen({ inTab = false }: { inTab?: boolean }) {
         }
       >
         <Text style={styles.dialogBody}>{browserTabs.thisPage.clearSiteBody(pageHost)}</Text>
+      </Dialog>
+
+      <Dialog
+        visible={mpmuxHelp != null}
+        onClose={() => setMpmuxHelp(null)}
+        title={mpmuxHelp === 'drm' ? 'DRM 보호 영상' : '플레이어 버퍼형 영상'}
+        actions={
+          <>
+            <Button label="MPMux 사용 안내" variant="secondary" fullWidth onPress={() => {
+              setMpmuxHelp(null);
+              void Linking.openURL('https://mpmux.com/ko').catch(() => showNotice({ message: 'MPMux 안내 페이지를 열지 못했습니다.' }));
+            }} />
+            <Button label="Chrome 확장 프로그램" variant="secondary" fullWidth onPress={() => {
+              setMpmuxHelp(null);
+              void Linking.openURL('https://chromewebstore.google.com/detail/video-downloader-mpmux/mbflpfaamifmmmkdjkcmpofpccfmlmap').catch(() => showNotice({ message: 'Chrome 확장 프로그램 페이지를 열지 못했습니다.' }));
+            }} />
+            <Button label="닫기" variant="ghost" fullWidth onPress={() => setMpmuxHelp(null)} />
+          </>
+        }
+      >
+        <Text style={styles.dialogBody}>
+          {mpmuxHelp === 'drm'
+            ? '이 영상은 DRM 암호화 보호가 감지되어 Maglev+에서 저장할 수 없습니다. MPMux도 DRM을 복호화하거나 보호를 우회하지 못합니다. 서비스의 공식 다운로드 기능이나 비보호 원본 제공 여부를 확인하세요.'
+            : '직접 파일 주소가 없는 비암호화 MSE/HLS 플레이어라면 PC Chrome 또는 Edge에서 MPMux의 Video Buffer Muxer가 작동할 수 있습니다. 확장 프로그램을 설치하고 영상 페이지를 재생한 상태에서 녹화를 시작하세요. 녹화가 끝날 때까지 해당 탭을 닫지 마세요. DRM 암호화 영상에는 사용할 수 없습니다.'}
+        </Text>
       </Dialog>
 
       <TextSizeSheet

@@ -193,3 +193,29 @@ YTDLnis의 동작을 참고하되 YTDLnis 앱의 소스/브랜드/전용 UI를 �
 - PR #4 is the consolidated YouTube integration branch: scheme-less youtu.be parsing, QuickShare raw-text fallback, browser paste route, yt-dlp stable updater, client-specific extraction and HLS/DASH handoff.
 - PO Token provider remains a known YTDLnis feature gap. No YouTube download or full Korean localization completion is claimed yet.
 - Gradle 9.4.1 outdated warning and debug-certificate warning remain to address/verify; debug-signed APK is test-only.
+## 2026-11-26 #163 사용자 설치 결과와 재작업 기준 (기존 최신 상태 기록 대체)
+
+### #163의 사실관계
+- Actions #163 / run ID `45645790936` / commit `e2aaee3b2b15b852df11ce13b5e2806de4aa9bae`: 7개 job CI success, APK artifact 생성.
+- arm64 APK SHA-256: `61362ab5611965194e661fe66926f07e9da1d6e9edccc1c7a2054fe94e5db3de`.
+- 사용자가 해당 APK를 Galaxy에 설치해 확인한 결과 **전체 한글화 실패, YouTube 다운로드 실패**. 따라서 #163은 CI_PASS만 해당하며 DEVICE_PASS/ACCEPTED가 아닙니다.
+
+### 소스 원인과 수정 지침
+1. 기존 `YoutubeDownload.kt`는 `YouTubeUrl.parse()` 성공만 허용해 YouTube 이외 yt-dlp 지원 사이트를 처리하지 못했습니다.
+2. 일반 웹페이지가 Maglev direct-file probe에서 `NOT_A_FILE`을 반환하면 기존 화면에는 브라우저 열기만 있어 yt-dlp page extractor로 이동할 수 없었습니다.
+3. 브라우저 page menu에도 일반 사이트에 대한 명시적 yt-dlp 분석 진입점이 없었습니다.
+4. HLS/DASH 선택에서 variant audio가 separate인 경우 stream의 `audioId`를 전달하지 않아 해당 조합을 놓칠 수 있었습니다.
+5. 현재 client fallback은 `web_safari/android_vr/web_embedded`이며 PO Token Provider와 최신 yt-dlp-ejs/JS runtime 준비 여부는 검증되지 않았습니다. youtubedl-android 0.18.1 bundled Python 3.8과 최신 yt-dlp Python 3.11+ 요구의 호환 위험도 남아 있습니다.
+
+### 새 변경 요구사항
+- YouTube와 일반 HTTP(S) 페이지의 yt-dlp metadata/format 분석을 동일 adapter에서 처리하되, 일반 페이지는 사용자가 명시적으로 선택할 때만 실행합니다.
+- 선택 가능한 muxed direct video, direct audio, 검증 가능한 HLS/DASH만 기존 `EngineHost.addDownload` / Maglev Transfers로 전달합니다. 분리된 direct A/V URL은 호환 mux 검증 없이 표시하지 않습니다.
+- 별도 `ytdlp-engine` queue, 별도 transfer store, 별도 foreground service를 만들지 않습니다.
+- Browser page menu와 Add download의 NOT_A_FILE 오류에서 `yt-dlp로 페이지 분석` 경로를 제공합니다.
+- DRM/Widevine/FairPlay 우회·복호화 코드를 만들지 않습니다. 보호 영상은 이유를 표시하고, 비암호화 MSE/HLS에 한해 PC MPMux 대체 안내를 표시합니다. MPMux도 DRM을 복호화하지 못한다고 사용자 화면에서 명시합니다.
+- MPMux 안내: https://mpmux.com/ko ; Chrome Web Store: https://chromewebstore.google.com/detail/video-downloader-mpmux/mbflpfaamifmmmkdjkcmpofpccfmlmap
+
+### 검증 전 금지사항
+- 이 변경은 새 CI, Galaxy 실제 공유/paste → 추출 → 형식 선택 → Transfers → 저장 → 재생 → 취소/재시도/재시작 검증을 통과하기 전까지 완료/최종본으로 표시하지 않습니다.
+- PO Token provider, yt-dlp-ejs/JS runtime, runtime/Python compatibility, playlist, separate direct A/V mux, non-YouTube site coverage, full Korean localization are still pending.
+- CI success and APK artifact generation do not equal device acceptance.

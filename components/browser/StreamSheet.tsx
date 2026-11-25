@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Linking, StyleSheet, Text, View } from 'react-native';
 import { sanitizeFileName, type FoundItem, type StreamProbe } from 'maglev-engine';
 import { useTheme } from '../../context/ThemeContext';
 import { useMaglevEngine } from '../../context/EngineContext';
@@ -55,6 +55,7 @@ export function StreamSheet({ item, pageTitle, userAgent = '', pageUrl = '', onC
   const [audioId, setAudioId] = useState<string | null>(null);
   const [name, setName] = useState('');
   const [message, setMessage] = useState<string | null>(null);
+  const [protectedStream, setProtectedStream] = useState(false);
   const [canRetry, setCanRetry] = useState(false);
   const [tries, setTries] = useState(0);
   const token = useRef(0);
@@ -66,6 +67,7 @@ export function StreamSheet({ item, pageTitle, userAgent = '', pageUrl = '', onC
     setPhase('probing');
     setProbe(null);
     setMessage(null);
+    setProtectedStream(false);
     setVariantId(null);
     setAudioId(null);
     setName(sanitizeFileName((pageTitle || item.name || '').trim()));
@@ -84,6 +86,7 @@ export function StreamSheet({ item, pageTitle, userAgent = '', pageUrl = '', onC
       const known = STREAM_BANNERS[res.code as keyof typeof STREAM_BANNERS];
       if (known) {
         setMessage(res.message || known);
+        setProtectedStream(res.code === 'STREAM_PROTECTED');
         setCanRetry(false);
       } else {
         setMessage(res.message || probeErrorView(res.code, res.message, res.httpStatus).body);
@@ -201,6 +204,12 @@ export function StreamSheet({ item, pageTitle, userAgent = '', pageUrl = '', onC
 
         <View style={styles.actions}>
           <Button label="링크 복사" icon="copy" variant="ghost" onPress={() => onCopyLink(it.url)} disabled={adding} />
+          {protectedStream ? (
+            <>
+              <Text style={styles.meta}>MPMux는 비암호화 MSE/HLS 버퍼 캡처용 대안이며, DRM 암호화 영상의 복호화나 우회는 지원하지 않습니다.</Text>
+              <Button label="PC MPMux 안내" variant="secondary" onPress={() => void Linking.openURL('https://mpmux.com/ko').catch(() => setMessage('MPMux 안내 페이지를 열지 못했습니다.'))} />
+            </>
+          ) : null}
           {phase === 'error' ? (
             canRetry ? <Button label="다시 시도" onPress={() => setTries((n) => n + 1)} /> : <Button label="닫기" onPress={onClose} />
           ) : (

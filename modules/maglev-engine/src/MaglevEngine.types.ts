@@ -637,6 +637,8 @@ export interface YouTubeInfo {
   videoId: string;
   title: string;
   uploader: string | null;
+  /** yt-dlp extractor name (e.g. Youtube, Vimeo), used for diagnostics and UI labels. */
+  extractor?: string | null;
   duration: number;
   thumbnail: string | null;
   formats: YouTubeFormat[];

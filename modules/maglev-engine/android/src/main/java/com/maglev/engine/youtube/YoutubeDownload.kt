@@ -1,6 +1,7 @@
 package com.maglev.engine.youtube
 
 import android.content.Context
+import android.net.Uri
 import android.util.Log
 import android.webkit.WebSettings
 import com.maglev.engine.EngineHost
@@ -63,14 +64,34 @@ object YoutubeDownload {
             .replace(Regex("https?://[^\\s]+", RegexOption.IGNORE_CASE), "[URL]")
             .take(240)
 
-    private fun requestFor(url: String, playerClient: String): YoutubeDLRequest =
-        YoutubeDLRequest(url)
-            .addOption("--no-playlist")
-            .addOption("--extractor-args", "youtube:player_client=" + playerClient)
+    /**
+     * YouTube needs an explicit player client. Other yt-dlp-supported HTTP(S) pages use the site's
+     * registered extractor. Generic extraction is only invoked by an explicit user action.
+     */
+    private fun requestFor(url: String, playerClient: String): YoutubeDLRequest {
+        val request = YoutubeDLRequest(url).addOption("--no-playlist")
+        if (playerClient != "generic") {
+            request.addOption("--extractor-args", "youtube:player_client=" + playerClient)
+        }
+        return request
+    }
+
+    /** Accept only normal web pages; reject custom schemes and credential-bearing URLs. */
+    private fun httpMediaUrl(raw: String): String? {
+        val value = raw.trim()
+        if (value.isEmpty() || value.length > 4096) return null
+        val uri = runCatching { Uri.parse(value) }.getOrNull() ?: return null
+        val scheme = uri.scheme?.lowercase()
+        if (scheme != "http" && scheme != "https") return null
+        if (uri.host.isNullOrBlank() || uri.userInfo != null) return null
+        return value
+    }
 
     fun info(context: Context, rawUrl: String): Map<String, Any?> {
         val link = YouTubeUrl.parse(rawUrl)
-            ?: return Json.failure("INVALID_SOURCE", "지원하지 않는 YouTube 동영상 링크입니다.")
+        val sourceUrl = link?.canonicalUrl ?: httpMediaUrl(rawUrl)
+            ?: return Json.failure("INVALID_SOURCE", "HTTP(S) 웹페이지 주소를 입력하세요.")
+        val clients = if (link != null) PLAYER_CLIENTS else listOf("generic")
         return try {
             val app = context.applicationContext
             prepareYtDlp(app)
@@ -78,9 +99,9 @@ object YoutubeDownload {
             var lastError: Exception? = null
             val allFormats = mutableListOf<Map<String, Any?>>()
 
-            for (client in PLAYER_CLIENTS) {
+            for (client in clients) {
                 try {
-                    val current = YoutubeDL.getInstance().getInfo(requestFor(link.canonicalUrl, client))
+                    val current = YoutubeDL.getInstance().getInfo(requestFor(sourceUrl, client))
                     if (metadata == null || metadata?.title.isNullOrBlank()) metadata = current
                     val found = (current.formats ?: arrayListOf()).mapNotNull { format -> toFormat(format, client) }
                     allFormats.addAll(found)
@@ -106,15 +127,16 @@ object YoutubeDownload {
             val choices = videoFormats + audioFormats
             if (choices.isEmpty()) {
                 return Json.failure(
-                    "YOUTUBE_NO_FORMAT",
-                    "지원 가능한 형식을 찾지 못했습니다. YouTube PO Token, 영상 제한 또는 지역 제한으로 형식이 제공되지 않을 수 있습니다.",
+                    "YTDLP_NO_FORMAT",
+                    "지원 가능한 형식을 찾지 못했습니다. 로그인·세션·사이트 추출기·보호 상태 또는 런타임 요구를 확인하세요.",
                 )
             }
             linkedMapOf(
                 "ok" to true,
-                "videoId" to link.videoId,
-                "title" to (video.title ?: "YouTube video"),
+                "videoId" to (link?.videoId ?: (video.id ?: "")),
+                "title" to (video.title ?: if (link != null) "YouTube video" else "웹 동영상"),
                 "uploader" to video.uploader,
+                "extractor" to video.extractor,
                 "duration" to video.duration,
                 "thumbnail" to video.thumbnail,
                 "formats" to choices,
@@ -122,21 +144,24 @@ object YoutubeDownload {
         } catch (e: Exception) {
             val diagnostic = safeDiagnostic(e)
             val version = currentYtDlpVersion(context)
-            Log.e(TAG, "YouTube metadata extraction failed (yt-dlp=" + version + "): " + diagnostic)
-            Json.failure("YOUTUBE_EXTRACT_FAILED", "YouTube 영상 정보를 가져오지 못했습니다. yt-dlp " + version + " · " + diagnostic)
+            Log.e(TAG, "yt-dlp metadata extraction failed (yt-dlp=" + version + "): " + diagnostic)
+            val subject = if (link != null) "YouTube 영상" else "웹페이지 영상"
+            Json.failure("YOUTUBE_EXTRACT_FAILED", subject + " 정보를 가져오지 못했습니다. yt-dlp " + version + " · " + diagnostic)
         }
     }
 
     fun add(context: Context, rawUrl: String, formatId: String, playerClient: String): Map<String, Any?> {
         val link = YouTubeUrl.parse(rawUrl)
-            ?: return Json.failure("INVALID_SOURCE", "지원하지 않는 YouTube 동영상 링크입니다.")
-        if (!formatIdPattern.matches(formatId) || playerClient !in PLAYER_CLIENTS) {
+        val sourceUrl = link?.canonicalUrl ?: httpMediaUrl(rawUrl)
+            ?: return Json.failure("INVALID_SOURCE", "HTTP(S) 웹페이지 주소를 입력하세요.")
+        val validClient = if (link != null) playerClient in PLAYER_CLIENTS else playerClient == "generic"
+        if (!formatIdPattern.matches(formatId) || !validClient) {
             return Json.failure("INVALID_ARGUMENT", "선택한 형식이 올바르지 않습니다.")
         }
         return try {
             val app = context.applicationContext
             prepareYtDlp(app)
-            val selected = YoutubeDL.getInstance().getInfo(requestFor(link.canonicalUrl, playerClient).addOption("-f", formatId))
+            val selected = YoutubeDL.getInstance().getInfo(requestFor(sourceUrl, playerClient).addOption("-f", formatId))
             val requested = selected.requestedFormats?.firstOrNull()
             val directUrl = requested?.url ?: selected.url ?: requested?.manifestUrl ?: selected.manifestUrl
                 ?: return Json.failure("YOUTUBE_NO_FORMAT", "선택한 형식의 다운로드 주소를 가져오지 못했습니다.")
@@ -151,19 +176,21 @@ object YoutubeDownload {
             rawHeaders.entries.firstOrNull { it.key.equals("Referer", true) }?.value?.let { headers["Referer"] = it }
             rawHeaders.entries.firstOrNull { it.key.equals("Origin", true) }?.value?.let { headers["Origin"] = it }
             if (headers["User-Agent"].isNullOrBlank()) headers["User-Agent"] = WebSettings.getDefaultUserAgent(app)
-            if (headers["Referer"].isNullOrBlank()) headers["Referer"] = "https://www.youtube.com/"
-            if (headers["Origin"].isNullOrBlank()) headers["Origin"] = "https://www.youtube.com"
+            val pageUri = Uri.parse(sourceUrl)
+            if (headers["Referer"].isNullOrBlank()) headers["Referer"] = sourceUrl
+            val pageOrigin = pageUri.scheme + "://" + pageUri.authority
+            if (headers["Origin"].isNullOrBlank()) headers["Origin"] = pageOrigin
 
             if (!QuickShareAdd.startEngine(app)) {
                 return Json.failure("ENGINE_UNAVAILABLE", "다운로드 엔진을 시작하지 못했습니다.")
             }
             BackgroundStart.start(app, MaglevTorrentService.ACTION_START)
             val ext = (requested?.ext ?: selected.ext ?: "mp4").lowercase().filter { it.isLetterOrDigit() }.ifEmpty { "mp4" }
-            val name = safeName(selected.title ?: "YouTube video") + "." + ext
+            val name = safeName(selected.title ?: if (link != null) "YouTube video" else "Web video") + "." + ext
             val options = linkedMapOf<String, Any?>(
                 "name" to name,
                 "headers" to headers,
-                "pageUrl" to link.canonicalUrl,
+                "pageUrl" to sourceUrl,
             )
 
             if (streamUrl != null) {
@@ -184,15 +211,25 @@ object YoutubeDownload {
                 } ?: return Json.failure("YOUTUBE_STREAM_UNSUPPORTED", "오디오가 포함된 스트림 형식을 찾지 못했습니다.")
                 val variantId = variant["id"] as? String
                     ?: return Json.failure("YOUTUBE_STREAM_UNSUPPORTED", "스트림 품질 ID가 없습니다.")
-                options["stream"] = mapOf("kind" to kind, "variantId" to variantId)
+                val audioTracks = (probe["audioTracks"] as? List<*>)?.mapNotNull { it as? Map<*, *> }.orEmpty()
+                val audioId = audioTracks.firstOrNull()?.get("id") as? String
+                val selection = linkedMapOf<String, Any?>("kind" to kind, "variantId" to variantId)
+                if ((variant["audio"] as? String) == "separate") {
+                    if (audioId.isNullOrBlank()) {
+                        return Json.failure("YOUTUBE_STREAM_UNSUPPORTED", "분리 오디오 트랙을 확인하지 못했습니다.")
+                    }
+                    selection["audioId"] = audioId
+                }
+                options["stream"] = selection
             }
 
             EngineHost.addDownload(mediaUrl, options)
         } catch (e: Exception) {
             val diagnostic = safeDiagnostic(e)
             val version = currentYtDlpVersion(context)
-            Log.e(TAG, "YouTube download extraction failed (yt-dlp=" + version + "): " + diagnostic)
-            Json.failure("YOUTUBE_DOWNLOAD_FAILED", "YouTube 다운로드를 시작하지 못했습니다. yt-dlp " + version + " · " + diagnostic)
+            Log.e(TAG, "yt-dlp download extraction failed (yt-dlp=" + version + "): " + diagnostic)
+            val subject = if (link != null) "YouTube 다운로드" else "웹페이지 다운로드"
+            Json.failure("YOUTUBE_DOWNLOAD_FAILED", subject + "를 시작하지 못했습니다. yt-dlp " + version + " · " + diagnostic)
         }
     }
 

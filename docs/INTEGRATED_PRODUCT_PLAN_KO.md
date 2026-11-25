@@ -11,13 +11,13 @@ Maglev의 브라우저·토렌트·직접 링크·HLS/DASH·자막·전송 목�
 - 설치용 APK는 정확한 Actions artifact, commit SHA, ABI, 서명, APK SHA-256을 확인한 뒤 전달합니다.
 
 ## 확정 아키텍처
-1. URL classifier: magnet/torrent → Maglev torrent; direct file → Maglev link; HLS/DASH → Maglev stream; YouTube URL → 기존 Maglev YouTube extractor; 그 외 지원 사이트 → 사용자가 명시적으로 요청했을 때 yt-dlp.
+1. URL classifier: magnet/torrent → Maglev torrent; direct file → Maglev link; HLS/DASH → Maglev stream; YouTube URL → yt-dlp YouTube client fallback; 그 외 HTTP(S) 페이지 → 사용자가 브라우저 메뉴 또는 NOT_A_FILE 대체 동작에서 명시적으로 선택했을 때 yt-dlp generic extractor.
 2. `modules/maglev-engine`은 기존 torrent/link/stream과 Transfers 상태를 소유합니다.
-3. YouTube adapter는 `modules/maglev-engine/android/src/main/java/com/maglev/engine/youtube/YoutubeDownload.kt`에 이미 있습니다. `MaglevEngineModule.kt`의 `getYouTubeInfo`와 `addYouTubeDownload`는 yt-dlp로 포맷을 조회하고 선택한 URL/playlist를 `EngineHost.addDownload`로 넘깁니다.
+3. yt-dlp adapter는 `modules/maglev-engine/android/src/main/java/com/maglev/engine/youtube/YoutubeDownload.kt`에 있습니다. YouTube URL은 전용 player-client fallback을 사용하고, 일반 HTTP(S) 페이지는 사용자가 명시적으로 분석을 실행한 경우에만 yt-dlp generic extractor를 사용합니다. 직접 파일/HLS/DASH로 검증 가능한 형식만 기존 `EngineHost.addDownload`에 전달합니다.
 4. UI는 `maglevEngine.getYouTubeInfo()` 및 `maglevEngine.addYouTubeDownload()`를 사용합니다. 추가된 작업은 Transfers의 기존 pause/resume/retry/remove, 진행률, 알림, 영속화 정책을 사용합니다.
 5. 별도 `modules/ytdlp-engine` 프로토타입은 같은 yt-dlp 런타임을 중복 연결하고 별도 staging·진행·완료 상태를 만들어 이중 큐 위험이 있어 제품 의존성 및 autolinking에서 제외합니다. 실험 이력은 Git commit으로 보존합니다.
 6. 브라우저는 기존 Maglev 감지기를 우선 사용합니다. WebView request observer, active-tab ServiceWorker observer, DOM media, fetch/XHR, Resource Timing을 중복 구현하지 않습니다.
-7. DRM/Widevine/FairPlay 또는 표준 MediaSource 버퍼가 아닌 보호 콘텐츠의 우회는 범위 밖입니다. 감지 시 미지원 원인을 표시합니다.
+7. DRM/Widevine/FairPlay 암호화·라이선스 보호 자체를 무력화하지 않습니다. 감지 시 원인을 분명히 표시합니다. 비암호화 blob/MSE/HLS 버퍼형 재생은 PC Chrome/Edge MPMux 안내를 제공할 수 있으나, MPMux도 DRM 복호화 수단이 아닙니다.
 
 ## MPMux 벤치마킹 결과와 구현 결정
 
@@ -53,9 +53,9 @@ MPMux는 정적/HLS VOD에 최대 3개 요청을 사용하고, live는 실시간
 
 ## 구현 게이트
 - G0 Baseline: PR #1, feature branch, upstream diff, workflow, artifact, app ID/ABI/signature 확인.
-- G1 YouTube native smoke: Galaxy에서 yt-dlp init/version, 공개 영상 metadata/formats, 제한 영상 오류 원인 확인.
-- G2 YouTube UI/queue: YouTube 공유·붙여넣기 → 포맷 선택 → 기존 Transfers 등록 → pause/resume/retry/remove/재시작 복구/저장 검증.
-- G3 한국어 UI: 변경 화면과 공통 오류·로딩·빈 상태까지 ko-KR 검사.
+- G1 Android yt-dlp runtime smoke: Python/yt-dlp/JS runtime, init/version/getInfo, PO Token Provider 호환성을 Galaxy에서 검증.
+- G2 YouTube + generic extraction: YouTube 및 사용자가 명시한 일반 HTTP(S) 페이지 metadata/formats, muxed/direct audio/HLS/DASH 형식 분류.
+- G3 Shared Transfers E2E + 한국어: 기존 queue 등록·진행·취소·재시도·복구와 전체 사용자 문자열을 함께 검증.
 - G4 기존 미디어 회귀: direct link, Range split, HLS VOD, DASH, 분리 오디오, AES-128, torrent, 브라우저 감지.
 - G5 MPMux static/HLS matrix: 기존 코드가 실제로 충족하는지 fixture로 확인. 중복 구현 금지.
 - G6 HLS Live: polling, sequence, Stop/Finalize, 파일 회전, 공통 Transfers, process restart.
@@ -63,11 +63,17 @@ MPMux는 정적/HLS VOD에 최대 3개 요청을 사용하고, live는 실시간
 - G8 사이트 호환: YouTube watch/youtu.be/Shorts/live, Chrome/Samsung Internet 공유, 기타 yt-dlp 지원 URL.
 - G9 Release QA: JS/typecheck/tests, Rust tests/lint, Kotlin tests, arm64 APK, 16 KB alignment, signature/hash, emulator launch, Galaxy E2E 및 기존 기능 회귀.
 
-## 현재 검증 상태 — 2026-11-26
-- #159 / run `45639676759`는 `app/youtube-download.tsx:27`의 리터럴 `\\n` 구문 오류로 실패했습니다. commit `2458a27e6ee79ce511865d3d6864538e7013ed2e`에서 줄바꿈과 View import를 수정했습니다.
-- commit `2a5d1b8fde95bff01e53eb367b9667fcaab2c871`에서 YouTube UI를 기존 Maglev API/shared Transfers에 연결하고 source-contract 테스트를 추가했습니다.
-- 해당 commit의 run #161 / ID `45643449600`은 JS, contract, Rust tests, ARM64 Rust/16 KB alignment가 통과했고, 이 기록 시점에는 APK Gradle build가 진행 중이었습니다.
-- 빌드와 실기기 YouTube 실제 저장·재생 여부는 별도 검증이 필요합니다. 이 문서만으로 최종 또는 device-pass를 선언하지 않습니다.
+## 2026-11-26 #163 설치 결과 및 수정 기준 (기존 상태 기록 대체)
+
+- Actions #163 / run ID `45645790936`, SHA `e2aaee3b2b15b852df11ce13b5e2806de4aa9bae`: 7개 job 전체 CI success, APK artifact 생성.
+- Artifact arm64 APK SHA-256: `61362ab5611965194e661fe66926f07e9da1d6e9edccc1c7a2054fe94e5db3de`.
+- 사용자가 #163 APK를 Galaxy에 설치해 확인한 결과: **전체 한글화 실패, YouTube 실제 다운로드 실패**. CI success와 실제 기능 실패를 분리해 기록합니다. 이 artifact를 최종본으로 취급하지 않습니다.
+- 소스 재검토에서 확인한 제한: 기존 네이티브 adapter는 YouTube URL만 허용했고, 일반 사이트 페이지는 yt-dlp로 명시 분석할 진입점이 없었습니다. YouTube adapter는 `web_safari/android_vr/web_embedded`만 시도하고 PO Token Provider/최신 JS runtime 연결이 확인되지 않았습니다. HLS/DASH에서 분리 오디오가 필요한 경우 audio track ID 전달도 빠져 있었습니다.
+- 이번 코드 수정 초안: 일반 HTTP(S) URL을 사용자 동작으로 yt-dlp generic extraction에 전달; Add download의 NOT_A_FILE 상태와 브라우저 페이지 메뉴에 “yt-dlp로 페이지 분석” 추가; YouTube와 일반 페이지가 같은 기존 Maglev Transfers 큐를 사용; HLS/DASH 별도 오디오 track ID 전달; DRM/blob/STREAM_PROTECTED 거절 시 MPMux PC 안내 제공.
+- MPMux 안내의 범위: 비암호화 MSE/HLS buffer형 플레이어에 대한 PC Chrome/Edge 대안만 안내. DRM/Widevine/FairPlay 복호화·우회는 제공하지 않으며 MPMux도 이를 할 수 없다고 UI에서 명시합니다.
+- **이 수정 묶음은 아직 새 CI와 Galaxy 실기기 검증 전**입니다. 코드가 커밋되고 새 Actions가 통과하기 전까지 build-pass로 표기하지 않습니다.
+- 남은 필수 검증: youtubedl-android 0.18.1의 Python 3.8과 최신 yt-dlp의 Python 3.11+ 요구 차이, yt-dlp-ejs/JS runtime, PO Token Provider(BGUtils), YouTube 공개 영상 metadata/formats/download, muxed/A-V 합성 가능한 형식, HLS/DASH separate audio, 일반 yt-dlp 사이트별 지원, APK size/16 KB alignment, Galaxy saved-file playback.
+- 전체 UI 한국어화는 별도 전수 문자열 인벤토리와 Galaxy 화면 검수 전까지 FAIL/미완료 상태입니다.
 
 ## 저장소 관리
 - Draft PR #1 하나의 통합 흐름을 유지합니다.

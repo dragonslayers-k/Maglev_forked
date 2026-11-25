@@ -45,7 +45,10 @@ async function main() {
 
   const youtubeAdapter = fs.readFileSync(path.join(root, 'modules/maglev-engine/android/src/main/java/com/maglev/engine/youtube/YoutubeDownload.kt'), 'utf8');
   const nativeModule = fs.readFileSync(path.join(root, 'modules/maglev-engine/android/src/main/java/com/maglev/engine/MaglevEngineModule.kt'), 'utf8');
-  assert.ok(youtubeAdapter.includes('PLAYER_CLIENTS = listOf("web_safari", "android_vr", "web_embedded")'), 'extractor must try supported no-token clients');
+  assert.ok(youtubeAdapter.includes('PLAYER_CLIENTS = listOf("web_safari", "android_vr", "web_embedded")'), 'extractor keeps explicit YouTube client fallback');
+  assert.ok(youtubeAdapter.includes('playerClient != "generic"'), 'generic extraction does not force a YouTube player client');
+  assert.ok(youtubeAdapter.includes('httpMediaUrl(rawUrl)'), 'generic extraction validates HTTP(S) page URLs');
+  assert.ok(youtubeAdapter.includes('playerClient == "generic"'), 'generic page formats are tagged separately from YouTube clients');
   assert.ok(youtubeAdapter.includes('EngineHost.probeStream'), 'HLS/DASH formats must use Maglev stream engine');
   assert.ok(youtubeAdapter.includes('youtube:player_client='), 'selected format must be re-extracted with its original client');
   assert.match(nativeModule, /formatId: String, playerClient: String/, 'native bridge must carry the selected extractor client');
@@ -68,6 +71,13 @@ async function main() {
   assert.equal(packageJson.dependencies?.['ytdlp-engine'], undefined, 'do not install a second yt-dlp Expo module/queue');
   assert.ok(!fs.existsSync(path.join(root, 'modules/ytdlp-engine')), 'the standalone duplicate prototype must stay out of the product tree');
   assert.ok(screen.includes('maglevEngine.addYouTubeDownload'), 'YouTube formats must be added through the existing Maglev queue');
+  const addDownload = fs.readFileSync(path.join(root, 'app/add-download.tsx'), 'utf8');
+  assert.ok(addDownload.includes('yt-dlp로 페이지 분석'), 'NOT_A_FILE pages expose explicit yt-dlp analysis');
+  const browserScreen = fs.readFileSync(path.join(root, 'app/browser.tsx'), 'utf8');
+  assert.ok(browserScreen.includes('yt-dlp로 페이지 분석'), 'browser page menu exposes explicit generic site analysis');
+  assert.ok(browserScreen.includes('MPMux 사용 안내'), 'DRM/blob refusal offers MPMux information');
+  assert.ok(browserScreen.includes('MPMux도 DRM을 복호화하거나 보호를 우회하지 못합니다'), 'MPMux is not described as a DRM bypass');
+  assert.ok(!browserScreen.includes('decryptDrm') && !browserScreen.includes('widevineDecrypt'), 'no DRM decryption adapter is shipped');
   console.log('test-youtube-intents: all assertions passed');
 }
 main().catch((e) => { console.error(e); process.exit(1); });

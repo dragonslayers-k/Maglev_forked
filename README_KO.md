@@ -14,9 +14,9 @@
 
 상세 목표·필수 기능·완료 기준·단계별 작업 순서는 [최종 목표 제품 명세](docs/PRODUCT_TARGET_KO.md)를 기준으로 합니다. Maglev 기존 기능과 하나의 Transfers 큐를 보존하면서 LJ/MPMux 기능 중 실제 누락된 미디어 감지·HLS Live·MediaSource buffer capture와 YouTube yt-dlp 다운로드를 통합합니다. 전체 한국어화 및 upstream 업데이트 검토도 진행합니다.
 
-**이전 설치본에서는 한국어화와 YouTube 공유/다운로드 실패가 확인됐습니다.** 최신 코드에서 YouTube 화면을 기존 Maglev 추출기와 Transfers 큐에 연결했지만, 최신 APK 빌드와 Galaxy 실기기 다운로드·저장·재생은 아직 합격 판정 전입니다. CI 성공은 실제 사이트별 기능 성공을 보증하지 않습니다.
+**#163 APK 설치 테스트에서 전체 한글화와 YouTube 실제 다운로드 실패가 확인됐습니다.** #163 CI success는 자동 빌드/테스트 결과일 뿐이며 기능 승인으로 계산하지 않습니다. 현재 수정 작업은 일반 HTTP(S) 사이트의 명시적 yt-dlp 페이지 분석 경로를 기존 Transfers에 연결하고, MPMux PC 대안 안내를 추가하는 것입니다. 새 CI 및 Galaxy 실기기 검증 전에는 완료로 취급하지 않습니다.
 
-**중요:** 모든 웹사이트의 모든 영상을 100% 저장할 수 있다고 보장하지 않습니다. DRM 보호, 서비스 정책, 로그인 세션, 만료된 URL, 사이트별 플레이어 구현, 브라우저 보안 경계에 따라 감지 또는 저장이 제한될 수 있습니다. DRM 우회 기능은 개발 범위에 포함하지 않습니다.
+**중요:** 모든 웹사이트의 모든 영상을 100% 저장할 수 있다고 보장하지 않습니다. DRM 보호, 서비스 정책, 로그인 세션, 만료된 URL, 사이트별 플레이어 구현, 브라우저 보안 경계와 추출기 런타임에 따라 감지 또는 저장이 제한될 수 있습니다. DRM/Widevine/FairPlay 보호 해제는 구현하지 않습니다. 비암호화 MSE/HLS 버퍼형 플레이어는 PC MPMux 안내를 제공할 수 있지만, MPMux도 DRM을 복호화하지 못합니다.
 
 ## 자체 업데이트 경로
 
@@ -47,7 +47,7 @@
 | 다운로드 | 일시정지·재개, 재시도, 분할 스트림 처리 및 병합 |
 | 브라우저 연동 | 앱 내부 브라우저 및 외부 브라우저 공유 전달 |
 | 언어 | 앱 전체 사용자 노출 문자열 완전 한국어화 (현재 미완료/실기기 실패 확인) |
-| YouTube / yt-dlp | YouTube 전용 metadata/format adapter 및 shared Transfers handoff 연결 (실기기 E2E 미검증); 일반 yt-dlp 사이트 라우팅은 미완료 |
+| YouTube / yt-dlp | YouTube 및 사용자가 명시한 일반 HTTP(S) 페이지 metadata/format 분석을 기존 Transfers 큐에 연결하는 수정 진행 중 (새 CI/Galaxy E2E 미검증); PO Token/JS runtime 및 분리 A/V merge 미완료 |
 | upstream | Maglev 원본 변경 월간 검토, 선택적 통합 및 regression 검증 |
 
 ## 현재 구현 진행 내용
@@ -63,8 +63,9 @@
 7. 감지 파일 목록과 스트림 다운로드의 핵심 화면 문구를 한국어로 바꿉니다.
 8. YouTube 포맷 선택은 기존 maglevEngine.getYouTubeInfo / addYouTubeDownload API를 사용해 새 별도 큐 없이 기존 Transfers로 전달합니다.
 9. MPMux 비교 결과 static Range/HLS VOD는 기존 엔진을 재사용하고, HLS Live 및 MediaSource byte capture를 신규 갭으로 분리했습니다.
+10. 브라우저의 blob/DRM/보호 스트림 거절 시 PC MPMux 안내를 제공하되, 비암호화 MSE/HLS만 대상으로 하고 DRM 우회 불가를 한국어로 고지하도록 수정 중입니다.
 
-아직 최종 APK나 실기기 기능 합격을 선언하지 않습니다. 최신 branch head는 84c52d6b83b99c3176828e5601df46f4fe8c9fa2이며 CI #162를 검증 중입니다. HLS Live, MediaSource capture, 전체 한국어화 및 Galaxy E2E도 미완료입니다.
+아직 최종 APK나 실기기 기능 합격을 선언하지 않습니다. Actions #163(`45645790936`, SHA `e2aaee3b2b15b852df11ce13b5e2806de4aa9bae`)은 CI success였으나 사용자가 설치해 YouTube 다운로드와 전체 한글화 실패를 확인했습니다. #163 APK SHA-256은 `61362ab5611965194e661fe66926f07e9da1d6e9edccc1c7a2054fe94e5db3de`이며 최종본이 아닙니다. 새 수정의 CI/Galaxy E2E, HLS Live, MediaSource capture, 전체 한국어화가 남아 있습니다.
 
 ## 빌드 및 테스트
 

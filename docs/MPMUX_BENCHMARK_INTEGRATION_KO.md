@@ -100,3 +100,12 @@ Maglev Range split은 1~8 연결, validator, sidecar resume, 서버 거절 대�
 
 ## 8. 완료 판정
 Static Range/HLS VOD는 기존 엔진 회귀검증 결과를 사용합니다. HLS Live와 MSE capture는 기존 Transfers 목록·알림·저장·재시작 정책을 통합하고, 파일 무결성·메모리 한계·DRM 거절·실기기 재생까지 통과해야 합니다. CI pass나 UI 진입만으로 device-pass를 선언하지 않습니다.
+## 9. 앱 내 MPMux 대체 안내 (2026-11-26)
+
+Maglev+ 브라우저에서 직접 미디어 URL이 확인되지 않고 blob/MediaSource 계열 재생이 의심되거나 STREAM_PROTECTED가 반환될 때, 사용자에게 PC용 MPMux 안내를 제공할 수 있습니다.
+
+- 공식 안내: https://mpmux.com/ko
+- Chrome Web Store: https://chromewebstore.google.com/detail/video-downloader-mpmux/mbflpfaamifmmmkdjkcmpofpccfmlmap
+- 대상은 **암호화되지 않은** MediaSource/HLS 버퍼형 플레이어입니다. PC Chrome 또는 Edge에서 확장 프로그램 설치 → 영상 페이지 재생 → Video Buffer Muxer 녹화 시작 → 녹화 종료까지 해당 탭 유지 → MP4 결과 저장 순서입니다.
+- 이 안내는 Android 앱의 기능 이식이 아니며 PC 브라우저용 외부 대안입니다. MPMux는 DRM 암호화 미디어를 복호화하거나 Widevine/FairPlay 보호를 해제하지 않습니다. DRM 콘텐츠에는 공식 제공자의 다운로드/오프라인 기능만 안내합니다.
+- MPMux 안내를 표시하는 경우 DRM 우회, 보호 해제, 모든 영상 저장이라는 표현을 사용하지 않습니다.

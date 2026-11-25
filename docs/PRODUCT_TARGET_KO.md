@@ -41,8 +41,19 @@ YTDLnis/yt-dlp의 사용자 기능을 Maglev+ UX에 단계적으로 통합한다
 - 기존 Maglev queue/storage/notifications에 통합; pause/resume/cancel/retry/complete 관리. YouTube adapter는 선택한 media를 EngineHost.addDownload로 넘기며 별도 queue를 두지 않음
 - yt-dlp/runtime init·extract·format listing·download lifecycle 안정화, 원인별 오류와 로그
 - cold-start 공유, URL parse, native bridge, format ID 전달, 저장 및 queue 전체 파이프라인 E2E
+- 일반 yt-dlp 사이트는 브라우저 메뉴 또는 NOT_A_FILE 상태에서 사용자가 명시적으로 분석을 요청하는 경로 제공
+- 지원 형식은 사이트·추출기·런타임에 따라 다르며, format 목록에 나타난 형식 중 Maglev가 처리 가능한 direct/muxed/HLS/DASH만 큐에 등록
+- 분리된 고화질 video/audio direct URL의 병합은 별도 mux compatibility gate 통과 전 지원 완료로 표기하지 않음
 - playlist/multi-URL은 별도 검증 후 지원
 - YTDLnis 브랜드/UI를 복사하지 않고 기능을 Maglev+ UI로 재구현
+
+### C-1. MPMux PC 대체 안내
+
+- 브라우저에서 blob/MSE buffer형 후보 또는 보호된 스트림을 감지했을 때 공식 MPMux 사용 안내와 Chrome Web Store 링크를 제공
+- PC Chrome/Edge에서 비암호화 MediaSource/HLS 버퍼를 캡처하는 보조 경로이며 Android Maglev+에 MPMux를 내장한 것으로 표시하지 않음
+- DRM/Widevine/FairPlay 암호화·라이선스 보호를 해제하지 않으며 MPMux도 복호화할 수 없다고 명시
+- 안내 URL: https://mpmux.com/ko
+- Chrome Web Store: https://chromewebstore.google.com/detail/video-downloader-mpmux/mbflpfaamifmmmkdjkcmpofpccfmlmap
 
 ### D. 완전 한국어화
 앱 전체 사용자 노출 문구 전수 검사: onboarding/permissions, tabs/home/browser/search/share, download queue/status/error/notifications, media detection/format selection/YouTube, subtitles/playback/file management, settings/advanced/help, dialogs/toasts/empty/loading/validation/accessibility. 문장·버튼·설명은 자연스러운 한국어, 고유 프로토콜/코덱/서비스 명칭은 적절히 유지. 번역 누락/영어 잔존 자동 검사와 실제 화면 QA 필요. 일부 번역만 완료로 보고 금지.
@@ -94,3 +105,10 @@ Detector (browser/network observation), extractor (yt-dlp), protocol download (H
 - MediaSource buffer capture는 현재 실제 SourceBuffer bytes를 저장하지 않으므로 신규 구현 대상입니다. 기본 OFF, 사용자 opt-in, bounded native binary staging, backpressure, timestamp/track/A/V remux, EME/DRM 거절을 필수로 합니다.
 - MPMux 공개 문서와 현 소스 대조는 MPMUX_BENCHMARK_INTEGRATION_KO.md를 기준으로 합니다.
 - 완료 상태는 CI_PASS, DEVICE_PASS, ACCEPTED를 구분합니다. 브라우저 진입·metadata·CI 성공만으로 제품 완료를 선언하지 않습니다.
+
+## 2026-11-26 #163 재검토 및 수정 기준
+- Actions #163(run `45645790936`)은 automated CI success였지만 사용자가 설치 후 확인한 실제 결과는 전체 한글화 FAIL / YouTube 다운로드 FAIL입니다.
+- #163 APK SHA-256: `61362ab5611965194e661fe66926f07e9da1d6e9edccc1c7a2054fe94e5db3de`. 해당 APK는 최종본이 아닙니다.
+- 기존 YouTube adapter가 YouTube URL만 받아 일반 yt-dlp 사이트를 분석하지 못했던 점, NOT_A_FILE 화면과 브라우저 메뉴에 일반 yt-dlp 진입점이 없던 점, separate audio track ID 미전달을 수정 대상으로 명시합니다.
+- 새 변경의 목표는 기존 Maglev Transfers 큐에 일반 HTTP(S) 페이지의 명시적 yt-dlp 분석을 추가하고, MPMux PC 대안 안내를 제공하는 것입니다. 변경 후 새 CI/Galaxy 검증 전에는 완료로 처리하지 않습니다.
+- Python 3.8/yt-dlp Python 3.11+ 호환성, yt-dlp-ejs/JS runtime, PO Token Provider, 실제 YouTube 및 일반 사이트 E2E는 여전히 미검증.

@@ -7,6 +7,7 @@ import { ThemeColors, spacing, type } from '../constants/theme';
 import { formatBytes } from '../constants/format';
 import { haptic } from '../constants/haptics';
 import { Button, Screen } from '../components/ui';
+import { parseYouTubeLink } from '../utils/browser/youtube';
 
 const formatKey = (format: YouTubeFormat) => format.playerClient + ':' + format.formatId;
 const formatLabel = (format: YouTubeFormat) => {
@@ -27,6 +28,7 @@ export default function YouTubeDownloadScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const screenTitle = parseYouTubeLink(String(url || '')) ? 'YouTube 다운로드' : '웹사이트 동영상 다운로드';
 
   useEffect(() => {
     let alive = true;
@@ -35,7 +37,7 @@ export default function YouTubeDownloadScreen() {
     setError(null);
     setLoading(true);
     if (!rawUrl) {
-      setError('YouTube 링크가 없습니다.');
+      setError('웹페이지 주소가 없습니다.');
       setLoading(false);
       return () => { alive = false; };
     }
@@ -43,10 +45,10 @@ export default function YouTubeDownloadScreen() {
       .then((result) => {
         if (!alive) return;
         if (result.ok) setInfo(result);
-        else setError(result.message || '영상 정보를 가져오지 못했습니다.');
+        else setError(result.message || '동영상 정보를 가져오지 못했습니다.');
       })
       .catch((cause: unknown) => {
-        if (alive) setError(cause instanceof Error ? cause.message : '영상 정보를 조회하지 못했습니다.');
+        if (alive) setError(cause instanceof Error ? cause.message : '동영상 정보를 조회하지 못했습니다.');
       })
       .finally(() => { if (alive) setLoading(false); });
     return () => { alive = false; };
@@ -86,8 +88,8 @@ export default function YouTubeDownloadScreen() {
     .sort((a, b) => b.abr - a.abr);
 
   return (
-    <Screen title="YouTube 다운로드" onBack={back} scroll contentStyle={styles.content}>
-      {loading ? <Text style={styles.muted}>yt-dlp로 영상 정보를 확인하고 있습니다…</Text> : null}
+    <Screen title={screenTitle} onBack={back} scroll contentStyle={styles.content}>
+      {loading ? <Text style={styles.muted}>yt-dlp로 사이트와 영상 형식을 분석하고 있습니다…</Text> : null}
       {error ? <Text style={styles.error}>{error}</Text> : null}
       {info ? (
         <>
@@ -116,8 +118,8 @@ export default function YouTubeDownloadScreen() {
       ) : null}
       {busy ? <Text style={styles.muted}>선택한 형식을 기존 전송 목록에 추가하고 있습니다…</Text> : null}
       <Text style={styles.note}>
-        YouTube 접근 제한(PO Token, 로그인, 연령·지역 제한 등)에 따라 일부 영상이나 형식은 표시되지 않을 수 있습니다.
-        다운로드가 추가되면 전송 목록에서 진행률, 일시정지, 재시도 및 완료 파일을 관리합니다.
+        로그인·세션·지역 제한·추출기 변경·PO Token/JavaScript 런타임 요구에 따라 일부 페이지나 형식은 분석되지 않을 수 있습니다.
+        분리된 영상·오디오 트랙은 병합 호환성이 확인된 형식만 표시합니다. 추가된 작업은 기존 전송 목록에서 관리합니다.
       </Text>
     </Screen>
   );
