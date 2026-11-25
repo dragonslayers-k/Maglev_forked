@@ -40,3 +40,11 @@ Maglev의 브라우저·토렌트·직접 링크·HLS/DASH·자막·전송 목�
 - Keep CI, emulator/device QA, release workflow, audit and Pages only if actively used. Before deleting any workflow/release/tag, verify references and artifact/release consumers.
 - Do not create test releases. Do not publish debug-signed APKs as final releases.
 - Update this document and PR #1 body after each verified gate; record exact run URL and artifact only when produced.
+
+
+## 진행 재개 기록 — CI #148 확인 (2026-11-25)
+- Run #148 [45625614864](https://github.com/dragonslayers-k/Maglev_forked/actions/runs/45625614864) / commit `1dea9d0af7a5534ab1b837572394747256f57894`: CI completed successfully. Rust, contract, JS/typecheck, ARM64 + 16 KB alignment, Android APK/signature/version checks, Kotlin unit tests passed.
+- Run #147은 후속 run에 의해 취소됨. CI run number #148은 PR number가 아니며, 활성 PR은 Draft #1이다.
+- CI 성공은 실기기 기능 합격이 아니다. Galaxy에서 init/version, 공개 영상 metadata/formats, 실제 download/save/playback 확인은 여전히 미수행.
+- G0 재점검에서 yt-dlp adapter와 dependency가 `modules/maglev-engine`에 결합되어 있음을 확인. 목표 `modules/ytdlp-engine` 독립화 및 기존 transfer handoff 정리 필요.
+- G1 실기기 evidence → G2 isolated engine → G3 persistent shared Transfers → G4 share/paste → G5 Korean audit → G6 LJ gaps → G7 parity → G8 regression/release QA 순서 유지. No release until G8 acceptance.
