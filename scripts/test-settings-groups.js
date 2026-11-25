@@ -45,7 +45,7 @@ for (const [g, [list, rows]] of Object.entries(expected)) {
   }
 }
 check('전송은 추가 및 완료, 속도 및 공유, 저장 공간, 예약, 관심 항목 순서로 표시', (() => {
-  const d = jsx.Transfers;
+  const d = jsx['전송'];
   const p = ['{...downloadsRow}', '{...speedRow}', '<StorageRow', '{...scheduleRow}', '{...watchRow}'].map((x) => d.indexOf(x));
   return p.every((x, i) => x >= 0 && (i === 0 || x > p[i - 1]));
 })());
