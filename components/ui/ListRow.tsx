@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { ThemeColors, radius, spacing, type } from '../../constants/theme';
+import { koUiText } from '../../constants/korean';
 import { PixelIcon, PixelIconName } from '../PixelIcon';
 import { PressableScale } from './PressableScale';
 import { FocusAnchor, rowKey } from '../settings/settingsFocus';
@@ -62,11 +63,11 @@ function ListRowBody({
       ) : null}
       <View style={styles.text}>
         <Text style={[styles.title, { color: tint }]} numberOfLines={1}>
-          {title}
+          {koUiText(title)}
         </Text>
         {subtitle ? (
           <Text style={[styles.subtitle, subtitleTone === 'danger' && { color: colors.danger }]} numberOfLines={2}>
-            {subtitle}
+            {koUiText(subtitle)}
           </Text>
         ) : null}
       </View>
@@ -78,7 +79,7 @@ function ListRowBody({
         <>
           {value ? (
             <Text style={styles.value} numberOfLines={1}>
-              {value}
+              {koUiText(value)}
             </Text>
           ) : null}
           {onPress ? (
@@ -97,7 +98,7 @@ function ListRowBody({
         style={styles.row}
         testID={testID}
         accessible={!accessory}
-        accessibilityLabel={accessibilityLabel ?? (subtitle ? `${title}, ${subtitle}` : title)}
+        accessibilityLabel={accessibilityLabel ? koUiText(accessibilityLabel) : subtitle ? `${koUiText(title)}, ${koUiText(subtitle)}` : koUiText(title)}
       >
         {body}
       </View>
@@ -109,7 +110,7 @@ function ListRowBody({
       disabled={disabled}
       testID={testID}
       accessibilityRole={selected !== undefined ? 'radio' : 'button'}
-      accessibilityLabel={accessibilityLabel ?? [title, value, subtitle].filter(Boolean).join(', ')}
+      accessibilityLabel={accessibilityLabel ? koUiText(accessibilityLabel) : [title, value, subtitle].filter(Boolean).map(koUiText).join(', ')}
       accessibilityHint={accessibilityHint}
       accessibilityState={selected !== undefined ? { disabled: !!disabled, selected, checked: selected } : { disabled: !!disabled }}
       style={(pressed) => [styles.row, pressed && styles.pressed, disabled && styles.disabled]}
