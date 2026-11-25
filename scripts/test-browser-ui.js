@@ -165,7 +165,7 @@ async function main() {
   // 0.15: the Browser button is a compact labelled button (globe + the word) that hides when the Browser tab is on.
   check('search tab has a labelled Browser button', />\s*Browser\s*</.test(read('app/(tabs)/search.tsx')) && /accessibilityLabel="Open the browser"/.test(read('app/(tabs)/search.tsx')));
   check('settings list has Browser row', /route: 'browser'/.test(read('app/(tabs)/settings.tsx')));
-  check('add-download offers Open in browser', /Open in browser/.test(read('app/add-download.tsx')));
+  check('add-download offers yt-dlp page analysis and keeps Open in browser fallback', /yt-dlp로 페이지 분석/.test(read('app/add-download.tsx')) && /브라우저에서 열기/.test(read('app/add-download.tsx')));
 
   if (failed) {
     console.error(`\n${failed} check(s) failed`);
