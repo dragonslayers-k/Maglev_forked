@@ -81,12 +81,8 @@ Detector (browser/network observation), extractor (yt-dlp class), protocol downl
 ## 8. 개발 규율
 요구사항 축소 금지; automated CI와 실제 기능검증 분리; 실패는 실패/미완료로 표기; 매 변경 branch/head 확인·commit·handoff 갱신; main 보호; 불필요한 CI run/cancel 줄이기; 사용자 승인 없는 자동화/merge/release 금지; artifact는 검증 SHA와 일치할 때만 배포.
 
-## 9. APK 크기 및 사용자 배포 정책 (2026-11-25 추가)
 
-- 기본 사용자 배포는 Galaxy/Android ARM64용 APK 1개로 한다.
-- Universal APK는 기본 빌드·릴리스에서 생성하거나 사용자에게 제공하지 않는다.
-- 다른 ABI는 필요 시 별도 선택 빌드로 제공한다. 기본 릴리스에 여러 APK를 나열해 사용자가 어느 파일을 받아야 하는지 혼란스럽게 하지 않는다.
-- 기준: 기존 CI 로그의 ARM64 APK 약 41 MB, Universal APK 약 99 MB. 목표는 기본 ARM64 APK 50 MB 이하이며, 초과 시 native dependency/ABI/resource 용량을 분석한다.
-- APK 산출물은 실제 파일 크기, ABI, package ID, versionCode, 서명 인증서 SHA-256 및 APK SHA-256을 검증한다.
-- Debug signing은 테스트 전용이며 정식 업데이트 파일로 취급하지 않는다.
-- 관련 변경은 PR #2 `fix/arm64-only-apk-delivery`에서 검증한다. PR/CI 완료 전 main에 반영됐다고 간주하지 않는다.
+## 2026-11-25 배포 기준 갱신
+- 기본 APK는 ARM64 단일 APK이며 Universal APK 생성은 기본 비활성화한다. PR #5 패키징 변경은 feature 브랜치에 병합되었다.
+- Debug signing은 테스트용이다. 정식 배포/업데이트는 고정된 keystore 서명이 필요하다.
+- YouTube는 parser, dedicated route, extractor client fallback, HLS/DASH stream queue를 각각 검증한다. PO Token provider와 Galaxy E2E는 아직 완료 조건이다.

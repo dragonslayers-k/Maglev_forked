@@ -19,8 +19,14 @@ function parseTime(value: string | null): number | undefined {
 
 export function parseYouTubeLink(raw: string | null | undefined): YouTubeLink | null {
   if (!raw || raw.length > 4096) return null;
+  const value = raw.trim();
   let url: URL;
-  try { url = new URL(raw.trim()); } catch { return null; }
+  // Pasted/shared short links are often copied without the https:// prefix.
+  // Only add it to recognized YouTube host forms; arbitrary hosts remain rejected below.
+  const normalized = /^(?:(?:www|m|music)\.)?(?:youtube\.com|youtu\.be|youtube-nocookie\.com)\//i.test(value)
+    ? 'https://' + value
+    : value;
+  try { url = new URL(normalized); } catch { return null; }
   if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password) return null;
   const host = url.hostname.toLowerCase();
   if (!HOSTS.has(host)) return null;
@@ -40,7 +46,6 @@ export function parseYouTubeLink(raw: string | null | undefined): YouTubeLink | 
     (startSeconds ? '&t=' + startSeconds + 's' : '');
   return { videoId: id, playlistId, startSeconds, canonicalUrl };
 }
-
 
 /**
  * Parses YouTube links as delivered by Android's native-intent router. Some Android/Expo paths
@@ -65,18 +70,10 @@ export function parseYouTubeIntent(raw: string | null | undefined): YouTubeLink 
     // Continue with the path-only variants below.
   }
 
-  // Bare hostnames are common when a share/intent adapter strips the scheme.
-  if (/^(?:www\.)?(?:youtube\.com|m\.youtube\.com|music\.youtube\.com|youtu\.be|youtube-nocookie\.com|www\.youtube-nocookie\.com)\//i.test(value)) {
-    return parseYouTubeLink('https://' + value);
-  }
-
   // Expo Router may pass only the URL path and query. Only known video paths are normalized.
   const path = value.replace(/^\//, '');
   if (/^(?:watch|shorts|live|embed|v)(?:\/|\?)/i.test(path)) {
     return parseYouTubeLink('https://www.youtube.com/' + path);
-  }
-  if (/^youtu\.be\//i.test(path)) {
-    return parseYouTubeLink('https://' + path);
   }
   return null;
 }
