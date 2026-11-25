@@ -28,7 +28,7 @@ check('a blank tab mounts StartPage', /<StartPage[\s\S]{0,300}privateMode=\{pref
 check('StartPage opens a new tab or the current one', /o\?\.newTab\) openTabChecked\(\{ url \}\)[\s\S]{0,40}else go\(url\)/.test(scr));
 check('RecentHistory is gone', !fs.existsSync(path.join(root, 'components/browser/RecentHistory.tsx')) && !/RecentHistory/.test(scr));
 check('the page menu has the bookmark toggle', /<BookmarkToggle url=\{page\?\.url \?\? tab\?\.url \?\? ''\} title=\{page\?\.title \?\? tab\?\.title \?\? ''\} onDone=\{\(\) => setMenuOpen\(false\)\} \/>/.test(scr));
-check('the toggle sits after Copy page link, inside the page-only rows', /Copy page link[\s\S]*?<BookmarkToggle[\s\S]*?<\/>\s*\) : null\}/.test(scr));
+check('the toggle sits after the Korean copy-link row, inside the page-only rows', /페이지 링크 복사[\s\S]*?<BookmarkToggle[\s\S]*?<\/>\s*\) : null\}/.test(scr));
 
 // ---- media long press ----
 check('TS: onMediaHit is a wrapper prop and a native event', /onMediaHit\?: \(e: BrowserMediaHitEvent\) => void;/.test(wrap) && /onMediaHit\?: \(e: NativeEvent<BrowserMediaHitEvent>\) => void;/.test(wrap) && /onMediaHit=\{onMediaHit \? \(e\) => onMediaHit\(e\.nativeEvent\)/.test(wrap));
@@ -63,7 +63,7 @@ check('backup restores the pref through normalizeBrowserPrefs', /normalizeBrowse
 check('Kotlin: clearSiteStorage clears local and session storage and is a view command', /localStorage\.clear\(\);sessionStorage\.clear\(\)/.test(kt) && /AsyncFunction\("clearSiteStorage"/.test(mod));
 check('TS: clearSiteStorage is on the ref', /clearSiteStorage\(\): Promise<void>;/.test(wrap) && /clearSiteStorage: \(\) => nativeRef\.current\?\.clearSiteStorage\(\)/.test(wrap));
 check('screen: cookies of the host and parents, minus Search hosts, then storage, then reload, then the notice', /hostsToWipe\(\[url\], keepHosts\(\)\)[\s\S]*?clearCookies\(targets\)[\s\S]*?clearSiteStorage\(\)[\s\S]*?\.reload\(\)[\s\S]*?clearSiteDone/.test(scr) && /export function keepHosts/.test(read('utils/browser/privateSession.ts')));
-check('screen: the row asks first, in a Dialog, with a danger Clear and Cancel', /<Dialog\s+visible=\{clearSiteOpen\}[\s\S]*?clearSiteTitle[\s\S]*?clearSiteAction\}\s+variant="danger"[\s\S]*?Cancel/.test(scr) && /clearSiteBody\(pageHost\)/.test(scr));
+check('screen: the row asks first, in a Dialog, with a danger Clear and Cancel', /<Dialog\s+visible=\{clearSiteOpen\}[\s\S]*?clearSiteTitle[\s\S]*?clearSiteAction\}\s+variant="danger"[\s\S]*?취소/.test(scr) && /clearSiteBody\(pageHost\)/.test(scr));
 check('screen: the row is for http(s) pages and opens the Dialog, not the action', /\^https\?:\\\/\\\/\/i\.test\(page\?\.url \?\? ''\)[\s\S]{0,200}clearSiteRow[\s\S]{0,160}setClearSiteOpen\(true\)/.test(scr));
 check('copy follows the contract', /clearSiteRow: "Clear this site's data"/.test(copy) && /clearSiteDone: "Cleared this site's data"/.test(copy) && /clearSiteBody: \(host: string\) => `You'll be signed out of \$\{host\}\.`/.test(copy));
 
