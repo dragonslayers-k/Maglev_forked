@@ -113,8 +113,15 @@ object PageScan {
       var vh = t === 'video' && m.readyState >= 1 ? m.videoHeight : 0;
       push(list, m.currentSrc, t, vw, vh, m.getAttribute('type'));
       push(list, m.getAttribute('src'), t, vw, vh, m.getAttribute('type'));
+      // Common lazy-loader attributes are used by sites that defer the real media URL until scrolling/play.
+      push(list, m.getAttribute('data-src'), t, vw, vh, m.getAttribute('type'));
+      push(list, m.getAttribute('data-url'), t, vw, vh, m.getAttribute('type'));
+      push(list, m.getAttribute('data-video'), 'video', vw, vh, m.getAttribute('type'));
       ss = m.querySelectorAll('source');
-      for (j = 0; j < ss.length; j++) push(list, ss[j].getAttribute('src'), t);
+      for (j = 0; j < ss.length; j++) {
+        push(list, ss[j].getAttribute('src'), t);
+        push(list, ss[j].getAttribute('data-src'), t);
+      }
       if (m.mediaKeys) eme();
     }
     els = document.images;
@@ -126,6 +133,16 @@ object PageScan {
     for (i = 0; i < els.length; i++) push(list, els[i].getAttribute('content'), 'meta-image');
     els = document.querySelectorAll('meta[property="og:video"],meta[property="og:video:url"],meta[property="og:video:secure_url"]');
     for (i = 0; i < els.length; i++) push(list, els[i].getAttribute('content'), 'meta-video');
+    // Embedded media/file URLs are candidates only when the URL or MIME classifier recognizes them.
+    els = document.querySelectorAll('embed[src],object[data],iframe[src]');
+    for (i = 0; i < els.length && i < 500; i++) {
+      m = els[i];
+      var embedUrl = m.getAttribute('src') || m.getAttribute('data');
+      var embedMime = m.getAttribute('type') || '';
+      if (embedUrl && (FILE.test(embedUrl) || /^(video|audio)\//i.test(embedMime))) {
+        push(list, embedUrl, /audio\//i.test(embedMime) ? 'audio' : 'video', 0, 0, embedMime);
+      }
+    }
     els = document.querySelectorAll('a[href]');
     for (i = 0; i < els.length && i < 3000; i++) {
       var href = els[i].getAttribute('href');
@@ -213,7 +230,7 @@ object PageScan {
     document.addEventListener('encrypted', eme, true);
     document.addEventListener('loadedmetadata', schedule, true);
     window.addEventListener('load', schedule);
-    if (document.documentElement) new MutationObserver(schedule).observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ['src', 'href', 'srcset'] });
+    if (document.documentElement) new MutationObserver(schedule).observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ['src', 'href', 'srcset', 'data-src', 'data-url', 'data-video', 'data'] });
   } catch (e) {}
   scan();
 })();
