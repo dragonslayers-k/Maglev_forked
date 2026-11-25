@@ -31,10 +31,18 @@
 - [x] 같은 URL의 기존 Found Item에 뒤늦은 MIME·스트림·해상도 정보 보강
 - [x] HLS/DASH 매니페스트 감지 후 알려진 세그먼트 파일 노이즈 억제
 - [x] MIME·감지 보고·항목 보강에 대한 단위/계약 테스트 추가
-- [ ] PR CI 녹색 확인
+- [ ] PR CI 녹색 확인 (2026-11-25 run #45573899795 실패; assertion fixes committed, rerun pending)
 - [x] 앱 내 업데이트 조회를 이 포크의 Releases로 전환
 - [ ] Galaxy 실기기 G-01~G-18 수행
 - [ ] iframe·MSE·blob 및 사이트별 실패 패턴을 실제 로그로 분류
+
+## P1.5 — YouTube URL 지원
+
+- [x] YouTube URL parser: youtu.be/watch/shorts/live/embed/mobile/music URL 식별 및 canonicalization (단독 parser)
+- [ ] Parser를 native intent/share 및 Add Download UI 흐름에 연결
+- [ ] 단축 URL·watch·shorts 링크가 일반 direct-file probe에서 NOT_A_FILE로 종료되지 않도록 별도 UX 처리
+- [ ] 권리자가 소유하거나 다운로드를 허가한 콘텐츠 지원 방식의 기술·라이선스·정책 검토
+- [ ] extractor/다운로드 엔진 구현과 테스트 (DRM/접근제한 우회는 범위 제외)
 
 ## P2 — 다운로드 호환성
 
