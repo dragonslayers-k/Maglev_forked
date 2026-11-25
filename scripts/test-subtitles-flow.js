@@ -158,7 +158,7 @@ const nativeErr = (code) => Object.assign(new Error(code), { code });
   check('not offline when one source answered', !F.looksOffline([st('a', 'done'), st('b', 'error', 'Network request failed')]));
   check('not offline when a source timed out', !F.looksOffline([st('a', 'timeout', 'No answer in time'), st('b', 'error', 'Network request failed')]));
   const probs = F.sourceProblems([st('a', 'done'), st('b', 'limit'), st('c', 'timeout')], (id) => id.toUpperCase());
-  check('per-source problem lines name the source', probs.length === 2 && probs[0].text === "B says you've reached today's limit." && probs[1].text === "C isn't responding.");
+  check('per-source problem lines name the source', probs.length === 2 && probs[0].text === 'B의 오늘 사용 한도에 도달했습니다.' && probs[1].text === 'C 응답이 없습니다.');
 
   console.log('[sheet state machine]');
   const row = (id, group, language = 'en') => ({ group, candidate: { providerId: 'p', id, language, releaseName: `Rel.${id}`, matchedBy: group === 'fits' ? 'hash' : 'release' } });
