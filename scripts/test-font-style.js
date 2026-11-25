@@ -136,7 +136,7 @@ async function main() {
   // ---- copy (same voice rules as scripts/test-copy-voice.js, which also lints these strings)
   const c = copy.fontStyleCopy;
   check('copy: section label is Font', c.label === 'Font');
-  check('copy: options are Clean, Retro, Mono', JSON.stringify(c.options.map((o) => o.title)) === JSON.stringify(['Clean', 'Retro', 'Mono']));
+  check('copy: options are Korean Clean, Retro, Mono labels', JSON.stringify(c.options.map((o) => o.title)) === JSON.stringify(['깔끔하게', '레트로', '고정폭']));
   check('copy: one option per style', c.options.map((o) => o.value).join() === FS.FONT_STYLES.join());
   const bad = [];
   for (const o of c.options) {
@@ -146,7 +146,7 @@ async function main() {
     if (/[!…]|\.\.\./.test(o.description)) bad.push(`${o.value}: ! or ellipsis`);
   }
   check('copy: descriptions are short sentences', bad.length === 0, bad.join('; '));
-  check('copy: preview sample is a filename and a size', /^Big Buck Bunny 1080p/.test(c.sampleName) && /\d+(\.\d)? MB$/.test(c.sampleSize));
+  check('copy: preview sample is a filename and a size', /^빅 벅 버니 1080p/.test(c.sampleName) && /\d+(\.\d)? MB$/.test(c.sampleSize));
 
   // ---- AGENTS.md
   const agents = read('AGENTS.md');
