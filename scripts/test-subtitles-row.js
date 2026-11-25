@@ -71,7 +71,7 @@ function check(name, cond) {
   check('one video is not a pack', M.packCounts({ a: { phase: 'saved', tries: 1 } }) === null && M.packCounts(undefined) === null);
   m = row({ phase: 'needs-pick', pack: { total: 10, saved: 8, needYou: 2 }, canOpenSheet: false });
   check('"8 of 10 saved · 2 need you" + See all (no single target needed)', m.line === '10개 중 8개 저장 · 2개 선택 필요' && btn(m) === '모두 보기/see-all');
-  check('one needing you reads in Korean', copy.rowPackLine({ saved: 9, total: 10, needYou: 1 }) === '10개 중 9개 저장 · 1개 선택 필요' && copy.rowPackLine({ saved: 10, total: 10, needYou: 0 }) === '10개 저장');
+  check('one needing you reads in Korean', copy.rowPackLine({ saved: 9, total: 10, needYou: 1 }) === '10개 중 9개 저장 · 1개 선택 필요' && copy.rowPackLine({ saved: 10, total: 10, needYou: 0 }) === '10개 중 10개 저장');
   check('a skipped pack is just Skipped', row({ phase: 'skipped', pack: { total: 3, saved: 0, needYou: 0 } }).line === '건너뜀');
 
   console.log('[accessibility]');
