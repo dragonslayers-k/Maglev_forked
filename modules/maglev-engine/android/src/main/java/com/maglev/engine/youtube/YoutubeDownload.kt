@@ -22,35 +22,17 @@ import kotlin.math.abs
  */
 object YoutubeDownload {
     private const val TAG = "MaglevYouTube"
-    private const val UPDATE_PREFS = "maglev_ytdlp_update"
-    private const val KEY_LAST_ATTEMPT = "stable_last_attempt_ms"
-    private const val KEY_LAST_SUCCESS = "stable_last_success"
-    private const val UPDATE_INTERVAL_MS = 24 * 60 * 60 * 1000L
-    private const val RETRY_INTERVAL_MS = 6 * 60 * 60 * 1000L
     private val formatIdPattern = Regex("^[A-Za-z0-9._-]{1,64}$")
-    private val PLAYER_CLIENTS = listOf("web_safari", "android_vr", "web_embedded")
+    private val PLAYER_CLIENTS = listOf("android_vr", "web_safari", "web_embedded")
 
+    /**
+     * Initialize the bundled extractor only. Never check/download an yt-dlp update on the
+     * interactive metadata or download path: that network update made first-run analysis block.
+     * Runtime updates belong to an explicit background maintenance flow, not a user tap.
+     */
     @Synchronized
     private fun prepareYtDlp(context: Context) {
-        val app = context.applicationContext
-        val ytdlp = YoutubeDL.getInstance()
-        ytdlp.init(app)
-        val prefs = app.getSharedPreferences(UPDATE_PREFS, Context.MODE_PRIVATE)
-        val now = System.currentTimeMillis()
-        val lastAttempt = prefs.getLong(KEY_LAST_ATTEMPT, 0L)
-        val interval = if (prefs.getBoolean(KEY_LAST_SUCCESS, false)) UPDATE_INTERVAL_MS else RETRY_INTERVAL_MS
-        if (now - lastAttempt < interval) return
-
-        prefs.edit().putLong(KEY_LAST_ATTEMPT, now).apply()
-        try {
-            val status = ytdlp.updateYoutubeDL(app, YoutubeDL.UpdateChannel.STABLE)
-            val version = ytdlp.versionName(app) ?: "unknown"
-            prefs.edit().putBoolean(KEY_LAST_SUCCESS, true).apply()
-            Log.i(TAG, "yt-dlp stable update check: " + status + "; version=" + version)
-        } catch (e: Exception) {
-            prefs.edit().putBoolean(KEY_LAST_SUCCESS, false).apply()
-            Log.w(TAG, "yt-dlp stable update failed; using installed binary: " + safeDiagnostic(e))
-        }
+        YoutubeDL.getInstance().init(context.applicationContext)
     }
 
     private fun currentYtDlpVersion(context: Context): String =
@@ -140,7 +122,14 @@ object YoutubeDownload {
             }
 
             val video = metadata ?: throw (lastError ?: IllegalStateException("No YouTube metadata"))
-            val unique = allFormats.distinctBy { it["playerClient"].toString() + ":" + it["formatId"].toString() }
+            // Different player clients often expose the same format ID. Keep one row per
+            // format and prefer the client result that includes a known file-size estimate.
+            val unique = allFormats.groupBy { it["formatId"].toString() }.values.mapNotNull { candidates ->
+                candidates.maxWithOrNull(
+                    compareBy<Map<String, Any?>> { (it["size"] as? Number)?.toLong() ?: 0L }
+                        .thenBy { (it["tbr"] as? Number)?.toDouble() ?: 0.0 },
+                )
+            }
             val grouped = unique.groupBy { it["kind"] as String }
             val videoFormats = grouped["video"].orEmpty()
                 .sortedWith(compareByDescending<Map<String, Any?>> { (it["height"] as? Number)?.toInt() ?: 0 }
@@ -189,11 +178,14 @@ object YoutubeDownload {
             prepareYtDlp(app)
             val selected = YoutubeDL.getInstance().getInfo(requestFor(sourceUrl, playerClient).addOption("-f", formatId))
             val requested = selected.requestedFormats?.firstOrNull()
+            val audioOnly = formatId == "bestaudio"
             val directUrl = requested?.url ?: selected.url ?: requested?.manifestUrl ?: selected.manifestUrl
                 ?: return Json.failure("YOUTUBE_NO_FORMAT", "선택한 형식의 다운로드 주소를 가져오지 못했습니다.")
             val manifestUrl = requested?.manifestUrl?.takeIf { it.isNotBlank() }
                 ?: selected.manifestUrl?.takeIf { it.isNotBlank() }
-            val streamUrl = manifestUrl ?: directUrl.takeIf { isPlaylistUrl(it) }
+            // bestaudio is a yt-dlp selector, not a format row. Prefer its resolved direct
+            // audio URL and never route it through the video-variant stream selector.
+            val streamUrl = if (audioOnly) null else manifestUrl ?: directUrl.takeIf { isPlaylistUrl(it) }
             val mediaUrl = streamUrl ?: directUrl
 
             val rawHeaders = requested?.httpHeaders ?: selected.httpHeaders.orEmpty()
@@ -275,7 +267,7 @@ object YoutubeDownload {
         val kind = when {
             hasVideo && hasAudio -> "video"
             hasVideo && isStream -> "video"
-            !hasVideo && hasAudio && manifest == null -> "audio"
+            !hasVideo && hasAudio -> "audio"
             else -> return null
         }
         val bytes = f.fileSize.takeIf { it > 0 } ?: f.fileSizeApproximate.takeIf { it > 0 }
