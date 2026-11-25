@@ -73,7 +73,7 @@ class MaglevEngineModule : Module() {
                 val root = generateSequence(t) { it.cause }.lastOrNull() ?: t
                 val rawMessage = root.message ?: root.javaClass.simpleName
                 val safeMessage = rawMessage
-                    .replace(Regex("https?://[^\\\\s]+", RegexOption.IGNORE_CASE), "[URL]")
+                    .replace(Regex("""https?://[^\s]+""", RegexOption.IGNORE_CASE), "[URL]")
                     .take(180)
                 // Keep the exception type and root cause visible. Previously an empty Throwable.message
                 // collapsed native/yt-dlp failures into the unhelpful "Engine call failed" text.

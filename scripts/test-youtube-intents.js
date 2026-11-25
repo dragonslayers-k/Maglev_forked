@@ -58,6 +58,7 @@ async function main() {
   assert.ok(nativeModuleSource.includes('Native IO call failed:'), 'native IO failures must be logged with exception type');
   assert.ok(nativeModuleSource.includes('cause=${root.javaClass.name}'), 'native IO failures must expose the root cause type');
   assert.ok(nativeModuleSource.includes('root.message ?: root.javaClass.simpleName'), 'native IO failures must not collapse to generic Engine call failed');
+  assert.ok(nativeModuleSource.includes('Regex("""https?://[^\\s]+""", RegexOption.IGNORE_CASE)'), 'native diagnostics must redact complete URLs including query tokens');
   console.log('test-youtube-intents: all assertions passed');
 }
 main().catch((e) => { console.error(e); process.exit(1); });
