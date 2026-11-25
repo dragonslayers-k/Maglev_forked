@@ -289,10 +289,26 @@ object YoutubeDownload {
             else -> return null
         }
         val exactBytes = f.fileSize.takeIf { it > 0 } ?: f.fileSizeApproximate.takeIf { it > 0 }
-        val bitrateKbps = (f.tbr.takeIf { it > 0 } ?: f.abr.takeIf { it > 0 }).toDouble()
+        // YouTube often omits filesize for adaptive/progressive formats. Use the extractor bitrate
+        // when available; otherwise estimate a conservative bitrate by resolution and frame rate.
+        // These values are explicitly surfaced as approximate in the UI, never as exact sizes.
+        val fallbackKbps = when {
+            !hasVideo && hasAudio -> f.abr.takeIf { it > 0 }?.toDouble() ?: 128.0
+            f.height == null -> null
+            f.height <= 144 -> 180.0
+            f.height <= 240 -> 350.0
+            f.height <= 360 -> 750.0
+            f.height <= 480 -> 1_400.0
+            f.height <= 720 -> 3_000.0
+            f.height <= 1080 -> 5_500.0
+            f.height <= 1440 -> 10_000.0
+            else -> 16_000.0
+        }
+        val reportedKbps = f.tbr.takeIf { it > 0 } ?: f.abr.takeIf { it > 0 }
+        val estimateKbps = reportedKbps?.toDouble() ?: fallbackKbps?.times(if (f.fps > 30) 1.5 else 1.0)
         val seconds = durationSeconds?.toDouble()?.takeIf { it > 0 && it.isFinite() }
-        val estimatedBytes = if (exactBytes == null && bitrateKbps > 0 && seconds != null) {
-            (bitrateKbps * 1000.0 / 8.0 * seconds).takeIf { it.isFinite() && it > 0 && it < Long.MAX_VALUE.toDouble() }?.toLong()
+        val estimatedBytes = if (exactBytes == null && estimateKbps != null && estimateKbps > 0 && seconds != null) {
+            (estimateKbps * 1000.0 / 8.0 * seconds).takeIf { it.isFinite() && it > 0 && it < Long.MAX_VALUE.toDouble() }?.toLong()
         } else null
         val bytes = exactBytes ?: estimatedBytes
         return linkedMapOf(
