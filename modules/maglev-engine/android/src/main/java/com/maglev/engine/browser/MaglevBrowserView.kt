@@ -190,7 +190,6 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
     private val pullSafety = Runnable { if (!destroyed) refresh.isRefreshing = false }
 
     init {
-        installServiceWorkerObserver(this)
         BlocklistStore.warm(context)
         refresh.setOnRefreshListener {
             pullLoading = false
@@ -325,11 +324,16 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
     }
 
     fun setActive(value: Boolean) {
-        if (value == active) return
+        if (destroyed) return
+        if (value == active) {
+            // The first active prop can equal the default value. Still claim the process-wide
+            // Service Worker observer because another tab may have been constructed afterwards.
+            if (value) installServiceWorkerObserver(this)
+            return
+        }
         active = value
         if (value) installServiceWorkerObserver(this)
         else serviceWorkerObserver.compareAndSet(this, null)
-        if (destroyed) return
         applyActive()
     }
 
