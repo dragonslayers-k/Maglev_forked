@@ -131,14 +131,14 @@ export const TextField = forwardRef<TextFieldRef, TextFieldProps>(function TextF
         onBlur={onBlur}
         editable={editable}
         multiline={multiline}
-        placeholder={placeholder}
+        placeholder={koUiText(placeholder)}
         placeholderTextColor={colors.textFaint}
         selectionColor={colors.accent}
         cursorColor={colors.accent}
         autoCapitalize={autoCapitalize ?? (mono ? 'none' : undefined)}
         autoCorrect={autoCorrect ?? (mono ? false : undefined)}
         spellCheck={spellCheck ?? (mono ? false : undefined)}
-        accessibilityLabel={accessibilityLabel ?? label ?? placeholder}
+        accessibilityLabel={koUiText(accessibilityLabel ?? label ?? placeholder)}
         accessibilityHint={accessibilityHint}
         testID={testID}
         style={[mono ? styles.inputMono : styles.inputBody, { fontSize }, disabled && styles.inputDisabled, style]}
@@ -152,7 +152,7 @@ export const TextField = forwardRef<TextFieldRef, TextFieldProps>(function TextF
 
   return (
     <View style={styles.wrap}>
-      {label ? <Text style={styles.label}>{label}</Text> : null}
+      {label ? <Text style={styles.label}>{koUiText(label)}</Text> : null}
       <View style={[styles.box, boxHeight, multiline && styles.boxMulti, onSurface && styles.boxOnSurface, { borderColor }]}>
         {leadingIcon ? (
           <View style={[styles.lead, multiline && styles.leadMulti]}>
@@ -167,14 +167,14 @@ export const TextField = forwardRef<TextFieldRef, TextFieldProps>(function TextF
           onBlur={handleBlur}
           editable={editable}
           multiline={multiline}
-          placeholder={placeholder}
+          placeholder={koUiText(placeholder)}
           placeholderTextColor={colors.textFaint}
           selectionColor={colors.accent}
           cursorColor={colors.accent}
           autoCapitalize={autoCapitalize ?? (mono ? 'none' : undefined)}
           autoCorrect={autoCorrect ?? (mono ? false : undefined)}
           spellCheck={spellCheck ?? (mono ? false : undefined)}
-          accessibilityLabel={a11yLabel}
+          accessibilityLabel={koUiText(a11yLabel)}
           accessibilityHint={accessibilityHint ?? hint}
           accessibilityState={{ disabled }}
           testID={testID}
@@ -189,7 +189,7 @@ export const TextField = forwardRef<TextFieldRef, TextFieldProps>(function TextF
         />
         {trailing ? <View style={[styles.lead, multiline && styles.leadMulti]}>{trailing}</View> : null}
         {showClear ? (
-          <IconButton icon="close" size={16} onPress={clear} accessibilityLabel={clearLabel} testID={testID ? `${testID}-clear` : undefined} />
+          <IconButton icon="close" size={16} onPress={clear} accessibilityLabel={koUiText(clearLabel)} testID={testID ? `${testID}-clear` : undefined} />
         ) : null}
       </View>
       {invalid ? (
