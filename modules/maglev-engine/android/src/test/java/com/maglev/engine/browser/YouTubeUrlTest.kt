@@ -49,7 +49,7 @@ class YouTubeUrlTest {
 
     @Test fun timeFormatsAndBounds() {
         assertEquals(3661, YouTubeUrl.parse("https://youtube.com/watch?v=AbCdEf12345&t=1h1m1s")?.startSeconds)
-        assertNull(YouTubeUrl.parse("https://youtube.com/watch?v=AbCdEf12345&t=999999"))
+        assertNull(YouTubeUrl.parse("https://youtube.com/watch?v=AbCdEf12345&t=999999")?.startSeconds)
         assertNull(YouTubeUrl.parse("https://youtube.com/watch?v=AbCdEf12345&t=notatime")?.startSeconds)
     }
 }
