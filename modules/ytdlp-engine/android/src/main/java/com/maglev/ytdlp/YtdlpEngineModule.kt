@@ -74,7 +74,7 @@ class YtdlpEngineModule : Module() {
         }
 
         AsyncFunction("getInfo") { url: String ->
-            val context = appContext ?: throw IllegalStateException("Module not attached")
+            val context = androidContext ?: throw IllegalStateException("Module not attached")
             try { info(context, url) } catch (t: Throwable) {
                 mapOf("ok" to false, "code" to "EXTRACT_FAILED", "message" to sanitize(t.message), "errorType" to t.javaClass.simpleName)
             }
@@ -114,7 +114,7 @@ class YtdlpEngineModule : Module() {
         }
 
         AsyncFunction("update") { channel: String ->
-            val context = appContext ?: throw IllegalStateException("Module not attached")
+            val context = androidContext ?: throw IllegalStateException("Module not attached")
             ensureInitialized(context)
             val selected = if (channel.equals("nightly", true)) YoutubeDL.UpdateChannel.NIGHTLY else YoutubeDL.UpdateChannel.STABLE
             val status = YoutubeDL.getInstance().updateYoutubeDL(context, selected)
