@@ -34,7 +34,7 @@ function check(name, cond) {
   o = R.outcomeFromRanked([row('fr', 'fits')], ['en']);
   check('results only in other languages: needs-pick with the language', o.phase === 'needs-pick' && o.otherLang === 'fr' && !o.pick);
   check('no results: none', R.outcomeFromRanked([], ['en']).phase === 'none');
-  check('"Found in {other} only" copy', copy.foundInOtherOnly('fr') === '프랑스어에서만 찾음');
+  check('"Found in {other} only" copy', copy.foundInOtherOnly('fr') === 'French에서만 찾음');
   const src = (state, message) => ({ providerId: 'x', state, count: 0, ms: 1, message });
   check('every source failed while the phone is offline: offline', R.outcomeFromSources([src('error', 'Network request failed'), src('timeout')], false) === 'offline');
   check('every source failed with the phone online: failed, not offline (D8)', R.outcomeFromSources([src('error', 'Network request failed'), src('timeout')], true) === 'failed');
