@@ -166,6 +166,24 @@ object FoundClassifier {
     }
 
     /**
+     * Classifies a response Content-Type when the address has no useful extension.
+     * HLS and DASH MIME values carry the stream kind needed by the stream probe.
+     */
+    fun classifyMime(mime: String?): Classified? {
+        val value = mime?.substringBefore(';')?.trim()?.lowercase() ?: return null
+        return when (value) {
+            "application/vnd.apple.mpegurl", "application/x-mpegurl",
+            "audio/mpegurl", "audio/x-mpegurl" -> Classified("video", null, "hls", false)
+            "application/dash+xml" -> Classified("video", null, "dash", false)
+            else -> when {
+                value.startsWith("video/") -> Classified("video", null, null, false)
+                value.startsWith("audio/") -> Classified("audio", null, null, false)
+                else -> null
+            }
+        }
+    }
+
+    /**
      * A URL the page scan found (section 24.3 rule 2). [hint] is the kind the tag implies (`video`, `audio`, `image`);
      * with a hint an unknown extension still gives that kind. Without one (an `<a href>`) only known extensions count.
      */
@@ -206,10 +224,35 @@ class FoundTracker(private val cap: Int = FoundClassifier.MAX_ITEMS) {
     private val items = LinkedHashMap<String, FoundItem>()
     private val pending = ArrayList<FoundItem>()
 
-    /** Adds [item] unless its id is already known. Returns true when it was new. */
+    /**
+     * Adds [item], or upgrades an earlier entry when later evidence supplies stream, MIME, size or dimensions.
+     * This matters when a video tag reveals an extensionless URL before fetch/XHR reveals its response MIME.
+     */
     @Synchronized
     fun add(item: FoundItem): Boolean {
-        if (items.containsKey(item.id)) return false
+        val previous = items[item.id]
+        if (previous != null) {
+            val improved = (previous.stream == null && item.stream != null) ||
+                (previous.mime == null && item.mime != null) ||
+                (previous.ext == null && item.ext != null) ||
+                (previous.size == null && item.size != null) ||
+                (previous.width == null && item.width != null) ||
+                (previous.height == null && item.height != null) ||
+                (previous.kind != item.kind)
+            if (!improved) return false
+            val merged = item.copy(
+                mime = item.mime ?: previous.mime,
+                ext = item.ext ?: previous.ext,
+                size = item.size ?: previous.size,
+                width = item.width ?: previous.width,
+                height = item.height ?: previous.height,
+                stream = item.stream ?: previous.stream,
+            )
+            items[item.id] = merged
+            val queued = pending.indexOfFirst { it.id == item.id }
+            if (queued >= 0) pending[queued] = merged else pending.add(merged)
+            return true
+        }
         items[item.id] = item
         pending.add(item)
         while (items.size > cap) {
