@@ -43,7 +43,7 @@ async function main() {
   assert.match(youtubeAdapter, /safeDiagnostic\(e\)/, 'extractor errors must surface a sanitized diagnostic');
 
   const browser = fs.readFileSync(path.join(root, 'app/browser.tsx'), 'utf8');
-  assert.match(browser, /parseYouTubeIntent\\(text\\)/, 'browser paste must recognize YouTube URLs before generic navigation');
+  assert.match(browser, /parseYouTubeIntent\(text\)/, 'browser paste must recognize YouTube URLs before generic navigation');
   assert.match(browser, /pathname: '\/youtube-download'/, 'browser paste must open the dedicated downloader screen');
 
   console.log('test-youtube-intents: all assertions passed');
