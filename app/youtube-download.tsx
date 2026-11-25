@@ -11,8 +11,10 @@ import { parseYouTubeLink } from '../utils/browser/youtube';
 
 const formatKey = (format: YouTubeFormat) => format.playerClient + ':' + format.formatId;
 const formatLabel = (format: YouTubeFormat) => {
-  const quality = format.kind === 'audio'
-    ? (format.abr > 0 ? `${Math.round(format.abr)} kbps` : '오디오')
+  const quality = format.formatId === 'bestaudio'
+    ? '오디오만 · 최고 음질'
+    : format.kind === 'audio'
+      ? (format.abr > 0 ? `${Math.round(format.abr)} kbps` : '오디오')
     : (format.height > 0 ? `${format.height}p` : '동영상');
   const size = format.size && format.size > 0 ? formatBytes(format.size) : '용량 미상';
   const codec = format.format ? ` · ${format.format}` : '';
@@ -82,14 +84,21 @@ export default function YouTubeDownloadScreen() {
   }, [url, busy, router]);
 
   const formats = info?.formats ?? [];
-  const videos = formats.filter((format) => format.kind === 'video')
+  const uniqueFormats = Array.from(new Map(formats.map((format) => [format.formatId, format])).values());
+  const videos = uniqueFormats.filter((format) => format.kind === 'video')
     .sort((a, b) => b.height - a.height || b.tbr - a.tbr);
-  const audios = formats.filter((format) => format.kind === 'audio')
+  const audios = uniqueFormats.filter((format) => format.kind === 'audio')
     .sort((a, b) => b.abr - a.abr);
+  // Always offer yt-dlp's bestaudio selector even when the selected player client
+  // does not expose audio-only formats in its metadata response.
+  const audioFallback: YouTubeFormat = {
+    formatId: 'bestaudio', playerClient: formats[0]?.playerClient ?? 'android_vr', kind: 'audio',
+    ext: 'm4a', height: 0, width: 0, fps: 0, tbr: 0, abr: 0, size: null, format: '원본 오디오',
+  };
 
   return (
     <Screen title={screenTitle} onBack={back} scroll contentStyle={styles.content}>
-      {loading ? <Text style={styles.muted}>yt-dlp로 사이트와 영상 형식을 분석하고 있습니다…</Text> : null}
+      {loading ? <Text style={styles.muted}>yt-dlp로 영상과 오디오 형식을 분석하고 있습니다…</Text> : null}
       {error ? <Text style={styles.error}>{error}</Text> : null}
       {info ? (
         <>
@@ -108,15 +117,14 @@ export default function YouTubeDownloadScreen() {
           </View>
           <View style={styles.section}>
             <Text style={styles.heading}>오디오</Text>
-            {audios.map((format) => (
+            {[...audios, audioFallback].map((format) => (
               <Button key={formatKey(format)} fullWidth size="md" variant="secondary" disabled={busy}
                 label={formatLabel(format)} onPress={() => void start(format)} />
             ))}
-            {audios.length === 0 ? <Text style={styles.muted}>별도 오디오 형식이 없습니다.</Text> : null}
           </View>
         </>
       ) : null}
-      {busy ? <Text style={styles.muted}>선택한 형식을 기존 전송 목록에 추가하고 있습니다…</Text> : null}
+      {busy ? <Text style={styles.muted}>선택한 형식을 전송 목록에 추가하고 있습니다…</Text> : null}
       <Text style={styles.note}>
         로그인·세션·지역 제한·추출기 변경·PO Token/JavaScript 런타임 요구에 따라 일부 페이지나 형식은 분석되지 않을 수 있습니다.
         분리된 영상·오디오 트랙은 병합 호환성이 확인된 형식만 표시합니다. 추가된 작업은 기존 전송 목록에서 관리합니다.
