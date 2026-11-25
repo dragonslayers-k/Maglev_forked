@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { ThemeColors, spacing, type, touch } from '../../constants/theme';
+import { koUiText } from '../../constants/korean';
 import { FocusAnchor, sectionKey } from '../settings/settingsFocus';
 
 export interface SectionHeaderProps {
@@ -17,7 +18,7 @@ export function SectionHeader({ title, actionLabel, onAction }: SectionHeaderPro
     <FocusAnchor anchorKey={sectionKey(title)}>
       <View style={styles.row}>
         <Text style={styles.title} accessibilityRole="header" numberOfLines={1}>
-          {title}
+          {koUiText(title)}
         </Text>
         {actionLabel && onAction ? (
           <Pressable
@@ -27,7 +28,7 @@ export function SectionHeader({ title, actionLabel, onAction }: SectionHeaderPro
             accessibilityLabel={actionLabel}
             style={({ pressed }) => [styles.action, pressed && styles.pressed]}
           >
-            <Text style={styles.actionText}>{actionLabel}</Text>
+            <Text style={styles.actionText}>{koUiText(actionLabel)}</Text>
           </Pressable>
         ) : null}
       </View>
