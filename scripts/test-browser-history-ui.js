@@ -30,7 +30,7 @@ check('refused and crashed pages are never recorded', /!skipRecord\) \{[^}]*reco
 check('recordVisit is called nowhere else', (browser.match(/recordVisit\(/g) || []).length === 1);
 
 console.log('browser menu and suggestions');
-check('the menu has a History row that opens the screen', /title=\{historyCopy\.menuRow\}/.test(browser) && /router\.push\('\/browser-history'\)/.test(browser) && /menuRow: 'History'/.test(copy));
+check('the menu has a Korean history row that opens the screen', /title=\{historyCopy\.menuRow\}/.test(browser) && /router\.push\('\/browser-history'\)/.test(browser) && /menuRow: '방문 기록'/.test(copy));
 check('suggestions show only while editing', /\{editing \? \(\s*<HistorySuggestions/.test(browser));
 check('suggestions are gated by suggestFromHistory', /prefs\.suggestFromHistory/.test(sugg));
 check('suggestions are capped at 6 and ask the store', /suggestHistory\(query, 6\)/.test(sugg));
@@ -41,7 +41,7 @@ check('typed text still goes through go(draft)', /go\(draft\)/.test(browser));
 console.log('settings');
 check('three history toggles', /prefs\.saveHistory/.test(settings) && /prefs\.suggestFromHistory/.test(settings) && /prefs\.clearHistoryOnClose/.test(settings));
 check('toggles write their prefs', /setPrefs\(\{ saveHistory \}\)/.test(settings) && /setPrefs\(\{ suggestFromHistory \}\)/.test(settings) && /setPrefs\(\{ clearHistoryOnClose \}\)/.test(settings));
-check('clear-on-close subtitle is exact', copy.includes("clearOnCloseSubtitle: 'Clears history when you close Maglev, and again when it next starts.'") && /historyCopy\.settings\.clearOnCloseSubtitle/.test(settings));
+check('clear-on-close Korean subtitle is exact', copy.includes("clearOnCloseSubtitle: 'Maglev를 닫을 때 방문 기록을 삭제하고 다음 실행 시에도 정리합니다.'") && /historyCopy\.settings\.clearOnCloseSubtitle/.test(settings));
 check('History row opens the screen', /router\.push\('\/browser-history'\)/.test(settings));
 check('Clear history row opens the range sheet', /setClearMode\('range'\)/.test(settings));
 check('Clear browsing data uses the shared sheet in browsing-data mode', /setClearMode\('browsing-data'\)/.test(settings) && /<ClearHistorySheet/.test(settings));
@@ -55,7 +55,7 @@ check('range mode has four ranges and starts with none chosen', /RANGES: ClearRa
 check('History clears with clearHistoryRange(all)', /clearHistoryRange\('all'\)/.test(sheet));
 check('cookies and cache go through the bridge', /clearBrowserData\(\{ cookies: data\.cookies, cache: data\.cache \}\)/.test(sheet));
 check('Done shows a notice, Failed offers Retry', /notices\.browser\.historyCleared/.test(sheet) && /notices\.browser\.dataCleared/.test(sheet) && /phase === 'failed' \? copy\.retry/.test(sheet));
-check('copy has both notices', /historyCleared: 'History cleared\.'/.test(copy) && /dataCleared: 'Browsing data cleared\.'/.test(copy));
+check('copy has both Korean notices', /historyCleared: '방문 기록을 삭제했습니다\.'/.test(copy) && /dataCleared: '인터넷 사용 데이터를 삭제했습니다\.'/.test(copy));
 
 console.log('history screen (H2)');
 check('screen is registered', /<Stack\.Screen name="browser-history" \/>/.test(layout));
