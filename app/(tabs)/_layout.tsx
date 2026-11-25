@@ -165,12 +165,12 @@ export default function TabLayout() {
   // is off, or the Assistant while Settings > Assistant is off, has href null and no button.
   const shown = visibleTabs(prefs, { assistantEnabled: assistant.enabled });
   const screens: Record<TabId, React.ReactElement> = {
-    index: tab('index', 'Transfers', 'tab-transfers', !shown.includes('index')),
-    search: tab('search', 'Search', 'tab-search', !shown.includes('search')),
-    feeds: tab('feeds', 'Feeds', 'tab-feeds', !shown.includes('feeds'), true, feedsNew),
-    settings: tab('settings', 'Settings', 'tab-settings', !shown.includes('settings'), true),
-    assistant: tab('assistant', 'Assistant', 'tab-assistant', !shown.includes('assistant'), false, 0, unseenReply),
-    browse: tab('browse', 'Browser', 'tab-browse', !shown.includes('browse')),
+    index: tab('index', '전송', 'tab-transfers', !shown.includes('index')),
+    search: tab('search', '검색', 'tab-search', !shown.includes('search')),
+    feeds: tab('feeds', '피드', 'tab-feeds', !shown.includes('feeds'), true, feedsNew),
+    settings: tab('settings', '설정', 'tab-settings', !shown.includes('settings'), true),
+    assistant: tab('assistant', '도우미', 'tab-assistant', !shown.includes('assistant'), false, 0, unseenReply),
+    browse: tab('browse', '브라우저', 'tab-browse', !shown.includes('browse')),
   };
 
   // If the tab being shown is turned off, go to Transfers. Only a change of the bar triggers this,
