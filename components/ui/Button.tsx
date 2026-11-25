@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef } from 'react';
 import { Animated, StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { ThemeColors, motion, radius, spacing, type, touch } from '../../constants/theme';
+import { koUiText } from '../../constants/korean';
 import { PixelIcon, PixelIconName } from '../PixelIcon';
 import { PressableScale } from './PressableScale';
 import { useReduceMotion } from '../motion';
@@ -90,7 +91,7 @@ export function Button({
       testID={testID}
       pressableRef={buttonRef}
       accessibilityRole="button"
-      accessibilityLabel={accessibilityLabel ?? label}
+      accessibilityLabel={koUiText(accessibilityLabel ?? label)}
       accessibilityState={{ disabled: inactive, busy: loading }}
       style={(pressed) => [
         styles.base,
@@ -103,7 +104,7 @@ export function Button({
     >
       {loading ? <LoadingDots color={fg} /> : icon ? <PixelIcon name={icon} size={20} color={fg} /> : null}
       <Text style={[styles.label, { color: fg }]}>
-        {label}
+        {koUiText(label)}
       </Text>
     </PressableScale>
   );
