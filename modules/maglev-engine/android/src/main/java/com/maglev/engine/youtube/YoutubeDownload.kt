@@ -68,7 +68,7 @@ object YoutubeDownload {
         while (current != null && depth < 4) {
             val message = (current.message ?: current.javaClass.simpleName)
                 .replace(Regex("https?://[^\\s]+", RegexOption.IGNORE_CASE), "[URL]")
-                .replace(Regex("(?i)(cookie|authorization|token|key)=([^&\\s]+)"), "$1=[REDACTED]")
+                .replace(Regex("(?i)(cookie|authorization|token|key)=([^&\\s]+)"), "\\$1=[REDACTED]")
                 .take(180)
             parts += current.javaClass.simpleName + ": " + message
             current = current.cause
@@ -131,6 +131,9 @@ object YoutubeDownload {
                     if (hasVideo && hasAudio) break
                 } catch (e: Throwable) {
                     rethrowFatal(e)
+                    // A broken runtime/class initializer is not an extractor-client failure.
+                    // Do not continue into another client and overwrite the useful root cause.
+                    if (e is LinkageError) throw e
                     lastError = e as? Exception ?: RuntimeException(e)
                     Log.w(TAG, "yt-dlp client " + client + " failed: " + safeDiagnostic(e))
                 }
