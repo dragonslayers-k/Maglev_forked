@@ -160,6 +160,8 @@ check('dynamic media detection observes fetch, XHR, resource timing and Service 
   assert(view.includes('ServiceWorkerController') && view.includes('ServiceWorkerClient'), 'Service Worker observer not installed');
   assert(view.includes('noteServiceWorkerRequest') && view.includes('request.method'), 'Service Worker requests are attributable and GET-filtered');
   assert(view.includes('serviceWorkerObserver.compareAndSet(this, null)'), 'inactive/destroyed browser releases the observer');
+  assert(view.includes('FoundClassifier.isStreamSegment(url, hlsSeen, dashSeen)'), 'network observer shares the HLS/DASH segment filter');
+  assert(view.includes('dashSeen = false') && view.includes('item.stream == "dash"'), 'DASH detection state is reset and updated from page reports');
   assert(view.includes('@Volatile private var active = true'), 'active tab state is visible across WebView threads');
   for (const marker of ['streamSeen', 'video/mp2t', '.m4s', '.cmfv']) {
     assert(scan.includes(marker), 'stream segment suppression missing ' + marker);
