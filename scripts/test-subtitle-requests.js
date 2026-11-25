@@ -124,7 +124,7 @@ function check(name, cond) {
   check('links count as video by their name; every search uses effectiveLanguages', /linkNameKind\(d\.name\)/.test(runner) && /effectiveLanguages\(sub\)/.test(runner));
 
   console.log('[copy and settings]');
-  check('the settings line', copy.AUTO_NEW_VIDEOS_SUBTITLE === 'Maglev 실행 중, 설정한 자막 언어의 자막 자동 검색');
+  check('the settings line', copy.AUTO_NEW_VIDEOS_SUBTITLE === 'Maglev 실행 중, 설정한 언어의 자막 자동 검색');
   const page = read('app/settings/subtitles.tsx');
   check('the Settings switch', /title="Get subtitles for new videos"/.test(page) && /AUTO_NEW_VIDEOS_SUBTITLE/.test(page) && /autoNewVideos/.test(page) && /useSubtitleConsent/.test(page));
   const { SETTINGS_INDEX } = await import('../utils/settingsIndex.ts');
@@ -141,10 +141,10 @@ function check(name, cond) {
   console.log('[card icon by shape, 44.8]');
   check(
     'labels say the state in words',
-    F.cardIconLabel({ state: 'getting', lang: 'en' }).startsWith('Getting subtitles') &&
-      F.cardIconLabel({ state: 'saved', lang: 'en' }).startsWith('Subtitles saved') &&
-      F.cardIconLabel({ state: 'needs-look', lang: 'en' }).startsWith('Subtitles: pick one') &&
-      F.cardIconLabel({ state: 'none', lang: 'en' }).startsWith('No subtitles found'),
+    F.cardIconLabel({ state: 'getting', lang: 'en' }).startsWith('자막 검색 중') &&
+      F.cardIconLabel({ state: 'saved', lang: 'en' }).startsWith('자막 저장됨') &&
+      F.cardIconLabel({ state: 'needs-look', lang: 'en' }).startsWith('자막 선택 필요') &&
+      F.cardIconLabel({ state: 'none', lang: 'en' }).startsWith('자막을 찾지 못함'),
   );
   const icon = read('components/subtitles/SubtitleCardIcon.tsx');
   check('no warning colour, no hex, theme roles only', !/colors\.warning/.test(icon) && !/#[0-9A-Fa-f]{3,6}\b/.test(icon) && /colors\.accentText/.test(icon) && /colors\.textMuted/.test(icon));
@@ -269,7 +269,7 @@ function check(name, cond) {
     check('D10: the runner never shows a notice', !/showNotice|privacyNotice|consentShown/.test(runner));
     check('D10: the runner makes no automatic request before the OK', /sub\.autoNewVideos && sub\.privacyAck/.test(runner));
     const heldRow = RM.rowModel({ phase: 'queued', needsOk: true, fileListKnown: true, started: true, canOpenSheet: true });
-    check('D10: a held request reads "Needs your OK" with Review', heldRow.line === 'Needs your OK' && heldRow.button.label === 'Review' && heldRow.button.action === 'review');
+    check('D10: a held request reads "Needs your OK" with Review', heldRow.line === '선택 필요' && heldRow.button.label === '검토' && heldRow.button.action === 'review');
     check('D10: the notice is shown at opt-in: Settings switch, Add switch, tray and row', /consent\.require/.test(read('app/settings/subtitles.tsx')) && /consent\.require/.test(read('components/search/SubtitlesAutoRow.tsx')) && /consent\.require/.test(read('components/search/AddedTray.tsx')) && /consent\.require/.test(read('components/subtitles/SubtitlesRow.tsx')));
     check('D10: it reuses the existing notice text and the single sheet accepts the same way', /privacyNotice\(names\)/.test(read('components/subtitles/useSubtitleConsent.tsx')) && /acceptPrivacy\(\)/.test(read('components/subtitles/SubtitleSheet.tsx')));
 
