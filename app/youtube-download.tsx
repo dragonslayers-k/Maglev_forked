@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { StyleSheet, Text } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ytdlpEngine, type YtdlpInfo, type YtdlpFormat, type YtdlpProgress, type YtdlpCompletion, type YtdlpFailure } from 'ytdlp-engine';
 import { useTheme } from '../context/ThemeContext';
@@ -24,7 +24,9 @@ export default function YouTubeDownloadScreen() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [progress, setProgress] = useState<YtdlpProgress | null>(null);
-  const [completed, setCompleted] = useState<YtdlpCompletion | null>(null);\n  const busyRef = useRef<string | null>(null);\n  busyRef.current = busy;
+  const [completed, setCompleted] = useState<YtdlpCompletion | null>(null);
+  const busyRef = useRef<string | null>(null);
+  busyRef.current = busy;
 
   useEffect(() => {
     if (!ytdlpEngine.available) { setError('yt-dlp 모듈이 설치된 빌드가 아닙니다.'); setLoading(false); return; }
