@@ -10,6 +10,7 @@ import { ListRow, PressableScale, RadioCard, SegmentedControl, Toggle } from '..
 import { Card, Caption, SettingsPage } from '../../components/settings/SettingsParts';
 import { FontStyle, TelemetryDensity } from 'maglev-engine';
 import { fontFamilies, resolveFontStyle } from '../../constants/fontStyles';
+import { koUiText } from '../../constants/korean';
 import { fontStyleCopy, tabsCopy } from '../../constants/copy';
 import { DensityThumb } from '../../components/settings/DensityThumb';
 import { DensitySheet } from '../../components/settings/DensitySheet';
@@ -19,24 +20,24 @@ import type { PixelIconName } from '../../components/PixelIcon';
 
 const MODES = [
   { value: 'oled', label: 'OLED' },
-  { value: 'dim', label: 'Dim' },
-  { value: 'light', label: 'Light' },
-  { value: 'system', label: 'System' },
+  { value: 'dim', label: '어둡게' },
+  { value: 'light', label: '밝게' },
+  { value: 'system', label: '시스템' },
 ] as const;
 // NATIVE_CONTRACT 41.3: the row's second line and its spoken label, one pair per layout.
 const DENSITY_ROW: Record<TelemetryDensity, { line: string; spoken: string }> = {
-  COMPACT: { line: 'Compact: speed and time left', spoken: 'Download page, Compact, speed and time left' },
-  VERBOSE: { line: 'Detailed: adds amounts, connections and timing', spoken: 'Download page, Detailed, adds amounts, connections and timing' },
+  COMPACT: { line: '간결하게: 속도 및 남은 시간', spoken: '다운로드 화면, 간결하게, 속도 및 남은 시간' },
+  VERBOSE: { line: '자세히: 용량·연결·시간 정보 포함', spoken: '다운로드 화면, 자세히, 용량·연결·시간 정보 포함' },
 };
 const ACCENTS: { name: AccentName; label: string }[] = [
-  { name: 'lime', label: 'Lime' },
-  { name: 'cyan', label: 'Cyan' },
-  { name: 'pink', label: 'Pink' },
-  { name: 'orange', label: 'Orange' },
-  { name: 'violet', label: 'Violet' },
-  { name: 'blue', label: 'Blue' },
-  { name: 'amber', label: 'Amber' },
-  { name: 'mint', label: 'Mint' },
+  { name: 'lime', label: '라임' },
+  { name: 'cyan', label: '시안' },
+  { name: 'pink', label: '분홍' },
+  { name: 'orange', label: '주황' },
+  { name: 'violet', label: '보라' },
+  { name: 'blue', label: '파랑' },
+  { name: 'amber', label: '호박색' },
+  { name: 'mint', label: '민트' },
 ];
 
 const FONT_ICONS: Record<FontStyle, PixelIconName> = { clean: 'interface', retro: 'grid', mono: 'file' };
@@ -55,18 +56,18 @@ export default function InterfaceSettings() {
       <Stack.Screen options={{ headerShown: false }} />
       <Card>
         <View style={s.block}>
-          <Text style={s.label}>Mode</Text>
+          <Text style={s.label}>모드</Text>
           <SegmentedControl<AppearanceMode>
             options={MODES}
             value={a.mode}
             onChange={(mode) => set({ mode })}
-            accessibilityLabel="Mode"
+            accessibilityLabel="모드"
           />
-          <Caption>System follows your phone's dark or light setting.</Caption>
+          <Caption>휴대전화의 밝게 또는 어둡게 설정을 따릅니다.</Caption>
         </View>
         <View style={s.block}>
-          <Text style={s.label}>Accent</Text>
-          <View style={s.swatches} accessibilityRole="radiogroup" accessibilityLabel="Accent">
+          <Text style={s.label}>강조 색상</Text>
+          <View style={s.swatches} accessibilityRole="radiogroup" accessibilityLabel="강조 색상">
             {ACCENTS.map(({ name, label }) => {
               const selected = a.accent === name;
               const fill = dark ? accents[name].bright : accents[name].deep;
@@ -91,7 +92,7 @@ export default function InterfaceSettings() {
           </View>
         </View>
         <View style={s.block} accessibilityRole="radiogroup" accessibilityLabel={fontStyleCopy.label}>
-          <Text style={s.label}>{fontStyleCopy.label}</Text>
+          <Text style={s.label}>{koUiText(fontStyleCopy.label)}</Text>
           {fontStyleCopy.options.map((o) => {
             const fonts = fontFamilies[o.value];
             return (
@@ -118,7 +119,7 @@ export default function InterfaceSettings() {
         </View>
         {/* NATIVE_CONTRACT 41.3: the "Transfers" heading, then the Download page row (the old Transfer details control is gone). */}
         <Text style={s.sectionLabel} accessibilityRole="header">
-          Transfers
+          전송
         </Text>
         <ListRow
           title="Download page"
