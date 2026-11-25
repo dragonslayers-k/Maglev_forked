@@ -25,34 +25,43 @@ jobs:
         run: |
           git remote add upstream https://github.com/Kaos599/Maglev.git
           git fetch upstream main --tags
-          fork_sha="$(git rev-parse origin/main)"
+          fork_sha="$(git rev-parse HEAD)"
           upstream_sha="$(git rev-parse upstream/main)"
           echo "fork_sha=$fork_sha" >> "$GITHUB_OUTPUT"
           echo "upstream_sha=$upstream_sha" >> "$GITHUB_OUTPUT"
-          if git merge-base --is-ancestor "$fork_sha" "$upstream_sha"; then
-            echo "behind=true" >> "$GITHUB_OUTPUT"
+          if [ "$fork_sha" = "$upstream_sha" ]; then
+            changed=false
+            state="Up to date"
+            commits="No upstream commits to review."
+          elif git merge-base --is-ancestor "$fork_sha" "$upstream_sha"; then
+            changed=true
+            state="Upstream is ahead"
             commits="$(git log --oneline --decorate "$fork_sha..$upstream_sha")"
           else
-            echo "behind=false" >> "$GITHUB_OUTPUT"
-            commits="Fork main is not a simple ancestor of upstream main. Manual divergence review is required."
+            changed=true
+            state="Fork and upstream have diverged; manual comparison is required."
+            commits="$(git log --oneline --decorate --left-right "$fork_sha...$upstream_sha")"
           fi
+          echo "changed=$changed" >> "$GITHUB_OUTPUT"
+          echo "state=$state" >> "$GITHUB_OUTPUT"
+          echo "$commits" > upstream-commits.txt
           {
-            echo "## Upstream Maglev monthly review"
+            echo "## Monthly upstream Maglev review"
             echo "- Fork main: `$fork_sha`"
             echo "- Upstream main: `$upstream_sha`"
-            echo "- Upstream ahead: ${{ steps.compare.outputs.behind }}"
+            echo "- Status: $state"
             echo
             echo "### Changes"
             echo "$commits"
           } >> "$GITHUB_STEP_SUMMARY"
-          echo "$commits" > upstream-commits.txt
 
-      - name: Create review issue when upstream has changes
-        if: steps.compare.outputs.behind == 'true'
+      - name: Create review issue when upstream differs
+        if: steps.compare.outputs.changed == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           FORK_SHA: ${{ steps.compare.outputs.fork_sha }}
           UPSTREAM_SHA: ${{ steps.compare.outputs.upstream_sha }}
+          REVIEW_STATE: ${{ steps.compare.outputs.state }}
         run: |
           month="$(date -u +%Y-%m)"
           title="Monthly upstream Maglev review: $month"
@@ -63,11 +72,12 @@ jobs:
           commits="$(cat upstream-commits.txt)"
           gh issue create --title "$title" --body "## Monthly upstream review
 
+          - Status: $REVIEW_STATE
           - Fork main: `$FORK_SHA`
           - Upstream main: `$UPSTREAM_SHA`
           - Source: https://github.com/Kaos599/Maglev
 
-          ## Upstream commits
+          ## Upstream commits / divergence
 
           ```
           $commits
