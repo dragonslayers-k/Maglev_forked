@@ -508,3 +508,14 @@ This section supplements the original 2026-11-25 Claude analysis with a current 
 - #161 최종 APK build result와 Galaxy 실기기 테스트는 이 부록 작성 시점에 별도 확인 필요. 이 기록만으로 최종/DEVICE_PASS를 선언하지 않음.
 
 - MPMux official feature pages: https://mpmux.com/staticdownloader ; https://mpmux.com/hlsdownloader ; https://mpmux.com/buffermuxer ; Chrome Web Store https://chromewebstore.google.com/detail/video-downloader-mpmux/mbflpfaamifmmmkdjkcmpofpccfmlmap?hl=en-US
+
+## 2026-11-26 Release crash follow-up (UNVERIFIED)
+
+- The Galaxy Release APK reported `ExceptionInInitializerError`, cause `RuntimeException: class pe is not a concrete class`.
+- Root cause identified from the prior crash analysis: R8 shrinking/obfuscation transforms Apache Commons Compress ZIP extra-field classes used by yt-dlp Android runtime extraction; its reflective registry requires concrete/default-constructible types. Debug builds do not shrink and therefore do not reproduce the Release-only failure.
+- `2416d16a` added keep rules for youtubedl-android wrappers/mappers (incomplete fix).
+- `467fba82` catches non-fatal Throwable including initializer/linkage Errors, preserves cause-chain and a short sanitized stack excerpt for diagnosis, and maps it into a controlled extraction error instead of allowing Exception-only handling to escape.
+- `8e6efd6f` adds the precise rule `-keep class org.apache.commons.compress.** { *; }` to protect the Commons Compress registry and ZIP extra-field concrete classes from R8.
+- Latest PR head after these changes: `3095c5f5cdbad7885c6e835de8da412584cf80b7` (documentation-only commit after code commits).
+- CI has NOT yet been run/verified on this head. GitHub connector API commits updated PR #1 but did not start a new workflow; the available connector has no workflow-dispatch action. Do not claim CI/APK/device validation.
+- Next required action: trigger CI on PR #1's current head, install the Release APK on Galaxy, validate cold init, engine version, metadata/formats, and a real YouTube download. If the error remains, capture the newly sanitized cause/stack and revise the fix.
