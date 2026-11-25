@@ -39,7 +39,7 @@ function check(name, cond) {
   m = row({ phase: 'needs-pick' });
   check('needs-pick: "Close match found" + Pick one, on results, ? badge', m.line === '비슷한 자막을 찾음' && btn(m) === '선택/pick' && m.start === 'results' && m.glyph === 'needs-look');
   m = row({ phase: 'needs-pick', otherLang: 'fr' });
-  check('needs-pick in another language: "Found in French only"', m.line === '프랑스어에서만 찾음' && btn(m) === 'Pick one/pick');
+  check('needs-pick in another language: "Found in French only"', m.line === '프랑스어에서만 찾음' && btn(m) === '선택/pick');
   m = row({ phase: 'none' });
   check('none: "아직 찾지 못함" + 이름 수정, opens the name field', m.line === '아직 찾지 못함' && btn(m) === '이름 수정/edit-name' && m.start === 'edit-name');
   m = row({ phase: 'has-already', language: 'de' });
