@@ -58,25 +58,25 @@ const toName = (s: string | number) => String(s);
 export const notices = {
   /** Used by more than one screen. */
   common: {
-    retryFailed: "Couldn't try again.",
+    retryFailed: "다시 시도하지 못했습니다.",
   },
   /** Inline errors set by a screen and shown in a banner or sheet. */
   inline: {
-    notTorrentFile: "That isn't a .torrent file.",
-    openFileFailed: "Couldn't open that file.",
-    clipboardEmpty: 'Your clipboard is empty.',
+    notTorrentFile: "토렌트(.torrent) 파일이 아닙니다.",
+    openFileFailed: "파일을 열지 못했습니다.",
+    clipboardEmpty: '클립보드가 비어 있습니다.',
     startDownloadFailed: '다운로드를 시작하지 못했습니다.',
-    folderPickerFailed: "Couldn't open the folder picker. Try again.",
-    folderNotDirect: "Maglev can't save straight into that folder. Pick another one.",
-    storageRefused: 'Storage access was refused. Files are saved in app storage instead.',
-    readFileFailed: "Couldn't read that file. Pick another one.",
-    removeTorrentFailed: "Couldn't remove this torrent. Try again.",
-    shareFailed: "Couldn't share. Try again.",
-    resumeFailed: "Couldn't resume the torrent.",
+    folderPickerFailed: "폴더 선택기를 열지 못했습니다. 다시 시도하세요.",
+    folderNotDirect: "해당 폴더에 직접 저장할 수 없습니다. 다른 폴더를 선택하세요.",
+    storageRefused: '저장소 접근이 거부되어 앱 내부 저장소에 파일을 저장합니다.',
+    readFileFailed: "파일을 읽지 못했습니다. 다른 파일을 선택하세요.",
+    removeTorrentFailed: "토렌트를 삭제하지 못했습니다. 다시 시도하세요.",
+    shareFailed: "공유하지 못했습니다. 다시 시도하세요.",
+    resumeFailed: "토렌트를 재개하지 못했습니다.",
     streamFailed: '스트림을 시작하지 못했습니다.',
     noPlayer: '재생 앱을 찾지 못했습니다. VLC 또는 다른 플레이어를 설치하세요.',
-    readInfoFailed: "Couldn't read torrent info.",
-    apiKeyFailed: "Couldn't save the API key on this device. Try again.",
+    readInfoFailed: "토렌트 정보를 읽지 못했습니다.",
+    apiKeyFailed: "이 기기에 API 키를 저장하지 못했습니다. 다시 시도하세요.",
   },
   /** context/EngineContext.tsx */
   engine: {
@@ -86,8 +86,8 @@ export const notices = {
     removeFailedMany: (count: string | number) => `Couldn't remove ${toName(count)} transfers. Try again.`,
     pauseFailed: (label: string | number) => `Couldn't pause ${toName(label)}. Try again.`,
     resumeFailed: (label: string | number) => `Couldn't resume ${toName(label)}. Try again.`,
-    pauseAllFailed: "Couldn't pause all. Try again.",
-    resumeAllFailed: "Couldn't resume all. Try again.",
+    pauseAllFailed: "모두 일시 정지하지 못했습니다. 다시 시도하세요.",
+    resumeAllFailed: "모두 재개하지 못했습니다. 다시 시도하세요.",
     downloadActionFailed: (verb: string | number) => `Couldn't ${toName(verb)}. Try again.`,
   },
   /** Multi-select actions on Transfers. */
@@ -131,38 +131,38 @@ export const notices = {
     historyRestoreFailed: '방문 기록을 복원하지 못했습니다.',
     /** Block list update errors, keyed by the native error code. */
     listError: {
-      NETWORK: "Couldn't reach the list. Check your connection.",
-      HTTP_STATUS: 'The list server returned an error.',
-      LIST_TOO_LARGE: 'That list is too big.',
-      LIST_INVALID: "That list doesn't look like a block list.",
-      BLOCKED: 'Blocked by your network settings.',
-      INVALID_ARGUMENT: "That list address isn't valid.",
-      OTHER: "Couldn't update the list.",
+      NETWORK: "목록에 연결하지 못했습니다. 인터넷 연결을 확인하세요.",
+      HTTP_STATUS: '목록 서버에서 오류를 반환했습니다.',
+      LIST_TOO_LARGE: '목록 파일이 너무 큽니다.',
+      LIST_INVALID: "차단 목록 형식이 아닙니다.",
+      BLOCKED: '네트워크 설정에서 차단했습니다.',
+      INVALID_ARGUMENT: "목록 주소가 올바르지 않습니다.",
+      OTHER: "목록을 업데이트하지 못했습니다.",
     },
   },
   addDownload: {
     duplicate: '이미 다운로드 목록에 있는 링크입니다.',
   },
   addTorrent: {
-    addedWaiting: 'Added. You can choose files once its details arrive.',
-    addFailed: 'Something went wrong. Try again.',
+    addedWaiting: '추가했습니다. 정보가 도착하면 파일을 선택할 수 있습니다.',
+    addFailed: '문제가 발생했습니다. 다시 시도하세요.',
   },
   detail: {
-    keepOneFile: 'Keep at least one file.',
-    priorityFailed: "Couldn't change the file priority.",
-    lookingForPeers: 'Looking for more peers.',
+    keepOneFile: '파일을 하나 이상 남겨 두세요.',
+    priorityFailed: "파일 우선순위를 변경하지 못했습니다.",
+    lookingForPeers: '피어를 더 찾고 있습니다.',
     retryIn: (seconds: string | number) => `Try again in ${toName(seconds)} s.`,
-    peersFailed: "Couldn't ask for more peers.",
-    magnetCopied: 'Magnet link copied.',
-    magnetCopyFailed: "Couldn't copy the magnet link.",
-    magnetShareFailed: "Couldn't share the magnet link.",
-    torrentSaveFailed: "Couldn't save the .torrent file.",
-    limitFailed: "Couldn't change the speed limit.",
-    moving: 'Moving files.',
-    checking: 'Checking files.',
-    openFolderFailed: "Couldn't open the folder.",
-    stateFailed: "Couldn't change the torrent state.",
-    resumedToStream: 'Resumed to stream.',
+    peersFailed: "피어를 더 요청하지 못했습니다.",
+    magnetCopied: '마그넷 링크를 복사했습니다.',
+    magnetCopyFailed: "마그넷 링크를 복사하지 못했습니다.",
+    magnetShareFailed: "마그넷 링크를 공유하지 못했습니다.",
+    torrentSaveFailed: "토렌트 파일을 저장하지 못했습니다.",
+    limitFailed: "속도 제한을 변경하지 못했습니다.",
+    moving: '파일을 이동하고 있습니다.',
+    checking: '파일을 확인하고 있습니다.',
+    openFolderFailed: "폴더를 열지 못했습니다.",
+    stateFailed: "토렌트 상태를 변경하지 못했습니다.",
+    resumedToStream: '스트리밍을 위해 다운로드를 재개했습니다.',
   },
 } as const;
 
@@ -171,13 +171,13 @@ export const notices = {
 // ---------------------------------------------------------------------------------------------
 export const banners = {
   settings: {
-    notificationsOff: { title: 'Notifications are off', body: 'Downloads may stop in the background.' },
-    batteryRestricted: { title: 'Android may stop downloads to save battery' },
-    legacyStorageDenied: { title: 'Storage access denied', body: 'Files are saved in app storage instead.' },
+    notificationsOff: { title: '알림이 꺼져 있습니다', body: '백그라운드에서 다운로드가 중단될 수 있습니다.' },
+    batteryRestricted: { title: '배터리 절약을 위해 Android가 다운로드를 중단할 수 있습니다' },
+    legacyStorageDenied: { title: '저장소 접근이 거부되었습니다', body: '파일은 앱 내부 저장소에 저장됩니다.' },
   },
   storage: {
-    folderAccessLost: { title: 'Folder access lost', body: 'Maglev can no longer write to your chosen folder.' },
-    appStorageFallback: { title: 'Files are saved in app storage', body: "The download folder isn't available right now." },
+    folderAccessLost: { title: '폴더 접근 권한이 사라졌습니다', body: '선택한 폴더에 더 이상 저장할 수 없습니다.' },
+    appStorageFallback: { title: '앱 내부 저장소에 파일을 저장합니다', body: "현재 다운로드 폴더를 사용할 수 없습니다." },
   },
   browser: {
     installer: { title: '앱 설치 파일입니다', body: '신뢰할 수 있는 사이트의 파일만 다운로드하세요.' },
@@ -192,27 +192,27 @@ export const banners = {
     notEnoughSpace: { title: '저장 공간이 부족합니다', body: '저장 공간을 확보한 뒤 다시 시도하세요.' },
   },
   addTorrent: {
-    addFailed: { title: "Couldn't add this torrent" },
+    addFailed: { title: "토렌트를 추가하지 못했습니다" },
   },
   feeds: {
     loadFailed: (name: string | number) => ({ title: `Couldn't load ${toName(name)}` }),
   },
   transfers: {
-    magnetInClipboard: { title: 'Add the magnet you copied?' },
-    torrentLinkInClipboard: { title: 'Add the torrent link you copied?' },
-    linkInClipboard: { title: 'Add the link you copied?' },
+    magnetInClipboard: { title: '복사한 마그넷 링크를 추가할까요?' },
+    torrentLinkInClipboard: { title: '복사한 토렌트 링크를 추가할까요?' },
+    linkInClipboard: { title: '복사한 링크를 추가할까요?' },
   },
   detail: {
-    updatesPaused: { title: 'Updates paused' },
-    torrentProblem: { title: 'This torrent has a problem' },
-    deleteFailed: { title: "Couldn't delete" },
-    removeFailed: { title: "Couldn't remove" },
-    shareFailed: { title: "Couldn't share" },
-    actionFailed: { title: "Couldn't do that" },
-    moveFailed: { title: "Couldn't move" },
+    updatesPaused: { title: '업데이트가 일시 정지되었습니다' },
+    torrentProblem: { title: '토렌트에 문제가 있습니다' },
+    deleteFailed: { title: "삭제하지 못했습니다" },
+    removeFailed: { title: "제거하지 못했습니다" },
+    shareFailed: { title: "공유하지 못했습니다" },
+    actionFailed: { title: "작업을 수행하지 못했습니다" },
+    moveFailed: { title: "이동하지 못했습니다" },
   },
   sources: {
-    unsafe: { title: 'Unsafe source' },
+    unsafe: { title: '안전하지 않은 출처' },
   },
 } as const;
 
@@ -220,63 +220,63 @@ export const banners = {
 // Empty states: a title (what is empty) and a body (how to fill it)
 // ---------------------------------------------------------------------------------------------
 /** NATIVE_CONTRACT 45.5 */
-export const SEARCH_TURN_ON_MORE = 'Turn on more sources';
+export const SEARCH_TURN_ON_MORE = '검색 사이트 더 켜기';
 export const offSourcesSentence = (k: number): string => (k === 1 ? '1 more source is off.' : `${k} more sources are off.`);
 
 export const empty = {
   transfers: {
-    none: { title: 'Nothing downloading', body: 'Add a link or a .torrent file, or find something.' },
+    none: { title: '다운로드 중인 항목이 없습니다', body: '링크나 .torrent 파일을 추가하거나 검색해 보세요.' },
     /** Under the finder tiles: the Share route, which the screen's buttons don't cover. */
-    shareHint: 'In another app, tap "Share", then Maglev.',
-    noMatch: { title: 'No matching transfers', body: 'Try a different search.' },
+    shareHint: '다른 앱에서 "공유"를 누른 다음 Maglev를 선택하세요.',
+    noMatch: { title: '일치하는 전송 항목이 없습니다', body: '다른 검색어를 입력해 보세요.' },
     noneInFilter: (filter: string | number) => ({
       title: `No ${toName(filter).toLowerCase()} transfers`,
-      body: 'Pick another filter to see more.',
+      body: '다른 필터를 선택하면 더 볼 수 있습니다.',
     }),
   },
   search: {
-    unavailable: { title: 'Search is unavailable right now', body: 'Check your connection and try again.' },
-    noSource: { title: 'No source covers this category', body: 'Turn on a source that searches it.' },
+    unavailable: { title: '현재 검색을 사용할 수 없습니다', body: '인터넷 연결을 확인하고 다시 시도하세요.' },
+    noSource: { title: '이 분류를 검색하는 사이트가 없습니다', body: '해당 분류를 검색하는 사이트를 켜세요.' },
     idle: (sources: number | string) => ({
       title: `Search ${toName(sources)} ${Number(sources) === 1 ? 'source' : 'sources'} at once`,
-      body: 'Tap the box to see your recent searches.',
+      body: '검색창을 눌러 최근 검색어를 확인하세요.',
     }),
-    noAnswer: { title: 'No source answered', body: 'Check your connection or try other sources.' },
+    noAnswer: { title: '응답한 검색 사이트가 없습니다', body: '인터넷 연결을 확인하거나 다른 검색 사이트를 사용하세요.' },
     /** `off`: NATIVE_CONTRACT 45.5, the sources that are switched off and could have answered. */
     noResults: (query: string | number, off = 0) => ({
-      title: 'No results',
+      title: '검색 결과가 없습니다',
       body: `Nothing matches "${toName(query)}". Try fewer words or another category.${off > 0 ? ` ${offSourcesSentence(off)}` : ''}`,
     }),
   },
   feeds: {
-    none: { title: 'No feeds yet', body: 'Follow an RSS or Atom feed to see new torrents here.' },
-    nothingNew: { title: 'Nothing new yet', body: 'Pull down to check for new releases.' },
+    none: { title: '피드가 아직 없습니다', body: 'RSS 또는 Atom 피드를 구독하면 새 토렌트가 여기에 표시됩니다.' },
+    nothingNew: { title: '새 항목이 없습니다', body: '아래로 당겨 새 항목을 확인하세요.' },
   },
   addTorrent: {
-    noFiles: { title: 'No files listed', body: 'This torrent has no files to choose from.' },
-    duplicate: { title: 'Already in Transfers', body: 'This torrent is already added.' },
-    timedOut: { title: "Couldn't find torrent info" },
+    noFiles: { title: '목록에 파일이 없습니다', body: '선택할 수 있는 파일이 없습니다.' },
+    duplicate: { title: '이미 전송 목록에 있습니다', body: '이 토렌트는 이미 추가되어 있습니다.' },
+    timedOut: { title: "토렌트 정보를 찾지 못했습니다" },
     timedOutMagnet: 'No peers answered in time. Retry, or add it anyway and Maglev keeps looking.',
-    timedOutFile: 'No peers answered in time.',
-    readFailed: { title: "Couldn't read this torrent" },
+    timedOutFile: '제한 시간 내에 피어가 응답하지 않았습니다.',
+    readFailed: { title: "토렌트를 읽지 못했습니다" },
   },
   addDownload: {
-    waitingForNetwork: { title: 'Waiting for Wi-Fi' },
-    deviceOnNetwork: { title: 'A device on your network' },
-    badLink: { title: "Couldn't use this link" },
+    waitingForNetwork: { title: 'Wi-Fi 연결 대기 중' },
+    deviceOnNetwork: { title: '네트워크의 기기' },
+    badLink: { title: "이 링크를 사용할 수 없습니다" },
   },
   detail: {
-    notFound: { title: 'Torrent not found', body: 'It may have been removed.' },
+    notFound: { title: '토렌트를 찾지 못했습니다', body: '삭제되었을 수 있습니다.' },
     /** The page of a link download whose id is not in the list (removed, or a stale link). */
-    downloadNotFound: { title: 'Download not found', body: 'It may have been removed.' },
-    loadFailed: { title: "Couldn't load this torrent" },
-    noFiles: { title: 'No files yet', body: 'File info appears once the torrent has its metadata.' },
+    downloadNotFound: { title: '다운로드를 찾지 못했습니다', body: '삭제되었을 수 있습니다.' },
+    loadFailed: { title: "토렌트를 불러오지 못했습니다" },
+    noFiles: { title: '파일 정보가 아직 없습니다', body: '토렌트 메타데이터를 받으면 파일 정보가 표시됩니다.' },
     peersUnavailable: (connected: string | number) => ({
-      title: "Peer details aren't available yet",
+      title: "피어 정보가 아직 없습니다",
       body: `${toName(connected)} connected. The list fills in shortly.`,
     }),
-    noPeers: { title: 'No peers connected', body: 'Peers show up while the torrent is running.' },
-    noTrackers: { title: 'No trackers', body: 'Peers can still be found without one. Add a tracker to look for more.' },
+    noPeers: { title: '연결된 피어가 없습니다', body: '토렌트가 실행되면 피어가 표시됩니다.' },
+    noTrackers: { title: '트래커가 없습니다', body: '트래커가 없어도 피어를 찾을 수 있습니다. 더 찾으려면 트래커를 추가하세요.' },
   },
   browser: {
     start: { title: '열린 페이지가 없습니다', body: '위 주소창에 주소를 입력하거나 검색어를 입력하세요.' },
@@ -289,12 +289,12 @@ export const empty = {
     historyFailed: { title: '방문 기록을 사용할 수 없습니다', body: '방문 기록을 불러오지 못했습니다. 다시 시도하세요.' },
   },
   engineError: {
-    title: "The downloader didn't start",
+    title: "다운로더가 시작되지 않았습니다",
   },
   /** utils/addErrorNotice.ts, app/add-torrent.tsx, app/engine-error.tsx */
   engineStopped: {
-    title: 'The downloader stopped',
-    noReason: "It couldn't be started again.",
+    title: '다운로더가 중지되었습니다',
+    noReason: "다시 시작하지 못했습니다.",
   },
 } as const;
 
@@ -470,35 +470,35 @@ export const streamSheet = {
 export const onboarding = {
   welcome: {
     title: 'Maglev',
-    body: 'Torrents, web links and videos in one place.',
-    detail: 'Search many sources at once, find videos in the browser, and follow feeds for new releases.',
+    body: '토렌트, 웹 링크, 동영상을 한곳에서 관리하세요.',
+    detail: '여러 사이트를 동시에 검색하고, 브라우저에서 동영상을 찾고, 피드로 새 항목을 받아보세요.',
   },
   notifications: {
-    title: 'Know when it is done',
-    body: 'Maglev tells you when a download finishes, and shows progress while it runs in the background.',
+    title: '다운로드 완료 알림',
+    body: '다운로드가 완료되면 알려 드리고 백그라운드에서도 진행 상황을 표시합니다.',
   },
   folder: {
-    title: 'Download folder',
-    body: 'Finished files are saved here. You can change it later in Settings.',
+    title: '다운로드 폴더',
+    body: '완료된 파일이 여기에 저장됩니다. 설정에서 변경할 수 있습니다.',
   },
   background: {
-    title: 'Keep running',
-    body: 'Android may stop downloads to save battery. Allow Maglev to keep running?',
+    title: '백그라운드 실행 유지',
+    body: '배터리 절약을 위해 Android가 다운로드를 중단할 수 있습니다. Maglev의 실행을 허용할까요?',
   },
   mobileData: {
-    title: 'Download on mobile data?',
-    body: 'Large downloads can use a lot of your data plan.',
+    title: '모바일 데이터로 다운로드할까요?',
+    body: '대용량 다운로드는 데이터 요금이 많이 발생할 수 있습니다.',
   },
 };
 /** The + button's menu (components/add/AddMenuSheet.tsx). */
 export const addMenu = {
-  title: 'Add',
-  magnet: 'Magnet link',
-  copyFirst: 'Copy a link first',
-  typeHint: 'Enter a web link or magnet link',
-  fileHint: 'Pick one from your phone',
-  searchHint: 'Look in your sources',
-  browseHint: 'Find a file or video on a web page',
+  title: '추가',
+  magnet: '마그넷 링크',
+  copyFirst: '먼저 링크를 복사하세요',
+  typeHint: '웹 링크 또는 마그넷 링크를 입력하세요',
+  fileHint: '휴대전화에서 파일을 선택하세요',
+  searchHint: '검색 사이트에서 찾아보세요',
+  browseHint: '웹페이지에서 파일이나 동영상을 찾으세요',
 } as const;
 
 // ---------------------------------------------------------------------------------------------
@@ -520,14 +520,14 @@ export function mobileDataLine(onMetered: boolean, wifiOnly: boolean, sizeBytes:
  * banner body: at most 16 words, ends with a period. The sample is a made-up file shown in each style.
  */
 export const fontStyleCopy = {
-  label: 'Font',
-  hint: 'Applies as soon as you pick it.',
-  sampleName: 'Big Buck Bunny 1080p',
+  label: '글꼴',
+  hint: '선택하면 바로 적용됩니다.',
+  sampleName: '빅 벅 버니 1080p',
   sampleSize: '691 MB',
   options: [
-    { value: 'clean', title: 'Clean', description: 'Easy to read. Inter for titles, names and numbers.' },
-    { value: 'retro', title: 'Retro', description: 'Pixel titles and fixed-width numbers, like an old terminal.' },
-    { value: 'mono', title: 'Mono', description: 'Fixed-width titles, names and numbers. Labels and text stay easy to read.' },
+    { value: 'clean', title: '깔끔하게', description: '읽기 쉬운 글꼴입니다. 제목, 이름, 숫자에 Inter를 사용합니다.' },
+    { value: 'retro', title: '레트로', description: '옛 터미널처럼 픽셀 제목과 고정폭 숫자를 사용합니다.' },
+    { value: 'mono', title: '고정폭', description: '제목, 이름, 숫자를 고정폭으로 표시합니다. 설명과 본문은 읽기 쉽게 유지됩니다.' },
   ],
 } as const;
 
@@ -550,24 +550,24 @@ export const tabsCopy = {
 
 /** Settings > Appearance > App icon. The hint is linted like a banner body: at most 16 words, ends with a period. */
 export const appIconCopy = {
-  label: 'App icon',
-  hint: 'Changes when you leave Maglev. Your home screen may take a moment to update.',
+  label: '앱 아이콘',
+  hint: 'Maglev를 나가면 변경됩니다. 홈 화면에 반영되기까지 잠시 걸릴 수 있습니다.',
   /** "Teal app icon, selected" */
   a11y: (name: string, selected: boolean) => `${name} app icon${selected ? ', selected' : ''}`,
 } as const;
 
 /** The screen shown when a screen crashes, and the crash log row in Settings > About. */
 export const errorScreenCopy = {
-  title: 'Something went wrong',
-  body: 'Maglev hit a problem on this screen. Reload to try again.',
-  reload: 'Reload',
-  copy: 'Copy crash report',
-  copied: 'Report copied',
+  title: '문제가 발생했습니다',
+  body: '이 화면에서 오류가 발생했습니다. 다시 불러와 시도하세요.',
+  reload: '다시 불러오기',
+  copy: '충돌 보고서 복사',
+  copied: '보고서를 복사했습니다',
   copyFailed: 'Couldn\'t copy the report',
   about: {
-    title: 'Crash report',
-    subtitle: 'Saved on this phone only. Nothing is sent.',
-    clear: 'Clear crash log',
+    title: '충돌 보고서',
+    subtitle: '이 휴대전화에만 저장되며 외부로 전송되지 않습니다.',
+    clear: '충돌 기록 지우기',
   },
 } as const;
 
@@ -575,13 +575,13 @@ export const errorScreenCopy = {
 // play (0.19: Play while downloading; docs/contracts-0.19/play-and-storage.md section 1)
 // ---------------------------------------------------------------------------------------------
 export const playCopy = {
-  label: 'Play',
+  label: '재생',
   a11y: (name: string) => `Play ${name}`,
-  needsResume: 'Resume the download first.',
-  storageFull: 'Phone storage is full. Free up space to keep downloading.',
-  noFile: "There's nothing to play in this torrent yet.",
-  failed: "Couldn't start playing.",
-  resumedToPlay: 'Resumed so it can play.',
+  needsResume: '먼저 다운로드를 재개하세요.',
+  storageFull: '휴대전화 저장 공간이 부족합니다. 공간을 확보해야 다운로드를 계속할 수 있습니다.',
+  noFile: "이 토렌트에는 아직 재생할 파일이 없습니다.",
+  failed: "재생을 시작하지 못했습니다.",
+  resumedToPlay: '재생할 수 있도록 다운로드를 재개했습니다.',
 } as const;
 
 // ---------------------------------------------------------------------------------------------
@@ -589,67 +589,67 @@ export const playCopy = {
 // ---------------------------------------------------------------------------------------------
 export const storageCopy = {
   /** Same words as the notification: StorageGuard.PAUSED_TITLE / PAUSED_TEXT. */
-  pausedTitle: 'Paused: phone storage is almost full',
-  freeUp: 'Free up space',
-  screenTitle: 'Free up space',
-  freeLabel: 'Free now',
-  reserveLabel: 'Kept free for your phone',
+  pausedTitle: '일시 정지됨: 휴대전화 저장 공간이 거의 없습니다',
+  freeUp: '공간 확보',
+  screenTitle: '공간 확보',
+  freeLabel: '현재 여유 공간',
+  reserveLabel: '휴대전화용으로 남겨 둔 공간',
   unknown: '—',
-  listTitle: 'Finished downloads, largest first',
-  emptyTitle: 'Nothing finished to remove',
-  emptyBody: 'Finished torrents and downloads show up here, largest first.',
-  removeAction: 'Remove and delete files',
+  listTitle: '완료된 다운로드 · 큰 파일순',
+  emptyTitle: '삭제할 완료 항목이 없습니다',
+  emptyBody: '완료된 토렌트와 다운로드가 큰 파일순으로 표시됩니다.',
+  removeAction: '항목 및 파일 삭제',
   removeSelected: (n: number) => `Remove and delete ${n} ${n === 1 ? 'item' : 'items'}`,
-  confirmTitle: 'Delete files from your phone?',
+  confirmTitle: '휴대전화에서 파일을 삭제할까요?',
   confirmBody: (count: number, size: string) =>
     `This removes ${count} ${count === 1 ? 'item' : 'items'} and deletes ${size} from your phone. There is no undo.`,
   removed: (count: number) => `Removed ${count} ${count === 1 ? 'item' : 'items'}.`,
   removeFailed: "Couldn't remove everything. Try again.",
-  selectNone: 'Select none',
-  selectAll: 'Select all',
+  selectNone: '선택 해제',
+  selectAll: '모두 선택',
 } as const;
 
 // ---- backup (Settings > Backup and restore) ----
 export const backupCopy = {
-  title: 'Backup and restore',
-  export: { title: 'Export backup', subtitle: 'Save your settings, bookmarks and lists to one file.' },
-  restore: { title: 'Restore from backup', subtitle: 'Pick a backup file from this phone.' },
-  includeStats: { title: 'Include stats', restore: 'Stats', note: 'Stats include the names of what you downloaded.' },
+  title: '백업 및 복원',
+  export: { title: '백업 내보내기', subtitle: '설정, 북마크, 목록을 하나의 파일로 저장합니다.' },
+  restore: { title: '백업에서 복원', subtitle: '이 휴대전화에서 백업 파일을 선택하세요.' },
+  includeStats: { title: '통계 포함', restore: 'Stats', note: 'Stats include the names of what you downloaded.' },
   last: (when: string) => `Last backup ${when}`,
-  never: 'No backup yet',
-  secrets: 'Passwords, API keys and tokens are never saved in a backup.',
-  notIncluded: 'Downloaded files, browsing history, chat history and the crash log are not included.',
+  never: '백업이 없습니다',
+  secrets: '비밀번호, API 키, 토큰은 백업에 포함되지 않습니다.',
+  notIncluded: '다운로드 파일, 방문 기록, 대화 기록, 충돌 로그는 포함되지 않습니다.',
   exportDone: (name: string) => `Saved ${name}`,
-  exportFailed: "Couldn't save the backup",
-  readFailed: "Couldn't read that file",
-  previewTitle: 'Restore this backup',
-  partsHeader: 'What to restore',
+  exportFailed: "백업을 저장하지 못했습니다",
+  readFailed: "파일을 읽지 못했습니다",
+  previewTitle: '이 백업 복원',
+  partsHeader: '복원할 항목',
   parts: {
     settings: 'Settings',
-    search: 'Search sources',
-    feeds: 'Feeds and rules',
-    schedule: 'Schedule',
-    assistant: 'Assistant',
-    torrents: 'Torrents',
-    downloads: 'Downloads',
+    search: '검색 사이트',
+    feeds: '피드 및 규칙',
+    schedule: '예약',
+    assistant: '도우미',
+    torrents: '토렌트',
+    downloads: '다운로드',
   },
-  torrentsNote: 'Torrents and downloads are added paused. Files are not in the backup, so Maglev checks the saved folder first.',
+  torrentsNote: '토렌트와 다운로드는 일시 정지 상태로 추가됩니다. 파일은 백업에 포함되지 않으므로 먼저 저장 폴더를 확인합니다.',
   settingsConfirm: {
-    title: 'Replace your settings?',
-    body: 'The settings in this backup replace the ones on this phone. Bookmarks are added to yours.',
-    action: 'Replace and restore',
+    title: '설정을 교체할까요?',
+    body: '백업의 설정으로 이 휴대전화의 설정을 교체합니다. 북마크는 기존 항목에 추가됩니다.',
+    action: '교체 및 복원',
   },
   restoreAction: 'Restore',
-  restoring: 'Restoring',
-  doneTitle: 'Restore finished',
+  restoring: '복원 중',
+  doneTitle: '복원이 완료되었습니다',
   added: (n: number) => `${n} added`,
   skipped: (n: number) => `${n} already here, skipped`,
   failed: (n: number) => `${n} couldn't be added`,
   defaultFolder: (n: number) => `${n} saved to the default folder, because the old folder isn't on this phone`,
-  restartNote: 'Some changes show after you restart Maglev.',
-  startAll: 'Start all',
+  restartNote: '일부 변경 사항은 Maglev를 다시 시작한 뒤 적용됩니다.',
+  startAll: '모두 시작',
   started: (n: number) => `Started ${n}`,
-  done: 'Done',
+  done: '완료',
 } as const;
 
 // region quick share
@@ -684,19 +684,19 @@ export const quickShareCopy = {
 // region watch
 /** Watch for a title (docs/contracts-0.19/watch.md). Screens: Settings > Watches, the Watch button on Search. */
 export const watchCopy = {
-  title: 'Watches',
-  rowTitle: 'Watches',
+  title: '관심 항목',
+  rowTitle: '관심 항목',
   rowValue: (n: number) => (n === 0 ? 'None' : n === 1 ? '1 title' : `${n} titles`),
-  intro: 'Maglev checks for new copies of a title in the background and tells you when one shows up.',
-  empty: 'You are not watching anything yet. Search for a title and tap Watch.',
-  watchButton: 'Watch',
-  watchHint: 'Watch this search',
+  intro: 'Maglev가 백그라운드에서 새 영상이나 파일을 확인하고 발견하면 알려 드립니다.',
+  empty: '아직 관심 항목이 없습니다. 제목을 검색하고 관심 등록을 누르세요.',
+  watchButton: '관심 등록',
+  watchHint: '이 검색을 관심 등록',
   watching: (q: string) => `Watching "${q}"`,
-  watchingBody: 'You will get a notification when a new copy shows up. Change it in Settings, Watches.',
-  capNotice: 'You can watch up to 20 titles. Delete one first.',
-  alreadyNotice: 'You are already watching that.',
-  mobileData: 'Use mobile data',
-  mobileDataHint: 'Off means Wi-Fi only.',
+  watchingBody: '새 항목이 발견되면 알림을 받습니다. 설정의 관심 항목에서 변경할 수 있습니다.',
+  capNotice: '최대 20개까지 관심 등록할 수 있습니다. 먼저 하나를 삭제하세요.',
+  alreadyNotice: '이미 관심 등록한 항목입니다.',
+  mobileData: '모바일 데이터 사용',
+  mobileDataHint: '끄면 Wi-Fi에서만 확인합니다.',
   pause: 'Pause',
   resume: 'Resume',
   paused: 'Paused',
@@ -704,7 +704,7 @@ export const watchCopy = {
   deleteTitle: 'Delete this watch?',
   deleteBody: 'You will stop getting notifications for it.',
   lastNew: (name: string) => `Last new: ${name}`,
-  noneNew: 'Nothing new yet',
+  noneNew: '새 항목이 없습니다',
   every: 'Check every',
   backgroundNote: 'Android decides the exact time, so a check can come later than you chose. It does not run after you force-stop Maglev, until you open it again.',
 } as const;
@@ -739,7 +739,7 @@ export const updateCopy = {
     retry: 'Try again',
     allowInstalls: 'Allow installs',
     downloading: 'Downloading',
-    waitingForWifi: 'Waiting for Wi-Fi',
+    waitingForWifi: 'Wi-Fi 연결 대기 중',
     installing: 'Installing',
     confirm: 'Confirm on the screen Android shows.',
     ready: (version: string) => `Maglev ${version} is ready`,
