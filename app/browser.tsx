@@ -1131,11 +1131,11 @@ export default function BrowserScreen({ inTab = false }: { inTab?: boolean }) {
           <>
             <Button label="MPMux 사용 안내" variant="secondary" fullWidth onPress={() => {
               setMpmuxHelp(null);
-              void Linking.openURL('https://mpmux.com/ko').catch(() => showNotice({ message: 'MPMux 안내 페이지를 열지 못했습니다.' }));
+              void Linking.openURL('https://mpmux.com/ko').catch(() => showNotice({ message: notices.browser.mpmuxGuideOpenFailed }));
             }} />
             <Button label="Chrome 확장 프로그램" variant="secondary" fullWidth onPress={() => {
               setMpmuxHelp(null);
-              void Linking.openURL('https://chromewebstore.google.com/detail/video-downloader-mpmux/mbflpfaamifmmmkdjkcmpofpccfmlmap').catch(() => showNotice({ message: 'Chrome 확장 프로그램 페이지를 열지 못했습니다.' }));
+              void Linking.openURL('https://chromewebstore.google.com/detail/video-downloader-mpmux/mbflpfaamifmmmkdjkcmpofpccfmlmap').catch(() => showNotice({ message: notices.browser.mpmuxExtensionOpenFailed }));
             }} />
             <Button label="닫기" variant="ghost" fullWidth onPress={() => setMpmuxHelp(null)} />
           </>

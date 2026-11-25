@@ -102,6 +102,8 @@ export const notices = {
     permission: '카메라, 마이크 또는 위치 권한 요청을 차단했습니다.',
     drm: 'DRM 보호 영상은 저장할 수 없습니다.',
     blob: '이 플레이어의 스트림은 직접 저장할 수 없습니다.',
+    mpmuxGuideOpenFailed: 'MPMux 안내를 열지 못했습니다.',
+    mpmuxExtensionOpenFailed: 'MPMux 확장 프로그램 안내를 열지 못했습니다.',
     linkCopied: '링크를 복사했습니다.',
     linkCopyFailed: '링크를 복사하지 못했습니다.',
     addedToTransfers: '다운로드 목록에 추가했습니다.',
