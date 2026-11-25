@@ -25,10 +25,16 @@ object YouTubeUrl {
         "youtube-nocookie.com", "www.youtube-nocookie.com", "youtu.be",
     )
 
+    private fun normalize(raw: String): String {
+        val value = raw.trim()
+        val hostOnly = Regex("^(?:(?:www|m|music)\\.)?(?:youtube\\.com|youtu\\.be|youtube-nocookie\\.com)/", RegexOption.IGNORE_CASE)
+        return if (!value.contains("://") && hostOnly.containsMatchIn(value)) "https://$value" else value
+    }
+
     /** Parse known URL forms; null for non-YouTube URLs, malformed URLs, or playlist-only URLs. */
     fun parse(raw: String?): VideoLink? {
         if (raw.isNullOrBlank() || raw.length > 4096) return null
-        val uri = try { URI(raw.trim()) } catch (_: Exception) { return null }
+        val uri = try { URI(normalize(raw)) } catch (_: Exception) { return null }
         if (!uri.scheme.equals("https", true) && !uri.scheme.equals("http", true)) return null
         val host = uri.host?.lowercase()?.removePrefix("www.") ?: return null
         if (host !in hosts.map { it.removePrefix("www.") }.toSet()) return null
@@ -47,7 +53,7 @@ object YouTubeUrl {
 
     fun isYouTubeHost(raw: String?): Boolean {
         if (raw.isNullOrBlank()) return false
-        val uri = try { URI(raw.trim()) } catch (_: Exception) { return false }
+        val uri = try { URI(normalize(raw)) } catch (_: Exception) { return false }
         if (!uri.scheme.equals("https", true) && !uri.scheme.equals("http", true)) return false
         val host = uri.host?.lowercase() ?: return false
         return host in hosts
