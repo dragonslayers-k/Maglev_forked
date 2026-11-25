@@ -59,6 +59,11 @@ async function main() {
   assert.ok(nativeModuleSource.includes('cause=${root.javaClass.name}'), 'native IO failures must expose the root cause type');
   assert.ok(nativeModuleSource.includes('root.message ?: root.javaClass.simpleName'), 'native IO failures must not collapse to generic Engine call failed');
   assert.ok(nativeModuleSource.includes('Regex("""https?://[^\\s]+""", RegexOption.IGNORE_CASE)'), 'native diagnostics must redact complete URLs including query tokens');
+  const screen = fs.readFileSync(path.join(root, 'app/youtube-download.tsx'), 'utf8');
+  assert.ok(screen.includes('maglevEngine.getYouTubeInfo'), 'YouTube screen must use the existing native extractor');
+  assert.ok(screen.includes('maglevEngine.addYouTubeDownload'), 'selected formats must enter the shared native transfer queue');
+  assert.ok(screen.includes('format.playerClient'), 'the selected extractor client must be preserved');
+  assert.ok(!screen.includes('ytdlpEngine.download'), 'screen must not create a second standalone download queue');
   console.log('test-youtube-intents: all assertions passed');
 }
 main().catch((e) => { console.error(e); process.exit(1); });
