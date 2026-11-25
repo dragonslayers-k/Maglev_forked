@@ -469,3 +469,15 @@ This section supplements the original 2026-11-25 Claude analysis with a current 
 ### Architecture decision after this source check
 - Keep youtubedl-android as a candidate engine integration, but G1 must validate whether its bundled Python 3.8/lazy yt-dlp package satisfies current YouTube requirements. If not, evaluate (a) upstream-compatible runtime/package upgrade path, (b) YTDLnis-style managed Python/JS/runtime packages, or (c) a different maintained Android embedding. Decision requires a reproducible device spike, APK size measurement, 16 KB ABI validation, and update/rollback strategy.
 - YouTube acceptance explicitly includes yt-dlp-ejs/JS runtime and PO Token behavior. “getInfo works for a public URL” is not enough to claim current YouTube compatibility.
+
+
+## Appendix F. CI run #148 재검증 및 작업 재개 기록 — 2026-11-25
+
+- GitHub Actions run **#148**: [45625614864](https://github.com/dragonslayers-k/Maglev_forked/actions/runs/45625614864), commit `1dea9d0af7a5534ab1b837572394747256f57894`, 완료 / success.
+- Run #147 ([45625278310](https://github.com/dragonslayers-k/Maglev_forked/actions/runs/45625278310))는 새 실행에 의해 취소된 이전 작업이며 실패로 계산하지 않는다.
+- #148 성공 작업: Rust tests, Contract tests, JS checks/typecheck, ARM64 Rust build 및 16 KB alignment, APK build/signature/versionCode checks, Kotlin unit tests.
+- #148은 PR #1에 대한 CI run이며 **PR 번호가 아니다**. 현재 PR은 Draft PR #1, feature branch head는 위 SHA이다.
+- CI 성공은 코드/빌드 검증이다. Galaxy 실기기에서 yt-dlp 초기화, 공개 영상 metadata/formats, 실제 다운로드·재생을 확인한 증거는 없다. 이 APK는 기능 승인/최종 배포본이 아니다.
+- G0 재점검: 현재 YouTube adapter `YoutubeDownload.kt`가 여전히 `modules/maglev-engine` 안에 있고 해당 모듈 Gradle이 `youtubedl-android:library:0.18.1`에 직접 의존한다. 목표 독립 `modules/ytdlp-engine` 구조와 불일치한다. 기존 add flow가 내부 `EngineHost`에 연결돼 있으므로 분리 시 transfer handoff/공통 목록 contract를 함께 설계해야 한다.
+- G1 상태: cold-start engine wait와 native exception/root-cause 진단 개선은 코드에 반영됐지만 실기기 테스트는 미수행이므로 `IN_PROGRESS` 유지.
+- 재개 순서: (1) G0 transfer/native contract audit → (2) G1 Galaxy init/version/getInfo/format smoke evidence → (3) G2 standalone module download/cancel/progress/update → (4) G3 shared Transfers persistence/foreground/background/restart → (5) G4 share/paste routing → (6) G5 app-wide Korean → (7) G6 LJ gap audit/implementation → (8) G7 parity → (9) G8 regression/release QA. Gate failure must be fixed before advancing.
