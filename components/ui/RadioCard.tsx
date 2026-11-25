@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { ThemeColors, radius, spacing, touch, type } from '../../constants/theme';
+import { koUiText } from '../../constants/korean';
 import { PixelIcon, PixelIconName } from '../PixelIcon';
 import { PressableScale } from './PressableScale';
 
@@ -46,7 +47,7 @@ export function RadioCard({
       testID={testID}
       scaleTo={0.99}
       accessibilityRole="radio"
-      accessibilityLabel={accessibilityLabel ?? title}
+      accessibilityLabel={koUiText(accessibilityLabel ?? title)}
       accessibilityState={{ checked: selected, selected }}
       style={[styles.card, dashed && styles.dashed, selected && styles.selected]}
     >
@@ -55,10 +56,10 @@ export function RadioCard({
       </View>
       <View style={[styles.main, dashed && !selected && styles.faded]}>
         <View style={styles.titleRow}>
-          <Text style={styles.title}>{title}</Text>
+          <Text style={styles.title}>{koUiText(title)}</Text>
           {titleAccessory}
         </View>
-        <Text style={styles.desc}>{description}</Text>
+        <Text style={styles.desc}>{typeof description === 'string' ? koUiText(description) : description}</Text>
       </View>
       <View style={[styles.radio, selected && styles.radioOn]}>{selected ? <View style={styles.dot} /> : null}</View>
     </PressableScale>
