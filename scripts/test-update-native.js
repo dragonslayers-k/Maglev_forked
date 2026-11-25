@@ -75,7 +75,7 @@ check('cleanup deletes everything but the pending file', /fun cleanup\(context: 
 console.log('\n[verify before every install]');
 const verify = body(upd, /fun verify\(/);
 check('SHA-256 of the file equals the expected one', /sha256Hex\(file\) != sha256\.lowercase\(\)/.test(verify) && /MessageDigest\.getInstance\("SHA-256"\)/.test(upd));
-check('package name is com.maglev', /PACKAGE = "com\.maglev"/.test(upd) && /archive\.packageName != PACKAGE/.test(verify));
+check('package name is com.maglev.plus', /PACKAGE = "com\.maglev\.plus"/.test(upd) && /archive\.packageName != PACKAGE/.test(verify));
 check('versionCode is greater than the installed one', /versionOf\(archive\) <= versionOf\(installed\)/.test(verify) && /longVersionCode/.test(upd));
 check('signers equal the installed app (SHA-256 sets of apkContentsSigners)', /apkContentsSigners/.test(upd) && /a != own/.test(verify) && /own = signers\(installed\)/.test(verify) && /a\.isEmpty\(\)/.test(verify));
 check('a rotated key is accepted when signingCertificateHistory holds the installed signer (API 28+ guard)', /signingCertificateHistory/.test(upd) && /SDK_INT < Build\.VERSION_CODES\.P\) return emptySet\(\)/.test(upd) && /own\.intersect\(signerHistory\(archive\)\)\.isEmpty\(\)/.test(verify));
