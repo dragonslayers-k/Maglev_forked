@@ -430,3 +430,18 @@ The user-provided Claude analysis document is preserved conceptually in this int
 - Cookie file: `--cookies <file>`
 
 Options must be built as typed argument arrays, not shell-string concatenation. Confirm option availability and compatibility with the packaged yt-dlp version before exposing them in UI.
+
+
+## Appendix C. 직접 확보한 LJ APK 바이너리 증거 — 2026-11-25 추가
+
+현재 대화의 업로드 파일에서 LJ XAPK를 실제 확인했다.
+- XAPK: `Lj+Video+Downloader+(m3u8,mp4)_1.1.79_APKPure (1).xapk`
+- XAPK 내부 base APK: `com.leavjenn.m3u8downloader.apk` (12,069,682 bytes)
+- base APK SHA-256: `f65a847504c8e9587c9f173bb5b23125de8563770aaf28897a4c0ef143ab047b`
+- XAPK 내부 split: `config.armeabi_v7a.apk` (18,638,168 bytes), `config.en.apk` (65,945 bytes), `config.xhdpi.apk` (80,196 bytes)
+- base APK archive inventory: `classes.dex`, `classes2.dex`, `classes3.dex`; HtmlUnit resource tree present; base APK archive에 `lib/` native library directory는 발견되지 않음.
+- XAPK base APK를 ZIP 구조로 열고 파일 목록·크기·SHA-256을 확인했다. 현재 실행환경에는 jadx/apktool이 없어 manifest binary decode 및 DEX method-level decompilation은 아직 수행하지 않았다. 따라서 위 직접 확인은 파일/패키지 구성 수준이며, 4장 LJ 동작 설명은 Claude 분석자료 기반으로 유지한다.
+
+### Appendix D. YTDLnis APK/source evidence
+
+YTDLnis Android source reference: https://github.com/deniscerri/ytdlnis ; package ecosystem: https://github.com/deniscerri/ytdlnis-packages/ . This conversation's mounted uploads did not include a YTDLnis APK binary, so its APK manifest/DEX/native-library inventory and SHA-256 are not yet independently inspected. The current engine integration design relies on the separately referenced youtubedl-android source, not on copying the YTDLnis APK binary. If a YTDLnis APK is later supplied, record package/version/hash and inspect manifest, service/receiver/intent, runtime package manager, Python/JS/FFmpeg/aria2 assets, downloader command construction, and storage/notification flow before changing this document.
