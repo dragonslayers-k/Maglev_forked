@@ -10,6 +10,8 @@ async function main() {
   const canonical = 'https://www.youtube.com/watch?v=' + id;
   const cases = [
     ['full watch URL', canonical],
+    ['non-www watch URL', 'https://youtube.com/watch?v=' + id],
+    ['www host without scheme', 'www.youtube.com/watch?v=' + id],
     ['short URL', 'https://youtu.be/' + id],
     ['shorts URL', 'https://youtube.com/shorts/' + id],
     ['live URL', 'https://m.youtube.com/live/' + id],
