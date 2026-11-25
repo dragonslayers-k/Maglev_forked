@@ -24,7 +24,7 @@ check('the overlay lets touches through to the page', /styles\.overlay\} pointer
 check('the overlay sits inside the body, above the web view', scr.indexOf('<TabWebView') < scr.indexOf('styles.overlay}') && scr.indexOf('styles.overlay}') < scr.indexOf('<FoundTray'));
 check('Korean files label and accessibility label', /label=\{`파일 · \$\{found\.length\}`\}/.test(scr) && /accessibilityLabel=\{`감지된 파일 \$\{found\.length\}개`\}/.test(scr));
 check('the blocked count is not an overlay pill', !/blockedPill/.test(scr));
-check('the blocked count shows in the This page menu, on the ads row', /subtitle=\{allowedHere \? [^}]*blocked > 0 \? `\$\{blocked\} blocked on this page`/.test(scr));
+check('the blocked count shows in Korean on the This page menu ads row', /subtitle=\{allowedHere \? [^}]*blocked > 0 \? `\$\{blocked\}개 차단/.test(scr));
 check('the downloading chip keeps its accessibility label', /foundTray\.downloadingLabel\(activeLabel\(active\)\)/.test(scr));
 const pills = ['overlay', 'activeChip'].map((k) => styleBlock(scr, k)).join('');
 check('the pills have a card background and a hairline border', /backgroundColor: c\.surface/.test(styleBlock(scr, 'activeChip')) && /borderWidth: 1/.test(pills));
