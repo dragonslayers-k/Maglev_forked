@@ -80,12 +80,12 @@ async function main() {
   console.log('summary copy');
   const copy = await import('../constants/copy.ts');
   const s = copy.notices.browser.batchDone;
-  check('all added', s(7, 0, 0) === 'Added 7.');
-  check('some failed', s(7, 0, 1) === 'Added 7. 1 failed.');
-  check('some already there', s(3, 2, 0) === 'Added 3. 2 already in Transfers.');
-  check('everything failed', s(0, 0, 2) === "Couldn't add 2 files.");
-  check('nothing new, all duplicates', s(0, 2, 0) === '2 already in Transfers.');
-  check('one failed says file, not files', s(0, 0, 1) === "Couldn't add 1 file.");
+  check('all added', s(7, 0, 0) === '7개 추가.');
+  check('some failed', s(7, 0, 1) === '7개 추가 · 실패 1개.');
+  check('some already there', s(3, 2, 0) === '3개 추가 · 이미 목록에 있는 파일 2개.');
+  check('everything failed', s(0, 0, 2) === '파일 2개를 추가하지 못했습니다.');
+  check('nothing new, all duplicates', s(0, 2, 0) === '이미 목록에 있는 파일 2개.');
+  check('one failed says file, not files', s(0, 0, 1) === '파일 1개를 추가하지 못했습니다.');
 
   console.log('wiring');
   const tray = read('components/browser/FoundTray.tsx');
