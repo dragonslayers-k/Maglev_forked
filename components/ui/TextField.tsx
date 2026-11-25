@@ -2,6 +2,7 @@ import React, { forwardRef, useCallback, useImperativeHandle, useMemo, useRef, u
 import { StyleSheet, Text, TextInput, TextInputProps, View } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { ThemeColors, radius, spacing, touch, type } from '../../constants/theme';
+import { koUiText } from '../../constants/korean';
 import { PixelIcon, PixelIconName } from '../PixelIcon';
 import { IconButton } from './IconButton';
 
