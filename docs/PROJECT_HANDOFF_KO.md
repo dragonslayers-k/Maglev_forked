@@ -129,3 +129,18 @@ YTDLnis의 동작을 참고하되 YTDLnis 앱의 소스/브랜드/전용 UI를 �
 - APK assemble 성공과 Kotlin unit test 성공을 별도로 보고합니다.
 - 실행 중인 GitHub Actions 로그를 확인할 때 대량 로그 전체를 출력하지 말고 실패 구간만 추출합니다.
 - 사용자가 새 대화에서 이 문서를 주면 이 문서와 현재 GitHub 상태를 함께 확인하고 이어서 진행합니다.
+
+
+## 10. 2026-11-25 CI 검증 결과 / 다음 세션 기준
+
+- Latest verified workflow: [#45580170442](https://github.com/dragonslayers-k/Maglev_forked/actions/runs/45580170442)
+- Result: **SUCCESS**, 7 jobs: Contract tests, ABI plan, Rust tests, JS/typecheck/tests, arm64 Rust build, Build APK all passed; PR APK reuse was skipped as expected.
+- Run SHA and feature branch HEAD matched: `26759a694852c7ec7d6707a4b21e4647818ad0dd`. Do not report older cancelled runs as current failures; they were superseded by this successful run.
+- Release APK artifact `apks` was produced (arm64 and universal). Signing verification and versionCode verification steps passed in the workflow; Kotlin unit tests passed.
+- APK archive integrity checked locally. 30 arm64 shared libraries in each APK were inspected; no ELF PT_LOAD alignment below 16 KiB was found. Local `apksigner` was unavailable, so independent local signature verification was not performed; rely only on the successful CI signing step.
+- CI artifact ZIP SHA-256: `ebb3e5b80520bc41af9c55cb7b31c6c2462ad7dc3853bbd4c3a0d4bb835715af`.
+- arm64 APK SHA-256: `1774032323e2a74b8e55fb72467011189e26a1d140a6419eb30a14778452fa0f`.
+- universal APK SHA-256: `8308642e248969d71cf5e6e5b14d962731bddbf9fd7994daa4c85c09fa8b6990`.
+- PR #1 remains **Draft** to `dev`; not merged/released. APK is a CI test artifact, not final public release.
+- The ChatGPT monthly-review automation was created unintentionally and then **disabled**. It must not be re-enabled without explicit user approval. The repository workflow `.github/workflows/monthly-upstream-review.yml` is a separate GitHub Action and may create a review issue; disclose its schedule and side effects before changing it.
+- Next: check remaining Korean localization by screen coverage (not only strings already translated), add missing coverage and tests; review media detection behavior; audit YouTube share/extraction for authorized content use only and limitations (muxed formats only, no separate DASH merge); update test checklist; then run CI on final HEAD and test on Galaxy. Do not mark complete without real-device verification.
