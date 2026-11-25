@@ -113,11 +113,11 @@ export default function YouTubeDownloadScreen() {
 function makeStyles(c: ThemeColors) {
   return StyleSheet.create({
     content: { padding: spacing.lg, gap: spacing.md },
-    title: { color: c.text, fontSize: type.size.xl, fontWeight: '700' },
-    heading: { color: c.text, fontSize: type.size.base, fontWeight: '700', marginBottom: spacing.sm },
-    muted: { color: c.textMuted, fontSize: type.size.base },
-    error: { color: c.danger, fontSize: type.size.base },
-    note: { color: c.textMuted, fontSize: type.size.sm, lineHeight: 18 },
+    title: { ...type.heading, color: c.text, fontSize: type.size.xl },
+    heading: { ...type.bodyStrong, color: c.text, fontSize: type.size.base, marginBottom: spacing.sm },
+    muted: { ...type.body, color: c.textMuted, fontSize: type.size.base },
+    error: { ...type.body, color: c.danger, fontSize: type.size.base },
+    note: { ...type.body, color: c.textMuted, fontSize: type.size.sm, lineHeight: 18 },
     section: { gap: spacing.sm },
   });
 }
