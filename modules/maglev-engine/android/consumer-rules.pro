@@ -16,3 +16,7 @@
 -keepclassmembers class * {
     @com.google.gson.annotations.SerializedName <fields>;
 }
+
+# Apache Commons Compress is used while yt-dlp Android extracts its bundled runtime.
+# Release R8 must not turn ZIP extra-field classes into abstract/interface-shaped types.
+-keep class org.apache.commons.compress.** { *; }
