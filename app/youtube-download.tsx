@@ -63,10 +63,12 @@ export default function YouTubeDownloadScreen() {
     setError(null);
     try {
       const result = await maglevEngine.addYouTubeDownload(url, format.formatId);
-      if (result.ok && result.id) {
+      if (!result.ok) {
+        setError(result.message);
+      } else if (result.id) {
         router.replace({ pathname: '/download/[id]', params: { id: result.id } });
       } else {
-        setError(result.message || '다운로드를 시작하지 못했습니다.');
+        setError('다운로드 작업을 만들지 못했습니다.');
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : '다운로드를 시작하지 못했습니다.');
@@ -114,7 +116,7 @@ function makeStyles(c: ThemeColors) {
     title: { color: c.text, fontSize: type.size.xl, fontWeight: '700' },
     heading: { color: c.text, fontSize: type.size.base, fontWeight: '700', marginBottom: spacing.sm },
     muted: { color: c.textMuted, fontSize: type.size.base },
-    error: { color: c.danger, fontSize: type.body },
+    error: { color: c.danger, fontSize: type.size.base },
     note: { color: c.textMuted, fontSize: type.size.sm, lineHeight: 18 },
     section: { gap: spacing.sm },
   });
