@@ -94,7 +94,7 @@
 - [Galaxy 실기기 검증 계획](docs/GALAXY_TEST_PLAN_KO.md)
 - [개발 로드맵](docs/ROADMAP.md)
 - [원본 Maglev 월간 업데이트 정책](docs/UPSTREAM_SYNC_POLICY_KO.md)
-- [MPMux 기능 벤치마크 및 Maglev 이식 설계](docs/MPMUX_BENCHMARK_INTEGRATION_KO.md)
+- [MPMux 기능 벤치마크 및 Maglev 이식 설계](docs/MPMUX_BENCHMARK_INTEGRATION_KO.md)\n- [기능 보존·다중 엔진 통합·보호 미디어 처리 기준](docs/FEATURE_PRESERVATION_AND_PROTECTED_MEDIA_KO.md)
 - [통합 개발 기준 및 현재 검증 게이트](docs/INTEGRATED_PRODUCT_PLAN_KO.md)
 
 ## 라이선스와 출처

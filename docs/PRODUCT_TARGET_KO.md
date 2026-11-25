@@ -112,3 +112,11 @@ Detector (browser/network observation), extractor (yt-dlp), protocol download (H
 - 기존 YouTube adapter가 YouTube URL만 받아 일반 yt-dlp 사이트를 분석하지 못했던 점, NOT_A_FILE 화면과 브라우저 메뉴에 일반 yt-dlp 진입점이 없던 점, separate audio track ID 미전달을 수정 대상으로 명시합니다.
 - 새 변경의 목표는 기존 Maglev Transfers 큐에 일반 HTTP(S) 페이지의 명시적 yt-dlp 분석을 추가하고, MPMux PC 대안 안내를 제공하는 것입니다. 변경 후 새 CI/Galaxy 검증 전에는 완료로 처리하지 않습니다.
 - Python 3.8/yt-dlp Python 3.11+ 호환성, yt-dlp-ejs/JS runtime, PO Token Provider, 실제 YouTube 및 일반 사이트 E2E는 여전히 미검증.
+
+
+## 2026-11-26 기능 보존 정책 보강
+- 원천별 기존 기능을 임의로 제거하지 않습니다. 중복은 공통 구현으로 통합하되, 대체 기능이 검증되기 전까지 기존 고유 기능은 유지하거나 명시적으로 BLOCKED/PLANNED 상태로 기록합니다.
+- MPMux Video Buffer Muxer는 화면 녹화가 아니라 MediaSource SourceBuffer 미디어 버퍼를 수집·재패키징하는 기능입니다. 비암호화 MSE capture와 HLS Live를 신규 개발 대상으로 유지합니다.
+- EME/DRM 보호 스트림은 감지·분류·오류 안내를 추가하되, Widevine/FairPlay 키/라이선스 추출·복호화·우회는 하지 않습니다. MSE buffer capture도 암호화된 미디어를 복호화하지 않습니다.
+- MediaProjection 화면 녹화는 별도 opt-in 기능으로 검토할 수 있지만 DRM/secure surface/HDCP 제한을 우회하는 기능으로 사용하지 않습니다.
+- 상세 기준: [기능 보존·다중 엔진 통합·보호 미디어 처리 기준](FEATURE_PRESERVATION_AND_PROTECTED_MEDIA_KO.md).
