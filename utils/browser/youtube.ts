@@ -2,7 +2,7 @@
 export type YouTubeLink = { videoId: string; playlistId?: string; startSeconds?: number; canonicalUrl: string };
 const VIDEO_ID = /^[A-Za-z0-9_-]{11}$/;
 const PLAYLIST_ID = /^[A-Za-z0-9_-]{10,80}$/;
-const HOSTS = new Set(['youtube.com','m.youtube.com','music.youtube.com','youtube-nocookie.com','www.youtube-nocookie.com','youtu.be']);
+const HOSTS = new Set(['youtube.com','www.youtube.com','m.youtube.com','music.youtube.com','youtube-nocookie.com','www.youtube-nocookie.com','youtu.be']);
 
 function parseTime(value: string | null): number | undefined {
   if (!value || value.length > 32) return;
