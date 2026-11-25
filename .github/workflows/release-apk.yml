@@ -1,6 +1,6 @@
 name: Build and Release Android APK
 
-# Releases reuse the APKs that ci.yml built for the same commit on main (all three ABIs).
+# Releases reuse the ARM64 APK that ci.yml built for the same commit on main.
 # If that run is missing, failed or expired, this workflow builds them itself.
 
 on:
@@ -75,7 +75,7 @@ jobs:
           if ! gh run download "$RUN" --name apks --dir ci-apks; then
             echo "Not reusing: download of apks from run $RUN failed"; exit 0
           fi
-          for abi in universal arm64-v8a armeabi-v7a x86_64; do
+          for abi in arm64-v8a; do
             f=$(find ci-apks -type f -name "app-${abi}-release.apk" | head -n 1)
             if [ -z "$f" ]; then echo "Not reusing: app-${abi}-release.apk missing from run $RUN"; find ci-apks -type f; exit 0; fi
             cp "$f" reuse-apks/
@@ -125,7 +125,7 @@ jobs:
     if: needs.reuse.outputs.found != 'true'
     uses: ./.github/workflows/_rust-android.yml
     with:
-      abis: 'arm64-v8a,armeabi-v7a,x86_64'
+      abis: 'arm64-v8a'
 
   build-apk:
     name: Build Android APK
@@ -181,7 +181,7 @@ jobs:
 
       - name: Verify jniLibs layout
         run: |
-          for abi in arm64-v8a armeabi-v7a x86_64; do
+          for abi in arm64-v8a; do
             test -f "modules/maglev-engine/android/src/main/jniLibs/$abi/libmaglev_core.so" \
               || { echo "Missing $abi/libmaglev_core.so"; find modules/maglev-engine/android/src/main/jniLibs -type f; exit 1; }
           done
@@ -301,7 +301,7 @@ jobs:
         run: |
           mkdir -p build-artifacts
           TAG="${{ github.ref_name }}"
-          for abi in universal arm64-v8a armeabi-v7a x86_64; do
+          for abi in arm64-v8a; do
             src=$(find release-apks -type f -name "app-${abi}-release.apk" | head -n 1)
             test -n "$src" || { echo "Missing app-${abi}-release.apk"; find release-apks -type f; exit 1; }
             cp "$src" "build-artifacts/Maglev-${TAG}-${abi}.apk"
@@ -340,10 +340,7 @@ jobs:
           name: Maglev ${{ github.ref_name }}
           body_path: release-body.md
           files: |
-            build-artifacts/Maglev-${{ github.ref_name }}-universal.apk
             build-artifacts/Maglev-${{ github.ref_name }}-arm64-v8a.apk
-            build-artifacts/Maglev-${{ github.ref_name }}-armeabi-v7a.apk
-            build-artifacts/Maglev-${{ github.ref_name }}-x86_64.apk
             build-artifacts/Maglev-${{ github.ref_name }}.apks
             build-artifacts/SHA256SUMS
           draft: false
