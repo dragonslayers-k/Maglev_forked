@@ -169,3 +169,11 @@ YTDLnis의 동작을 참고하되 YTDLnis 앱의 소스/브랜드/전용 UI를 �
 6. 한국어화는 화면별 문자열 인벤토리와 기본 언어 전환을 점검하고, 영어 잔존을 체크하는 자동 테스트를 추가. 일부 화면만 번역된 것을 완료로 보고하지 않음.
 
 현재 기능 상태는 사용자 실기기 결과를 최우선으로 하여 **YouTube 기능 실패 / 전체 한글화 실패 / P1 재작업**으로 관리합니다.
+
+
+## 12. 최종 제품 목표 문서 고정 — 2026-11-25
+
+- 단일 기준 문서: [docs/PRODUCT_TARGET_KO.md](PRODUCT_TARGET_KO.md)
+- 요구사항은 Maglev 기반/기존 기능 보존 + LJ Video Downloader 계열 자동 탐지 및 HTTP/HLS/DASH 다운로드 확대 + YTDLnis/yt-dlp 계열 실제 영상 추출·형식 선택·다운로드 queue 통합 + 앱 전체 완전 한국어화 + Maglev upstream 정기 review/sync를 포함합니다.
+- 이번 사용자 피드백에서 한국어·YouTube share recognition·download는 모두 실패로 확정 기록. CI run #45585266120 성공은 automated tests/build만 뜻하며 실기기 기능 성공을 뜻하지 않습니다.
+- 로드맵: P0 실패 재현/진단 → P1 YouTube end-to-end → P2 범용 탐지/다운로드 → P3 전체 한국어 → P4 upstream/회귀 → P5 안정화/릴리스. 목표 명세를 먼저 고정하고 이 문서의 DoD 기준으로 작업/보고합니다.
