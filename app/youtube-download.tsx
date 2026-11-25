@@ -16,7 +16,8 @@ const formatLabel = (format: YouTubeFormat) => {
     : format.kind === 'audio'
       ? (format.abr > 0 ? `${Math.round(format.abr)} kbps` : '오디오')
     : (format.height > 0 ? `${format.height}p` : '동영상');
-  const size = format.size && format.size > 0 ? formatBytes(format.size) : '용량 미상';
+  const rawSize = format.size && format.size > 0 ? formatBytes(format.size) : '용량 미상';
+  const size = format.sizeEstimated ? `약 ${rawSize}` : rawSize;
   const codec = format.format ? ` · ${format.format}` : '';
   return `${quality} · ${format.ext.toUpperCase()}${codec} · ${size}`;
 };
