@@ -40,7 +40,7 @@ export function redirectSystemPath({ path }: { path: string; initial: boolean })
     }
     // YouTube shares use the in-app browser entry point; the yt-dlp download adapter is a separate pending milestone.
     const youtube = parseYouTubeLink(raw);
-    if (youtube) return `/browser?url=${encodeURIComponent(youtube.canonicalUrl)}`;
+    if (youtube) return `/youtube-download?url=${encodeURIComponent(youtube.canonicalUrl)}`;
     if (/^magnet:/i.test(raw)) return addRoute(raw);
     if (/^content:\/\//i.test(raw) || /^file:\/\//i.test(raw)) return addRoute(raw);
     if (/^https?:\/\//i.test(raw) && isTorrentLocation(raw)) return addRoute(raw);

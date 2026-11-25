@@ -78,12 +78,15 @@ Head: `d13e7105691c025043fa1d291645b84454044535`
 - 브라우저 미디어 감지 계약 테스트
 - 주요 브라우저·다운로드 화면의 일부 한국어화
 - Android 공유 인텐트 및 Quick Share 카드의 기존 경로
-- `YouTubeUrl.kt`: YouTube URL 형식 파서와 단축 URL 정규화 단위 테스트
+- `YouTubeUrl.kt` 및 `utils/browser/youtube.ts`: YouTube URL 형식 파서와 단축 URL 정규화
+- `YoutubeDownload.kt`: yt-dlp로 공개 영상 메타데이터/합본 동영상/오디오 형식을 추출하고 기존 Rust 다운로드 큐에 등록하는 네이티브 어댑터 (CI·Galaxy 검증 대기)
+- `app/youtube-download.tsx`: YouTube 형식 선택 화면 (CI·Galaxy 검증 대기)
+- Chrome/Samsung Internet 및 YouTube 앱 공유 인텐트를 전용 다운로드 화면으로 연결
 
 ### 중요한 결함
-- `YouTubeUrl.kt`는 현재 QuickShare/다운로드 흐름에서 실제 호출되지 않는 독립 파일입니다. 따라서 YouTube 링크가 실제 yt-dlp 추출·다운로드로 연결되지 않습니다.
-- 현재 YouTube parser만 있는 상태를 YouTube 다운로드 지원으로 간주하지 않습니다.
-- QuickShare의 `ShareClassify`는 YouTube 페이지를 일반 WEB_PAGE로 분류하고, `Find videos` 경로로 보냅니다. YouTube 다운로드 카드/다운로드 엔진으로 연결하는 구현이 필요합니다.
+- YouTube 추출기는 yt-dlp Android wrapper를 통해 연결했습니다. 첫 단계는 별도 오디오·영상 병합이 필요 없는 합본 동영상 형식과 오디오 전용 형식만 노출합니다. 분리된 고화질 트랙 병합은 후속 작업입니다.
+- 공유·붙여넣기 라우팅과 기존 Rust 전송 큐 연결은 구현했으나, 최신 CI 및 Galaxy 실기기 검증 전에는 기능 완료로 간주하지 않습니다.
+- FFmpeg 패키지는 현재 의도적으로 포함하지 않았습니다. upstream 0.18.1의 FFmpeg zip 내부 WebP 라이브러리에서 16 KB 페이지 정렬 문제가 보고되어, 이를 해결하기 전에는 해당 모듈을 넣지 않습니다.
 - README의 versionCode 정보는 실제 `app.json`과 일치하는지 다시 확인해야 합니다.
 - 전체 화면 한국어화는 미완료입니다.
 - Galaxy 실기기 Chrome/Samsung Internet, 외부 공유, 직접 파일/HLS/DASH, YouTube 다운로드 검증은 아직 수행되지 않았습니다.
@@ -111,9 +114,9 @@ YTDLnis의 동작을 참고하되 YTDLnis 앱의 소스/브랜드/전용 UI를 �
 
 ## 8. 다음 작업 순서
 
-1. 최신 Actions에서 위 2개 테스트 수정이 실제로 해결됐는지 확인합니다. 실패하면 로그의 실제 실패 assertion만 고칩니다.
+1. 최신 Actions에서 자막 행·기존 자막·검색 사이트 한국어 문구 테스트 수정이 해결됐는지 확인합니다. 실패하면 실제 실패 assertion만 고칩니다.
 2. YouTube URL 파서의 앱 연결부를 구현합니다. parser 단위 테스트만 추가하고 완료 표시하지 않습니다.
-3. yt-dlp Android 의존성의 최신 버전·호환성·ABI·라이선스 검토 후 최소 동작 프로토타입을 구현합니다.
+3. yt-dlp Android 의존성 0.18.1을 추가했습니다. 최신 CI에서 Kotlin/Gradle 빌드, ABI, APK 크기, 16 KB LOAD alignment를 확인하고 Galaxy에서 실제 추출·다운로드를 검증합니다.
 4. 전체 한국어 문자열 인벤토리를 만들어 화면 단위로 번역하고 회귀 테스트를 추가합니다.
 5. 미디어 감지의 false positive/false negative를 fixture로 확장하고 외부 브라우저 실기기 시험을 수행합니다.
 6. Release 서명키를 Maglev+ 전용으로 구성하고 정식 서명 APK를 생성합니다. 원본 키를 찾거나 재사용하려 하지 않습니다.

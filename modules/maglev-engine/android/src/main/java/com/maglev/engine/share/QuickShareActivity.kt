@@ -11,6 +11,7 @@ import android.view.View
 import android.widget.Toast
 import androidx.core.view.WindowCompat
 import com.maglev.engine.EngineHost
+import com.maglev.engine.browser.YouTubeUrl
 import com.maglev.engine.storage.StorageManager
 import java.util.concurrent.Executors
 import kotlin.math.ln
@@ -53,6 +54,11 @@ class QuickShareActivity : Activity() {
         val (text, mime) = extract(original)
         cls = ShareClassify.classify(text, mime)
         if (original.action == Intent.ACTION_VIEW) cls = ShareClassify.withHandOffName(cls, handOffName(original))
+        val youtube = YouTubeUrl.parse(cls.source)
+        if (youtube != null) {
+            openMaglev(Uri.parse(youtube.canonicalUrl))
+            return
+        }
         val addable = cls.kind == ShareKind.MAGNET || cls.kind == ShareKind.TORRENT_FILE || cls.kind == ShareKind.FILE_LINK
         if (addable && QuickSharePrefs.addWithoutAsking(applicationContext)) {
             setContentView(View(this))

@@ -26,6 +26,7 @@ import com.maglev.engine.update.AppUpdater
 import com.maglev.engine.update.InstallSource
 import com.maglev.engine.update.UpdateNotices
 import com.maglev.engine.util.Json
+import com.maglev.engine.youtube.YoutubeDownload
 import expo.modules.interfaces.permissions.PermissionsResponseListener
 import expo.modules.kotlin.Promise
 import expo.modules.kotlin.modules.Module
@@ -210,6 +211,17 @@ class MaglevEngineModule : Module() {
         }
         AsyncFunction("addDownload") { url: String, options: Map<String, Any?>?, promise: Promise ->
             io(promise) { EngineHost.addDownload(url, options ?: emptyMap()) }
+        }
+        // YouTube (yt-dlp): extract metadata and add a selected progressive format to the existing transfer engine.
+        AsyncFunction("getYouTubeInfo") { url: String, promise: Promise ->
+            val c = context
+            if (c == null) promise.resolve(Json.failure("ENGINE_UNAVAILABLE", "Module is not attached"))
+            else io(promise) { YoutubeDownload.info(c, url) }
+        }
+        AsyncFunction("addYouTubeDownload") { url: String, formatId: String, promise: Promise ->
+            val c = context
+            if (c == null) promise.resolve(Json.failure("ENGINE_UNAVAILABLE", "Module is not attached"))
+            else io(promise) { YoutubeDownload.add(c, url, formatId) }
         }
         AsyncFunction("pauseDownload") { id: String, promise: Promise ->
             engine(promise) { EngineHost.pauseDownload(id) }

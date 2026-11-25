@@ -1,5 +1,5 @@
 import { Platform, requireOptionalNativeModule } from 'expo-modules-core';
-import type {
+import type { YouTubeInfo,
   ActiveBlock,
   AddTorrentOptions,
   Detail,
@@ -633,6 +633,12 @@ export class MaglevEngineBridge implements MaglevEngineApi {
   }
   public addDownload(url: string, options: DownloadOptions = {}): Promise<EngineResult<{ id: string }>> {
     return this.route('addDownload', url, options);
+  }
+  public getYouTubeInfo(url: string): Promise<EngineResult<YouTubeInfo>> {
+    return this.route('getYouTubeInfo', url);
+  }
+  public addYouTubeDownload(url: string, formatId: string): Promise<EngineResult<{ id: string }>> {
+    return this.route('addYouTubeDownload', url, formatId);
   }
   public pauseDownload(id: string): Promise<EngineResult> {
     return this.route('pauseDownload', id);

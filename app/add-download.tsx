@@ -12,6 +12,7 @@ import { formatBytes } from '../constants/format';
 import { haptic } from '../constants/haptics';
 import { StreamSheet } from '../components/browser/StreamSheet';
 import { streamKindOfLink } from '../components/browser/streamChoice';
+import { parseYouTubeLink } from '../utils/browser/youtube';
 import type { FoundItem } from 'maglev-engine';
 import { Banner, Button, EmptyBlock, Screen, TextField } from '../components/ui';
 import { useDownloadAdmission } from '../utils/useDownloadAdmission';
@@ -80,6 +81,11 @@ export default function AddDownloadScreen() {
   const submit = useCallback(
     async (raw: string, allowLan = false) => {
       const input = normalizeIncoming(raw);
+      const youtube = parseYouTubeLink(input);
+      if (youtube) {
+        router.replace({ pathname: '/youtube-download', params: { url: youtube.canonicalUrl } });
+        return;
+      }
       // A magnet or a .torrent link is a torrent: hand it to Add torrent instead of refusing it.
       if (isTorrentSource(input)) {
         router.replace({ pathname: '/add-torrent', params: { source: input } });

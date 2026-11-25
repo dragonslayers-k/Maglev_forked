@@ -67,8 +67,11 @@ async function main() {
   {
     const src = read('app/+native-intent.tsx');
     check('native intent normalises the full url for dl_ too', /appPath\(raw\)/.test(src));
-    check('YouTube shares route to browser, not direct-download probe', /parseYouTubeLink\(raw\)[\s\S]*?\/browser\?url=/.test(src) && /return sharedDownloadRoute\(raw\)/.test(src));
+    check('YouTube shares route to the dedicated downloader, not direct-download probe', /parseYouTubeLink\(raw\)[\s\S]*?\/youtube-download\?url=/.test(src) && /return sharedDownloadRoute\(raw\)/.test(src));
   }
+  check('pasted YouTube URLs use the extractor screen', /parseYouTubeLink\(input\)[\s\S]*?youtube-download/.test(read('app/add-download.tsx')));
+  check('Quick Share forwards YouTube links to the native-intent route', /YouTubeUrl\.parse\(cls\.source\)[\s\S]*?openMaglev\(Uri\.parse\(youtube\.canonicalUrl\)\)/.test(read('modules/maglev-engine/android/src/main/java/com/maglev/engine/share/QuickShareActivity.kt')));
+  check('native yt-dlp adapter feeds the existing transfer engine', /YoutubeDL\.getInstance\(\)\.getInfo/.test(read('modules/maglev-engine/android/src/main/java/com/maglev/engine/youtube/YoutubeDownload.kt')) && /EngineHost\.addDownload/.test(read('modules/maglev-engine/android/src/main/java/com/maglev/engine/youtube/YoutubeDownload.kt')));
   check('other routes are left alone', r('/add-download?url=x') === null && r('/settings/browser') === null);
 
   console.log('prefs');

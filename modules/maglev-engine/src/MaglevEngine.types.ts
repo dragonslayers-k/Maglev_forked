@@ -619,6 +619,28 @@ export interface DownloadOptions {
   stream?: StreamSelection;
 }
 
+export interface YouTubeFormat {
+  formatId: string;
+  kind: 'video' | 'audio';
+  ext: string;
+  height: number;
+  width: number;
+  fps: number;
+  tbr: number;
+  abr: number;
+  size: number | null;
+  format: string | null;
+}
+
+export interface YouTubeInfo {
+  videoId: string;
+  title: string;
+  uploader: string | null;
+  duration: number;
+  thumbnail: string | null;
+  formats: YouTubeFormat[];
+}
+
 export interface UrlProbe {
   name: string;
   size: number | null;
@@ -888,6 +910,10 @@ export interface MaglevEngineApi {
   /** NATIVE_CONTRACT 24.8. Errors: STREAM_PROTECTED, STREAM_LIVE, STREAM_UNSUPPORTED, plus the probeUrl ones. */
   probeStream(url: string, options: DownloadOptions, timeoutMs: number): Promise<EngineResult<StreamProbe>>;
   addDownload(url: string, options: DownloadOptions): Promise<EngineResult<{ id: string }>>;
+  /** Extracts public, non-DRM YouTube metadata and progressive video/audio formats via yt-dlp. */
+  getYouTubeInfo(url: string): Promise<EngineResult<YouTubeInfo>>;
+  /** Adds one selected progressive YouTube format to the normal transfer queue. */
+  addYouTubeDownload(url: string, formatId: string): Promise<EngineResult<{ id: string }>>;
   pauseDownload(id: string): Promise<EngineResult>;
   resumeDownload(id: string): Promise<EngineResult>;
   /** NATIVE_CONTRACT 25.1: the same for a link download. */

@@ -73,14 +73,14 @@ function check(name, cond) {
   check('real list: default languages count only sources that cover them', O.subtitleOffSources({ enabled: true, languages: ['en'], sourceEnabled: {} }, null).count > 0);
 
   console.log('[subtitle strings and wiring]');
-  check('sheet line', copy.offSourcesLine(3) === '3 more subtitle sources are off' && copy.offSourcesLine(1) === '1 more subtitle source is off');
-  check('sheet line names the anime source', copy.offSourcesLine(3, 'Kitsunekko') === '3 more subtitle sources are off, including Kitsunekko' && copy.offSourcesLine(1, 'Kitsunekko') === '1 more subtitle source is off (Kitsunekko)');
-  check('action label and multi tail', copy.TURN_ON_MORE_SOURCES === 'Turn on more sources' && copy.offSourcesTail(2) === '2 sources off' && copy.MORE_SOURCES === 'More sources');
+  check('sheet line', copy.offSourcesLine(3) === '자막 검색 사이트 3개가 꺼져 있습니다' && copy.offSourcesLine(1) === '자막 검색 사이트 1개가 꺼져 있습니다');
+  check('sheet line names the anime source', copy.offSourcesLine(3, 'Kitsunekko') === '자막 검색 사이트 3개가 꺼져 있습니다 (예: Kitsunekko)' && copy.offSourcesLine(1, 'Kitsunekko') === '자막 검색 사이트 1개가 꺼져 있습니다 (Kitsunekko)');
+  check('action label and multi tail', copy.TURN_ON_MORE_SOURCES === '검색 사이트 더 켜기' && copy.offSourcesTail(2) === '검색 사이트 2개 꺼짐' && copy.MORE_SOURCES === '검색 사이트');
   const base = { fileListKnown: true, started: true, canOpenSheet: true, phase: 'none' };
   let m = M.rowModel(base);
-  check('row, k = 0: "No match yet", Edit name, no second button', m.line === 'No match yet' && m.button.label === 'Edit name' && !m.extra);
+  check('row, k = 0: "No match yet", Edit name, no second button', m.line === '아직 찾지 못함' && m.button.label === '이름 수정' && !m.extra);
   m = M.rowModel({ ...base, offSources: 2 });
-  check('row, k > 0: "No match yet · 2 sources off", Edit name stays, "More sources" second', m.line === 'No match yet · 2 sources off' && m.button.label === 'Edit name' && m.extra.label === 'More sources' && m.extra.action === 'more-sources');
+  check('row, k > 0: "No match yet · 2 sources off", Edit name stays, "More sources" second', m.line === '아직 찾지 못함 · 검색 사이트 2개 꺼짐' && m.button.label === '이름 수정' && m.extra.label === '검색 사이트' && m.extra.action === 'more-sources');
   m = M.rowModel({ ...base, phase: 'saved', language: 'en', offSources: 2 });
   check('row: other phases ignore the count', !m.extra && !/off/.test(m.line));
   const sheet = read('components/subtitles/SubtitleSheet.tsx');
