@@ -45,7 +45,7 @@ export const glossary = {
 } as const;
 
 /** Words that may be written in capitals. */
-export const ACRONYMS = ['VPN', 'URL', 'RSS', 'SD', 'DHT', 'IP', 'ID', 'USB', 'UI', 'OK', 'API', 'VLC', 'HTTP', 'HTTPS', 'UPnP'] as const;
+export const ACRONYMS = ['VPN', 'URL', 'RSS', 'SD', 'DHT', 'IP', 'ID', 'USB', 'UI', 'OK', 'API', 'VLC', 'HTTP', 'HTTPS', 'UPnP', 'DRM', 'HLS', 'DASH', 'MIME', 'MP4', 'M3U8'] as const;
 
 /** Capitalised words that may appear mid-sentence. */
 export const PROPER_WORDS = ['Maglev', "Maglev's", 'Android', 'Transfers', 'Wi-Fi', 'Atom', 'Settings', 'Search', 'Feeds', 'Undo', 'Retry'] as const;
@@ -65,7 +65,7 @@ export const notices = {
     notTorrentFile: "That isn't a .torrent file.",
     openFileFailed: "Couldn't open that file.",
     clipboardEmpty: 'Your clipboard is empty.',
-    startDownloadFailed: "Couldn't start this download.",
+    startDownloadFailed: '다운로드를 시작하지 못했습니다.',
     folderPickerFailed: "Couldn't open the folder picker. Try again.",
     folderNotDirect: "Maglev can't save straight into that folder. Pick another one.",
     storageRefused: 'Storage access was refused. Files are saved in app storage instead.',
@@ -73,8 +73,8 @@ export const notices = {
     removeTorrentFailed: "Couldn't remove this torrent. Try again.",
     shareFailed: "Couldn't share. Try again.",
     resumeFailed: "Couldn't resume the torrent.",
-    streamFailed: "Couldn't start the stream.",
-    noPlayer: 'No video player found. Install VLC or another player.',
+    streamFailed: '스트림을 시작하지 못했습니다.',
+    noPlayer: '재생 앱을 찾지 못했습니다. VLC 또는 다른 플레이어를 설치하세요.',
     readInfoFailed: "Couldn't read torrent info.",
     apiKeyFailed: "Couldn't save the API key on this device. Try again.",
   },
@@ -139,7 +139,7 @@ export const notices = {
     },
   },
   addDownload: {
-    duplicate: 'This link is already in Transfers.',
+    duplicate: '이미 다운로드 목록에 있는 링크입니다.',
   },
   addTorrent: {
     addedWaiting: 'Added. You can choose files once its details arrive.',
@@ -509,9 +509,9 @@ export const addMenu = {
  */
 export function mobileDataLine(onMetered: boolean, wifiOnly: boolean, sizeBytes: number | null): string | null {
   if (!onMetered) return null;
-  if (wifiOnly) return 'This waits for Wi-Fi.';
+  if (wifiOnly) return 'Wi-Fi 연결 시 다운로드합니다.';
   if (sizeBytes == null || !(sizeBytes > 0)) return null;
-  return `You're on mobile data. This is ${formatBytes(sizeBytes)}.`;
+  return `현재 모바일 데이터를 사용 중입니다. 파일 크기는 ${formatBytes(sizeBytes)}입니다.`;
 }
 /**
  * Settings > Interface > Font. Each description is linted by scripts/test-copy-voice.js like a
