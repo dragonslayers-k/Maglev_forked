@@ -27,7 +27,7 @@ const props = applyArchitectures([
   { type: 'property', key: 'newArchEnabled', value: 'true' },
 ]);
 assert.strictEqual(props.filter((p) => p.key === 'reactNativeArchitectures').length, 1);
-assert.strictEqual(props.find((p) => p.key === 'reactNativeArchitectures').value, 'armeabi-v7a,arm64-v8a,x86_64');
+assert.strictEqual(props.find((p) => p.key === 'reactNativeArchitectures').value, 'arm64-v8a');
 assert(props.some((p) => p.key === 'newArchEnabled'));
 // MAGLEV_ABIS selects architectures; ARM64 is the default for normal user APKs.
 const { resolveAbis } = require('../plugins/withAbiSplits');
