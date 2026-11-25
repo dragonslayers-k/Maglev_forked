@@ -39,11 +39,11 @@ function check(name, cond) {
   m = row({ phase: 'needs-pick' });
   check('needs-pick: "Close match found" + Pick one, on results, ? badge', m.line === '비슷한 자막을 찾음' && btn(m) === '선택/pick' && m.start === 'results' && m.glyph === 'needs-look');
   m = row({ phase: 'needs-pick', otherLang: 'fr' });
-  check('needs-pick in another language: "Found in French only"', m.line === '프랑스어에서만 찾음' && btn(m) === '선택/pick');
+  check('needs-pick in another language: "Found in French only"', m.line === 'French에서만 찾음' && btn(m) === '선택/pick');
   m = row({ phase: 'none' });
   check('none: "아직 찾지 못함" + 이름 수정, opens the name field', m.line === '아직 찾지 못함' && btn(m) === '이름 수정/edit-name' && m.start === 'edit-name');
   m = row({ phase: 'has-already', language: 'de' });
-  check('has-already: "독일어 자막 있음" + 더 찾기', m.line === '독일어 자막 있음' && btn(m) === '더 찾기/find');
+  check('has-already: "독일어 자막 있음" + 더 찾기', m.line === 'German 자막 있음' && btn(m) === '더 찾기/find');
   m = row({ phase: 'offline' });
   check('offline: "Waiting for internet", no button', m.line === '인터넷 연결 대기' && m.button === null);
   m = row({ phase: 'limited' });
@@ -55,7 +55,7 @@ function check(name, cond) {
   m = row({ stored: { state: 'saved', lang: 'es' } });
   check('stored saved reads as saved, in Spanish', m.line === 'Spanish · 영상 버전 일치' && btn(m) === '변경/find');
   m = row({ stored: { state: 'needs-look', lang: 'en' } });
-  check('stored needs-look reads as needs-pick', btn(m) === 'Pick one/pick');
+  check('stored needs-look reads as needs-pick', btn(m) === '선택/pick');
   m = row({ stored: { state: 'getting', lang: 'en' } });
   check('stored getting has nothing to cancel', m.line === '자막 검색 중…' && m.button === null);
   check('a request wins over the stored state', row({ phase: 'none', stored: { state: 'saved', lang: 'en' } }).line === '아직 찾지 못함');
@@ -71,7 +71,7 @@ function check(name, cond) {
   check('one video is not a pack', M.packCounts({ a: { phase: 'saved', tries: 1 } }) === null && M.packCounts(undefined) === null);
   m = row({ phase: 'needs-pick', pack: { total: 10, saved: 8, needYou: 2 }, canOpenSheet: false });
   check('"8 of 10 saved · 2 need you" + See all (no single target needed)', m.line === '10개 중 8개 저장 · 2개 선택 필요' && btn(m) === '모두 보기/see-all');
-  check('one needing you reads "needs"', copy.rowPackLine({ saved: 9, total: 10, needYou: 1 }) === '10개 중 9개 저장 · 1개 선택 필요' && copy.rowPackLine({ saved: 10, total: 10, needYou: 0 }) === '10개 저장');
+  check('one needing you reads in Korean', copy.rowPackLine({ saved: 9, total: 10, needYou: 1 }) === '10개 중 9개 저장 · 1개 선택 필요' && copy.rowPackLine({ saved: 10, total: 10, needYou: 0 }) === '10개 저장');
   check('a skipped pack is just Skipped', row({ phase: 'skipped', pack: { total: 3, saved: 0, needYou: 0 } }).line === '건너뜀');
 
   console.log('[accessibility]');
