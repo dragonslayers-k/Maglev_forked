@@ -51,6 +51,8 @@ dependencies {
     implementation project(':expo-modules-core')
     // yt-dlp Android runtime. FFmpeg is intentionally excluded until its bundled WebP payload is 16 KB-page safe.
     implementation "io.github.junkfood02.youtubedl-android:library:0.18.1"
+    // Commons Compress uses Tukaani XZ for 7z/XZ archive codecs; explicit runtime dependency fixes R8 missing classes.
+    implementation "org.tukaani:xz:1.10"
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.23"
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3"
     implementation "androidx.core:core-ktx:1.17.0"
