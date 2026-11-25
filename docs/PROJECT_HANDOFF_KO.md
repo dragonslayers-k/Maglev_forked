@@ -144,3 +144,28 @@ YTDLnis의 동작을 참고하되 YTDLnis 앱의 소스/브랜드/전용 UI를 �
 - PR #1 remains **Draft** to `dev`; not merged/released. APK is a CI test artifact, not final public release.
 - The ChatGPT monthly-review automation was created unintentionally and then **disabled**. It must not be re-enabled without explicit user approval. The repository workflow `.github/workflows/monthly-upstream-review.yml` is a separate GitHub Action and may create a review issue; disclose its schedule and side effects before changing it.
 - Next: check remaining Korean localization by screen coverage (not only strings already translated), add missing coverage and tests; review media detection behavior; audit YouTube share/extraction for authorized content use only and limitations (muxed formats only, no separate DASH merge); update test checklist; then run CI on final HEAD and test on Galaxy. Do not mark complete without real-device verification.
+
+
+## 11. 사용자 실기기 검증 결과 — 2026-11-25 (중요한 정정)
+
+사용자가 최신 설치 APK에서 직접 확인한 결과:
+- 한국어화: 체감상 거의 적용되지 않음 — 전체 한글화 미완성 상태가 실제 UI에서 확인됨.
+- YouTube URL 인식: 작동하지 않음.
+- YouTube 다운로드: 작동하지 않음.
+- YTDLnis 기능 이식 여부: 실제 앱 기능 수준의 이식/검증은 완료되지 않았음. 현재 확인된 것은 yt-dlp Android wrapper `youtubedl-android 0.18.1` 의존성 및 얇은 네이티브 어댑터임. YTDLnis 자체 앱 기능을 통째로 이식했다고 주장하지 않음.
+
+### 즉시 확인된 잠재 원인 / 수정
+- `app/_layout.tsx`의 cold-launch 엔진 대기 라우트(`ENGINE_FIRST_ROUTE`)에 `youtube-download`가 누락되어 전용 화면이 엔진 준비 전에 추출 API를 호출할 수 있음.
+- 수정 커밋: `c3f39126107f683e2fb165c0b45662a3d2b9de13` (YouTube route 엔진 대기 포함)
+- 계약 테스트 추가 커밋: `1ff5ae4990f0622040a11f0125985608b5c1f748` (엔진 컨텍스트 테스트에서 route 포함 확인)
+- 이 수정은 잠재적인 race condition 한 건을 보완한 것이며, YouTube 공유 인식·추출·다운로드 성공을 증명하지 않습니다. 새 CI 및 실기기 재시험 전 완료로 표시하지 않습니다.
+
+### 다음 검증 필수
+1. 공유 인텐트가 YouTube URL을 실제 `redirectSystemPath`로 전달하는지, Chrome/Samsung Internet/YouTube 앱 각각 확인.
+2. `YouTubeUrl.parse` JS/Kotlin 구현 간 모든 형식 동기화 및 테스트.
+3. 엔진 준비 대기 뒤 yt-dlp 초기화·추출 호출의 실제 예외 로그 확보. 오류를 숨기는 generic 메시지 대신 진단 코드를 사용자에게 표시.
+4. 선택한 format ID가 실제 다운로드 요청에서 유지되는지, 요청된 format URL/headers와 Maglev 큐 처리의 호환 여부 확인. 오디오 포맷은 오디오 전용 파일 타입으로 정상 처리되는지 점검.
+5. 다운로드가 기존 목록에 실제 생성되고 파일 저장·재생·완료·취소 동작 확인.
+6. 한국어화는 화면별 문자열 인벤토리와 기본 언어 전환을 점검하고, 영어 잔존을 체크하는 자동 테스트를 추가. 일부 화면만 번역된 것을 완료로 보고하지 않음.
+
+현재 기능 상태는 사용자 실기기 결과를 최우선으로 하여 **YouTube 기능 실패 / 전체 한글화 실패 / P1 재작업**으로 관리합니다.
