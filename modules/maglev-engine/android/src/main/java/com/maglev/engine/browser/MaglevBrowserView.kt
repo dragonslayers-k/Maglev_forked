@@ -158,6 +158,7 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
     @Volatile private var curTitle: String = ""
     @Volatile private var nonce: String = ""
     @Volatile private var hlsSeen = false
+    @Volatile private var dashSeen = false
     @Volatile private var lastFlush = 0L
     private var progress = 0
     private var loading = false
@@ -765,6 +766,7 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
         tracker.clear()
         blockedPage.set(0)
         hlsSeen = false
+        dashSeen = false
         sslFailed = false
         newNonce()
         lastSentPage = 0
@@ -792,6 +794,9 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
         var added = false
         for (e in report.entries) {
             val item = PageScan.toItem(e, curUrl, curTitle) ?: continue
+            // Page-script MIME observations and native request observations share one segment filter.
+            if (item.stream == "hls") hlsSeen = true
+            if (item.stream == "dash") dashSeen = true
             if (tracker.add(item)) added = true
         }
         if (added) scheduleFlush()
@@ -1459,6 +1464,12 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
     /** A sub-resource, main request or attributable Service Worker request (section 24.3 rule 1). Background thread. */
     private fun noteNetwork(url: String, headers: Map<String, String>?, method: String = "GET") {
         if (!method.equals("GET", ignoreCase = true)) return
+        val path = url.substringBefore('?').substringBefore('#').lowercase()
+        if (path.endsWith(".m3u8")) hlsSeen = true
+        if (path.endsWith(".mpd")) dashSeen = true
+        val segment = path.endsWith(".ts") || path.endsWith(".m4s") ||
+            path.endsWith(".cmfv") || path.endsWith(".cmfa")
+        if (segment && (hlsSeen || dashSeen)) return
         var accept: String? = null
         var hasRange = false
         if (headers != null) {
@@ -1469,6 +1480,7 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
         }
         val c = FoundClassifier.classifyNetwork(url, accept, hasRange, hlsSeen) ?: return
         if (c.stream == "hls") hlsSeen = true
+        if (c.stream == "dash") dashSeen = true
         val item = FoundClassifier.item(url, c, "network", curUrl, curTitle) ?: return
         if (tracker.add(item)) scheduleFlush()
     }
