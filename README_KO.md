@@ -67,6 +67,7 @@ Maglev의 화면 구성과 다운로드 엔진을 유지하면서 일반 동영�
 - [LJ Downloader 분석 검토](docs/LJ_ANALYSIS_REVIEW_KO.md)
 - [Galaxy 실기기 검증 계획](docs/GALAXY_TEST_PLAN_KO.md)
 - [개발 로드맵](docs/ROADMAP.md)
+- [원본 Maglev 월간 업데이트 정책](docs/UPSTREAM_SYNC_POLICY_KO.md)
 
 ## 라이선스와 출처
 
