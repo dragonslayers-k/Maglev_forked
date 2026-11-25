@@ -741,7 +741,7 @@ export default function BrowserScreen({ inTab = false }: { inTab?: boolean }) {
       <View style={styles.bar}>
         <IconButton
           icon="back"
-          accessibilityLabel="Go back"
+          accessibilityLabel="뒤로"
           onPress={() => {
             if (!handleBack()) leave();
           }}
@@ -776,7 +776,7 @@ export default function BrowserScreen({ inTab = false }: { inTab?: boolean }) {
               name={page.secure ? 'lock' : 'warning'}
               size={16}
               color={page.secure ? colors.textMuted : colors.warning}
-              accessibilityLabel={page.secure ? 'Secure connection' : 'Not secure'}
+              accessibilityLabel={page.secure ? '보안 연결' : '보안되지 않은 연결'}
             />
           ) : null}
           <TextField
@@ -808,16 +808,16 @@ export default function BrowserScreen({ inTab = false }: { inTab?: boolean }) {
             autoCapitalize="none"
             autoCorrect={false}
             spellCheck={false}
-            placeholder="Search or type an address"
+            placeholder="주소 또는 검색어 입력"
             style={styles.input}
             numberOfLines={1}
-            accessibilityLabel="Address"
+            accessibilityLabel="주소"
           />
         </View>
         </AddressSwipe>
         <IconButton
           icon={loading ? 'stop' : 'retry'}
-          accessibilityLabel={loading ? 'Stop loading' : 'Reload'}
+          accessibilityLabel={loading ? '로딩 중지' : '새로고침'}
           disabled={!hasPage}
           onPress={() => {
             haptic('tap');
@@ -844,7 +844,7 @@ export default function BrowserScreen({ inTab = false }: { inTab?: boolean }) {
             </Text>
           </View>
         </PressableScale>
-        <IconButton icon="more" accessibilityLabel="More" disabled={!ready} onPress={() => setMenuOpen(true)} />
+        <IconButton icon="more" accessibilityLabel="더보기" disabled={!ready} onPress={() => setMenuOpen(true)} />
       </View>
       )}
       <View style={styles.progress}>{loading ? <ProgressBar progress={(page?.progress ?? 0) / 100} indeterminate={!page || page.progress <= 0} /> : null}</View>
@@ -918,7 +918,7 @@ export default function BrowserScreen({ inTab = false }: { inTab?: boolean }) {
               title={empty.browser.crashed.title}
               body={empty.browser.crashed.body}
               primary={{
-                label: 'Reload',
+                label: '새로고침',
                 onPress: () => {
                   haptic('tap');
                   patch(activeId, (d) => void (d.crashed = false));
@@ -946,10 +946,10 @@ export default function BrowserScreen({ inTab = false }: { inTab?: boolean }) {
               </PressableScale>
             ) : null}
             <Button
-              label={`Files · ${found.length}`}
+              label={`파일 · ${found.length}`}
               icon="file"
               variant="secondary"
-              accessibilityLabel={`Files, ${found.length} found`}
+              accessibilityLabel={`감지된 파일 ${found.length}개`}
               onPress={() => {
                 haptic('select');
                 setTrayOpen(true);
@@ -998,7 +998,7 @@ export default function BrowserScreen({ inTab = false }: { inTab?: boolean }) {
           <>
         <ListRow
           icon="forward"
-          title="Forward"
+          title="앞으로"
           disabled={!page?.canGoForward}
           onPress={() => {
             setMenuOpen(false);
@@ -1017,14 +1017,14 @@ export default function BrowserScreen({ inTab = false }: { inTab?: boolean }) {
         />
         <ListRow
           icon="interface"
-          title="Desktop site"
-          accessory={<Toggle value={desktop} onValueChange={setDesktop} accessibilityLabel="Desktop site" />}
+          title="데스크톱 사이트"
+          accessory={<Toggle value={desktop} onValueChange={setDesktop} accessibilityLabel="데스크톱 사이트" />}
         />
         {prefs.adBlock && pageHost ? (
           <ListRow
             icon="shield"
-            title={allowedHere ? 'Block ads on this site' : 'Allow ads on this site'}
-            subtitle={allowedHere ? 'Ads are allowed here' : blocked > 0 ? `${blocked} blocked on this page` : undefined}
+            title={allowedHere ? '이 사이트 광고 차단' : '이 사이트 광고 허용'}
+            subtitle={allowedHere ? '이 사이트의 광고를 허용 중입니다' : blocked > 0 ? `이 페이지에서 ${blocked}개 차단` : undefined}
             onPress={toggleAds}
           />
         ) : null}
@@ -1039,7 +1039,7 @@ export default function BrowserScreen({ inTab = false }: { inTab?: boolean }) {
         ) : null}
         <ListRow
           icon="copy"
-          title="Copy page link"
+          title="페이지 링크 복사"
           disabled={!page?.url}
           onPress={() => {
             setMenuOpen(false);
@@ -1077,7 +1077,7 @@ export default function BrowserScreen({ inTab = false }: { inTab?: boolean }) {
         />
         <ListRow
           icon="settings"
-          title="Browser settings"
+          title="브라우저 설정"
           onPress={() => {
             setMenuOpen(false);
             router.push('/settings/browser');
@@ -1092,7 +1092,7 @@ export default function BrowserScreen({ inTab = false }: { inTab?: boolean }) {
         actions={
           <>
             <Button label={browserTabs.thisPage.clearSiteAction} variant="danger" fullWidth onPress={() => void clearSiteData()} />
-            <Button label="Cancel" variant="secondary" fullWidth onPress={() => setClearSiteOpen(false)} />
+            <Button label="취소" variant="secondary" fullWidth onPress={() => setClearSiteOpen(false)} />
           </>
         }
       >
