@@ -69,7 +69,7 @@ const UNSUPPORTED_FILE = "지원하지 않는 자막 파일 형식입니다.";
 export const plural = (n: number, one: string, many = `${one}s`): string => (n === 1 ? one : many);
 
 export function groupFoundLine(count: number): string {
-  return `${count} ${plural(count, 'subtitle')}`;
+  return `${count}개 자막`;
 }
 
 export interface CopyArgs {
@@ -98,13 +98,13 @@ export function errorCopy(code: SubtitleErrorCode, a: CopyArgs = {}): ErrorCopy 
     case 'CANT_WRITE':
       return { message: 'Maglev에서 이 폴더에 저장할 수 없습니다.', action: '폴더 열기' };
     case 'NO_SPACE':
-      return { message: '저장 공간이 부족합니다.', action: 'Close' };
+      return { message: '저장 공간이 부족합니다.', action: '닫기' };
     case 'VERIFY_FAILED':
-      return { message: '자막을 올바르게 저장하지 못했습니다.', action: 'Try again' };
+      return { message: '자막을 올바르게 저장하지 못했습니다.', action: '다시 시도' };
     case 'unreadable_text':
       return { message: UNREADABLE_TEXT, action: '다른 파일 선택' };
     case 'ambiguous_pack':
-      return { message: AMBIGUOUS_PACK, action: 'Pick another' };
+      return { message: AMBIGUOUS_PACK, action: '다른 파일 선택' };
     case 'REPLACE_DENIED':
       // NATIVE_CONTRACT 39.1 S5
       return { message: '다른 앱에서 사용하는 파일입니다. 복사본으로 저장할까요?', action: NAME_TAKEN_ACTIONS.keepBoth };
@@ -233,7 +233,7 @@ export const MORE_SOURCES = '검색 사이트';
 export function offSourcesLine(k: number, animeName: string | null = null): string {
   const line = k === 1 ? '자막 검색 사이트 1개가 꺼져 있습니다' : `자막 검색 사이트 ${k}개가 꺼져 있습니다`;
   if (!animeName) return line;
-  return k === 1 ? `${line} (${animeName})` : `${line}, including ${animeName}`;
+  return k === 1 ? `${line} (${animeName})` : `${line} (예: ${animeName})`;
 }
 
 /** The multi-video sheet's summary tail, joined to the status summary. */
@@ -257,5 +257,5 @@ export const bulkProgress = (i: number, k: number): string => `Saving ${i} of ${
 /** 46.3: the line after it finished. The second part is left out when nothing is left. */
 export function bulkResult(saved: number, stillNeed: number): string {
   const head = `${saved}개 저장했습니다.`;
-  return stillNeed > 0 ? `${head} ${stillNeed} still ${stillNeed === 1 ? 'needs' : 'need'} you.` : head;
+  return stillNeed > 0 ? `${head} ${stillNeed}개 항목을 직접 선택해야 합니다.` : head;
 }
