@@ -49,6 +49,7 @@ import type {
   InstallSource,
   UpdateNetwork,
   UrlProbe,
+  YouTubeInfo,
 } from './MaglevEngine.types.ts';
 import { HEALTH_TAGS, subtitleError } from './MaglevEngine.types.ts';
 import { blocksChanged } from './blocksDiff.ts';
@@ -854,6 +855,12 @@ export class MaglevMockEngine implements MaglevEngineApi {
   }
   public addDownload(url: string, options: DownloadOptions = {}): Promise<EngineResult<{ id: string }>> {
     return this.downloads.add(url, options);
+  }
+  public getYouTubeInfo(_url: string): Promise<EngineResult<YouTubeInfo>> {
+    return Promise.resolve({ ok: false, code: 'UNSUPPORTED', message: 'YouTube extraction is available on Android only.' });
+  }
+  public addYouTubeDownload(_url: string, _formatId: string): Promise<EngineResult<{ id: string }>> {
+    return Promise.resolve({ ok: false, code: 'UNSUPPORTED', message: 'YouTube downloads are available on Android only.' });
   }
   public async pauseDownload(id: string): Promise<EngineResult> {
     return this.downloads.pause(id);

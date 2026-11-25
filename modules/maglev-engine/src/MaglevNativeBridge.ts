@@ -141,7 +141,7 @@ function cleanBlocks(raw: unknown): ActiveBlock[] {
  */
 const USER_ACTION_METHODS: readonly string[] = [
   // Add flow (a paste, share, search or feed add, including the preflight lookups)
-  'addTorrent', 'addDownload', 'resolveMetadata', 'probeUrl', 'probeStream',
+  'addTorrent', 'addDownload', 'addYouTubeDownload', 'resolveMetadata', 'probeUrl', 'probeStream',
   // Torrents
   'pause', 'resume', 'resumeAnyway', 'recheck', 'pauseAll', 'resumeAll', 'delete',
   'setIncludedFiles', 'setFilePriorities', 'removeFiles', 'resolveFiles', 'setHealth', 'scanFileHealth',
@@ -155,7 +155,7 @@ const USER_ACTION_METHODS: readonly string[] = [
   'runFeedCheckNow',
 ];
 export const READ_METHODS: readonly string[] = [
-  'shutdown', 'restartEngine', 'cancelResolve', 'getResolveActivity', 'listTorrents', 'getDetail', 'fileHealth', 'exportTorrent',
+  'shutdown', 'restartEngine', 'cancelResolve', 'getResolveActivity', 'getYouTubeInfo', 'listTorrents', 'getDetail', 'fileHealth', 'exportTorrent',
   'shareExportedTorrent', 'getFreeSpace', 'applyConfig', 'getEffectiveConfig', 'exportDebugLog', 'shareDebugLog', 'getPieceBitfield', 'streamUrl',
   'version', 'pickDownloadFolder', 'pickFolder', 'getPlaybackSupport', 'getStorageStatus', 'openFile', 'shareFile',
   'openFolder', 'openDownloadFolder', 'openDownload', 'shareDownload', 'getActiveBlocks', 'getNetworkState',
