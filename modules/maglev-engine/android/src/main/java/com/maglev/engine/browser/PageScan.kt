@@ -37,7 +37,7 @@ object PageScan {
   if (!B) return;
   if (window.__maglevN === N) { if (window.__maglevScanNow) window.__maglevScanNow(false); return; }
   window.__maglevN = N;
-  var sent = {}, count = 0, MAX = 500, timer = 0, last = 0, emeSent = false, blobSeen = false, blobSent = false;
+  var sent = {}, count = 0, MAX = 500, timer = 0, last = 0, emeSent = false, blobSeen = false, blobSent = false, streamSeen = false;
   var FILE = /\.(pdf|epub|mobi|djvu|docx?|xlsx?|pptx?|od[tsp]|txt|rtf|csv|md|zip|rar|7z|tar|gz|bz2|xz|iso|apk|exe|msi|dmg|bat|cmd|scr|torrent|srt|vtt|ass|mp4|m4v|webm|mkv|mov|avi|mp3|m4a|aac|flac|ogg|opus|wav|m3u8|mpd)([?#]|${'$'})/i;
   function post(o){ try { o.n = N; B.report(JSON.stringify(o)); } catch (e) {} }
   function abs(u){ try { return new URL(u, document.baseURI).href; } catch (e) { return ''; } }
@@ -56,6 +56,9 @@ object PageScan {
     if (/^data:/i.test(u)) return;
     u = abs(u);
     if (!/^https?:/i.test(u)) return;
+    var path = u.split(/[?#]/)[0].toLowerCase();
+    if (/\.(m3u8|mpd)$/i.test(path)) streamSeen = true;
+    if (streamSeen && /\.(ts|m4s|cmfv|cmfa)$/i.test(path)) return;
     var k = t + ' ' + u;
     var mt = cleanMime(mime);
     var entry = { u: u, t: t, w: w | 0, h: h | 0, m: mt };
@@ -74,7 +77,14 @@ object PageScan {
   }
   function resourceCandidate(list, u, mime){
     var kind = kindFromMime(mime);
+    var clean = cleanMime(mime);
     var path = String(u || '').split(/[?#]/)[0].toLowerCase();
+    if (/\.(m3u8|mpd)$/i.test(path) ||
+        clean === 'application/vnd.apple.mpegurl' || clean === 'application/x-mpegurl' ||
+        clean === 'audio/mpegurl' || clean === 'audio/x-mpegurl' || clean === 'application/dash+xml') {
+      streamSeen = true;
+    }
+    if (streamSeen && (/\.(ts|m4s|cmfv|cmfa)$/i.test(path) || clean === 'video/mp2t')) return;
     if (!kind) {
       if (/\.(m3u8|mpd|mp4|m4v|webm|mkv|mov|avi)$/i.test(path)) kind = 'video';
       else if (/\.(mp3|m4a|aac|flac|ogg|opus|wav)$/i.test(path)) kind = 'audio';
@@ -130,6 +140,13 @@ object PageScan {
         if (resources[i] && resources[i].name) resourceCandidate(list, resources[i].name, '');
       }
     } catch (e) {}
+    if (streamSeen) {
+      list = list.filter(function(entry){
+        var entryPath = String(entry.u || '').split(/[?#]/)[0].toLowerCase();
+        var entryMime = cleanMime(entry.m);
+        return !(/\.(ts|m4s|cmfv|cmfa)$/i.test(entryPath) || entryMime === 'video/mp2t');
+      });
+    }
     var blob = blobSeen && !blobSent;
     if (blob) blobSent = true;
     if (list.length || blob) post({ items: list, blob: blob });
