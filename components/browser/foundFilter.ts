@@ -10,24 +10,41 @@ export type FoundFilter = 'all' | FoundKind;
 
 const FILTER_ORDER: readonly FoundFilter[] = ['all', 'video', 'audio', 'image', 'document', 'other'];
 export const FILTER_LABEL: Record<FoundFilter, string> = {
-  all: 'All',
-  video: 'Video',
-  audio: 'Audio',
-  image: 'Image',
-  document: 'Document',
-  other: 'Other',
+  all: '전체',
+  video: '동영상',
+  audio: '오디오',
+  image: '이미지',
+  document: '문서',
+  other: '기타',
 };
 
 const MAX_FOUND = 500;
 const INSTALLER_EXT = new Set(['apk', 'exe', 'msi', 'dmg', 'bat', 'cmd', 'scr']);
 
-/** Adds new items to the list (newest last), skipping ids already there, keeping the newest MAX_FOUND. */
+/**
+ * Adds new items, and enriches an existing row when a later response reveals MIME, stream type,
+ * size or dimensions. A later partial observation must never erase earlier evidence.
+ */
 export function mergeFound(existing: readonly FoundItem[], incoming: readonly FoundItem[]): FoundItem[] {
-  const seen = new Set(existing.map((i) => i.id));
+  const positions = new Map(existing.map((item, index) => [item.id, index]));
   const next = [...existing];
   for (const item of incoming) {
-    if (seen.has(item.id)) continue;
-    seen.add(item.id);
+    const position = positions.get(item.id);
+    if (position !== undefined) {
+      const previous = next[position];
+      next[position] = {
+        ...previous,
+        ...item,
+        mime: item.mime ?? previous.mime,
+        ext: item.ext ?? previous.ext,
+        size: item.size ?? previous.size,
+        width: item.width ?? previous.width,
+        height: item.height ?? previous.height,
+        stream: item.stream ?? previous.stream,
+      };
+      continue;
+    }
+    positions.set(item.id, next.length);
     next.push(item);
   }
   return next.length > MAX_FOUND ? next.slice(next.length - MAX_FOUND) : next;
