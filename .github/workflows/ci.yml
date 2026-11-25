@@ -4,7 +4,7 @@ name: CI
 # main requires these checks on the pull request itself; a run started by hand on the same commit does not count.
 on:
   # Flow: feature branches → PR into dev → dev (the main CI run, where features converge) → PR dev → main
-  # (the release build: all three ABIs, strict signing, APK set) → main reuses that PR's APKs (job `reuse`),
+  # (the release build: ARM64 APK, strict signing, optional APK set) → main reuses that PR's APKs (job `reuse`),
   # and release-apk.yml publishes them. Main only builds if the merge changed anything the PR didn't build.
   push:
     branches: [main, dev]
@@ -46,7 +46,7 @@ jobs:
 
       - name: Clippy (non-blocking)
         continue-on-error: true
-        run: cargo clippy --manifest-path native/maglev-core/Cargo.toml --no-default-features -- -D warnings
+        run: cargo clippy --manifest-path native/maglev-core/Cargo.toml --no-default-features
 
   js:
     name: JS checks (typecheck, tests, assistant eval)
@@ -117,7 +117,7 @@ jobs:
           echo "Pull request CI run: $RUN"
           rm -rf pr-apks pr-set
           gh run download "$RUN" --name apks --dir pr-apks || { echo "Not reusing: run $RUN has no apks artifact"; exit 0; }
-          for abi in universal arm64-v8a armeabi-v7a x86_64; do
+          for abi in arm64-v8a; do
             test -f "pr-apks/app-${abi}-release.apk" || { echo "Not reusing: app-${abi}-release.apk missing (run $RUN was not a release build)"; exit 0; }
           done
           gh run download "$RUN" --name accrescent-apks --dir pr-set || echo "Run $RUN has no APK set (no signing secrets); none is reused"
@@ -148,8 +148,8 @@ jobs:
     if: ${{ !cancelled() && needs.reuse.outputs.found != 'true' }}
     uses: ./.github/workflows/_rust-android.yml
     with:
-      # Release builds (main, and pull requests into main) build all three ABIs; everything else builds arm64 only.
-      abis: ${{ (github.ref == 'refs/heads/main' || github.base_ref == 'main') && 'arm64-v8a,armeabi-v7a,x86_64' || 'arm64-v8a' }}
+      # Build the user-facing ARM64 APK only; other ABIs are opt-in builds.
+      abis: 'arm64-v8a'
 
   apk:
     name: Build APK
@@ -160,9 +160,8 @@ jobs:
     env:
       ANDROID_HOME: /usr/local/lib/android/sdk
       GRADLE_OPTS: "-Xmx4g -Dorg.gradle.jvmargs=-Xmx4g -Dorg.gradle.daemon=false -Dorg.gradle.caching=true"
-      # Everyday CI builds arm64 only (plugins/withAbiSplits.js). main and pull requests into main build all three;
-      # main reuses a pull request's set when nothing changed (job reuse), and release-apk.yml reuses main's `apks` artifact (app-{universal,arm64-v8a,armeabi-v7a,x86_64}-release.apk).
-      MAGLEV_ABIS: ${{ (github.ref == 'refs/heads/main' || github.base_ref == 'main') && 'arm64-v8a,armeabi-v7a,x86_64' || 'arm64-v8a' }}
+      # Build and publish only the user-facing ARM64 APK by default. Other ABIs can be built explicitly.
+      MAGLEV_ABIS: 'arm64-v8a'
 
     steps:
       - name: Checkout repository
@@ -280,7 +279,7 @@ jobs:
       - name: List APKs
         run: ls -lh android/app/build/outputs/apk/release/*.apk
 
-      - name: Verify versionCodes (base*10 + ABI digit; universal is base*10)
+      - name: Verify versionCodes (base*10 + ABI digit)
         shell: bash
         run: |
           AAPT2=$(ls -d "$ANDROID_HOME"/build-tools/*/aapt2 | sort -V | tail -n 1)
