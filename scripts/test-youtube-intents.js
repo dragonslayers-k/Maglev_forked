@@ -39,6 +39,10 @@ async function main() {
   assert.match(nativeIntent, /parseYouTubeIntent\(raw\)\s*\?\?\s*parseYouTubeIntent\(internalPath\)/, 'router must accept full and path-only intent URLs');
   assert.match(quickShare, /maglev:\/\/youtube-download\?url=/, 'QuickShare must launch the direct internal download route');
 
+  const browser = fs.readFileSync(path.join(root, 'app/browser.tsx'), 'utf8');
+  assert.match(browser, /parseYouTubeIntent\\(text\\)/, 'browser paste must recognize YouTube URLs before generic navigation');
+  assert.match(browser, /pathname: '\/youtube-download'/, 'browser paste must open the dedicated downloader screen');
+
   console.log('test-youtube-intents: all assertions passed');
 }
 main().catch((e) => { console.error(e); process.exit(1); });
