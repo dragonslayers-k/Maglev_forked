@@ -106,11 +106,11 @@ object YoutubeDownload {
                 try {
                     val current = YoutubeDL.getInstance().getInfo(requestFor(sourceUrl, client))
                     if (metadata == null || metadata?.title.isNullOrBlank()) metadata = current
-                    val found = (current.formats ?: arrayListOf()).mapNotNull { format -> toFormat(format, client) }
+                    val found = (current.formats ?: arrayListOf()).mapNotNull { format -> toFormat(format, client, current.duration) }
                     allFormats.addAll(found)
                     val hasVideo = found.any { it["kind"] == "video" }
                     val hasAudio = found.any { it["kind"] == "audio" }
-                    if (hasVideo && hasAudio) break
+                    if (hasVideo) break
                 } catch (e: Throwable) {
                     rethrowFatal(e)
                     // A broken runtime/class initializer is not an extractor-client failure.
@@ -177,14 +177,31 @@ object YoutubeDownload {
             val app = context.applicationContext
             prepareYtDlp(app)
             val selected = YoutubeDL.getInstance().getInfo(requestFor(sourceUrl, playerClient).addOption("-f", formatId))
-            val requested = selected.requestedFormats?.firstOrNull()
             val audioOnly = formatId == "bestaudio"
-            val directUrl = requested?.url ?: selected.url ?: requested?.manifestUrl ?: selected.manifestUrl
-                ?: return Json.failure("YOUTUBE_NO_FORMAT", "선택한 형식의 다운로드 주소를 가져오지 못했습니다.")
+            val requestedFormats = selected.requestedFormats.orEmpty()
+            val requested = if (audioOnly) {
+                requestedFormats.firstOrNull { format ->
+                    !format.acodec.isNullOrBlank() && format.acodec != "none" &&
+                        (format.vcodec.isNullOrBlank() || format.vcodec == "none")
+                }
+            } else requestedFormats.firstOrNull()
+            if (audioOnly && requested == null) {
+                return Json.failure(
+                    "YOUTUBE_AUDIO_FORMAT_UNRESOLVED",
+                    "오디오 전용 형식을 확인하지 못했습니다. 이 영상은 오디오만 저장할 수 있는 형식이 제공되지 않았습니다.",
+                )
+            }
+            // bestaudio must resolve to the requested audio-only format. Never fall back to
+            // VideoInfo.url, which can point at a video and violate the user's selection.
+            val directUrl = if (audioOnly) {
+                requested?.url?.takeIf { it.isNotBlank() }
+                    ?: return Json.failure("YOUTUBE_AUDIO_URL_MISSING", "오디오 전용 다운로드 주소를 가져오지 못했습니다.")
+            } else {
+                requested?.url ?: selected.url ?: requested?.manifestUrl ?: selected.manifestUrl
+                    ?: return Json.failure("YOUTUBE_NO_FORMAT", "선택한 형식의 다운로드 주소를 가져오지 못했습니다.")
+            }
             val manifestUrl = requested?.manifestUrl?.takeIf { it.isNotBlank() }
                 ?: selected.manifestUrl?.takeIf { it.isNotBlank() }
-            // bestaudio is a yt-dlp selector, not a format row. Prefer its resolved direct
-            // audio URL and never route it through the video-variant stream selector.
             val streamUrl = if (audioOnly) null else manifestUrl ?: directUrl.takeIf { isPlaylistUrl(it) }
             val mediaUrl = streamUrl ?: directUrl
 
@@ -203,7 +220,8 @@ object YoutubeDownload {
                 return Json.failure("ENGINE_UNAVAILABLE", "다운로드 엔진을 시작하지 못했습니다.")
             }
             BackgroundStart.start(app, MaglevTorrentService.ACTION_START)
-            val ext = (requested?.ext ?: selected.ext ?: "mp4").lowercase().filter { it.isLetterOrDigit() }.ifEmpty { "mp4" }
+            val ext = (requested?.ext ?: if (audioOnly) "m4a" else selected.ext ?: "mp4")
+                .lowercase().filter { it.isLetterOrDigit() }.ifEmpty { if (audioOnly) "m4a" else "mp4" }
             val name = safeName(selected.title ?: if (link != null) "YouTube video" else "Web video") + "." + ext
             val options = linkedMapOf<String, Any?>(
                 "name" to name,
@@ -256,7 +274,7 @@ object YoutubeDownload {
         return path.endsWith(".m3u8") || path.endsWith(".mpd") || raw.contains("manifest.m3u8", ignoreCase = true)
     }
 
-    private fun toFormat(f: VideoFormat, playerClient: String): Map<String, Any?>? {
+    private fun toFormat(f: VideoFormat, playerClient: String, durationSeconds: Number?): Map<String, Any?>? {
         val id = f.formatId?.takeIf { formatIdPattern.matches(it) } ?: return null
         val url = f.url?.takeIf { it.isNotBlank() }
         val manifest = f.manifestUrl?.takeIf { it.isNotBlank() }
@@ -270,7 +288,13 @@ object YoutubeDownload {
             !hasVideo && hasAudio -> "audio"
             else -> return null
         }
-        val bytes = f.fileSize.takeIf { it > 0 } ?: f.fileSizeApproximate.takeIf { it > 0 }
+        val exactBytes = f.fileSize.takeIf { it > 0 } ?: f.fileSizeApproximate.takeIf { it > 0 }
+        val bitrateKbps = (f.tbr.takeIf { it > 0 } ?: f.abr.takeIf { it > 0 }).toDouble()
+        val seconds = durationSeconds?.toDouble()?.takeIf { it > 0 && it.isFinite() }
+        val estimatedBytes = if (exactBytes == null && bitrateKbps > 0 && seconds != null) {
+            (bitrateKbps * 1000.0 / 8.0 * seconds).takeIf { it.isFinite() && it > 0 && it < Long.MAX_VALUE.toDouble() }?.toLong()
+        } else null
+        val bytes = exactBytes ?: estimatedBytes
         return linkedMapOf(
             "formatId" to id,
             "playerClient" to playerClient,
@@ -282,6 +306,7 @@ object YoutubeDownload {
             "tbr" to f.tbr,
             "abr" to f.abr,
             "size" to bytes,
+            "sizeEstimated" to (exactBytes == null && estimatedBytes != null),
             "format" to f.formatNote,
         )
     }
