@@ -45,16 +45,17 @@ async function main() {
 
   const youtubeAdapter = fs.readFileSync(path.join(root, 'modules/maglev-engine/android/src/main/java/com/maglev/engine/youtube/YoutubeDownload.kt'), 'utf8');
   const nativeModule = fs.readFileSync(path.join(root, 'modules/maglev-engine/android/src/main/java/com/maglev/engine/MaglevEngineModule.kt'), 'utf8');
-  assert.ok(youtubeAdapter.includes('PLAYER_CLIENTS = listOf("web_safari", "android_vr", "web_embedded")'), 'extractor keeps explicit YouTube client fallback');
+  assert.ok(youtubeAdapter.includes('PLAYER_CLIENTS = listOf("android_vr", "web_safari", "web_embedded")'), 'extractor tries the Android client first and keeps fallback clients');
   assert.ok(youtubeAdapter.includes('playerClient != "generic"'), 'generic extraction does not force a YouTube player client');
   assert.ok(youtubeAdapter.includes('httpMediaUrl(rawUrl)'), 'generic extraction validates HTTP(S) page URLs');
   assert.ok(youtubeAdapter.includes('playerClient == "generic"'), 'generic page formats are tagged separately from YouTube clients');
   assert.ok(youtubeAdapter.includes('EngineHost.probeStream'), 'HLS/DASH formats must use Maglev stream engine');
   assert.ok(youtubeAdapter.includes('youtube:player_client='), 'selected format must be re-extracted with its original client');
   assert.match(nativeModule, /formatId: String, playerClient: String/, 'native bridge must carry the selected extractor client');
-  assert.match(youtubeAdapter, /updateYoutubeDL\(app, YoutubeDL\.UpdateChannel\.STABLE\)/, 'adapter must update the stable yt-dlp binary');
-  assert.match(youtubeAdapter, /UPDATE_INTERVAL_MS = 24 \* 60 \* 60 \* 1000L/, 'stable update checks must be throttled to daily');
-  assert.match(youtubeAdapter, /RETRY_INTERVAL_MS = 6 \* 60 \* 60 \* 1000L/, 'failed update checks must retry later');
+  assert.match(youtubeAdapter, /private fun prepareYtDlp\(context: Context\)\s*\{\s*YoutubeDL\.getInstance\(\)\.init\(context\.applicationContext\)\s*\}/, 'interactive analysis must initialize the bundled yt-dlp without blocking on an update download');
+  assert.ok(youtubeAdapter.includes('groupBy { it["formatId"].toString() }'), 'duplicate format IDs from different player clients must collapse to one row');
+  assert.ok(youtubeAdapter.includes('formatId == "bestaudio"'), 'bestaudio selector must bypass video stream selection');
+  assert.ok(youtubeAdapter.includes('!hasVideo && hasAudio -> "audio"'), 'audio-only formats must be recognized even when exposed as a manifest');
   assert.match(youtubeAdapter, /safeDiagnostic\(e\)/, 'extractor errors must surface a sanitized diagnostic');
 
   const nativeModuleSource = fs.readFileSync(path.join(root, 'modules/maglev-engine/android/src/main/java/com/maglev/engine/MaglevEngineModule.kt'), 'utf8');
@@ -66,6 +67,8 @@ async function main() {
   assert.ok(screen.includes('maglevEngine.getYouTubeInfo'), 'YouTube screen must use the existing native extractor');
   assert.ok(screen.includes('maglevEngine.addYouTubeDownload'), 'selected formats must enter the shared native transfer queue');
   assert.ok(screen.includes('format.playerClient'), 'the selected extractor client must be preserved');
+  assert.ok(screen.includes("formatId: 'bestaudio'"), 'the screen must always expose an audio-only best-quality fallback');
+  assert.ok(screen.includes('오디오만 · 최고 음질'), 'audio-only fallback must be clearly labeled in Korean');
   assert.ok(!screen.includes('ytdlpEngine.download'), 'screen must not create a second standalone download queue');
   const packageJson = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
   assert.equal(packageJson.dependencies?.['ytdlp-engine'], undefined, 'do not install a second yt-dlp Expo module/queue');
