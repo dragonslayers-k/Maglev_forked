@@ -5,7 +5,9 @@
 import { languageInfo, languageName } from './languages.ts';
 import type { SubtitleErrorCode } from './payload.ts';
 
-const localizedLanguage = (code: string): string => languageInfo(code)?.native ?? languageName(code);\n\nexport interface ErrorCopy {
+const localizedLanguage = (code: string): string => languageInfo(code)?.native ?? languageName(code);
+
+export interface ErrorCopy {
   message: string;
   action: string;
 }
