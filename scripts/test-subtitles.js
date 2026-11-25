@@ -265,7 +265,7 @@ const utf8 = (s) => Uint8Array.from(Buffer.from(s, 'utf8'));
   check('limit', eq(EC('limit', { source: 'Foo' }), { message: 'Foo의 오늘 사용 한도에 도달했습니다.', action: '다른 검색 사이트 사용' }));
   check('nothing found names the language', EC('nothing', { language: 'de' }).message === 'Deutsch 자막을 찾지 못했습니다.' && EC('nothing', { language: 'pt-BR' }).message === 'Português (Brasil) 자막을 찾지 못했습니다.' && EC('nothing').action === '다른 언어');
   check('file, folder, space, verify', EC('missing').message === "동영상 파일을 찾을 수 없습니다." && EC('CANT_WRITE').action === '폴더 열기' && EC('NO_SPACE').message === '저장 공간이 부족합니다.' && EC('VERIFY_FAILED').message === "자막을 올바르게 저장하지 못했습니다.");
-  check('archive and text errors', EC('unsupported_archive').message === "지원하지 않는 자막 파일 형식입니다." && EC('unsupported_archive').action === 'Pick another' && EC('unreadable_text').message === "Maglev에서 이 자막의 텍스트를 읽을 수 없습니다." && EC('ambiguous_pack').message.startsWith('이 파일에는 여러 회차 자막이 포함되어 있어'));
+  check('archive and text errors', EC('unsupported_archive').message === "지원하지 않는 자막 파일 형식입니다." && EC('unsupported_archive').action === '다른 파일 선택' && EC('unreadable_text').message === "Maglev에서 이 자막의 텍스트를 읽을 수 없습니다." && EC('ambiguous_pack').message.startsWith('이 파일에는 여러 회차 자막이 포함되어 있어'));
   check('notice text', copy.privacyNotice(['A', 'B']) === "자막을 찾으면 동영상 파일명과 식별 정보가 활성 검색 사이트(A, B)로 전송됩니다. 검색 사이트는 어떤 영상을 찾는지 알 수 있습니다.");
   check('privacy line and sheet strings', copy.PRIVACY_LINE.endsWith("'자막 찾기'를 누르기 전에는 전송하지 않습니다.") && copy.NOTHING_FITS_TITLE === '일치하는 자막이 없습니다' && copy.DOWNLOAD_BUTTON === '자막 다운로드');
   const jargon = Object.values(copy).filter((v) => typeof v === 'string').join(' ');
