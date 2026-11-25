@@ -836,6 +836,8 @@ export const SETTINGS_INDEX: SettingEntry[] = [
     "Browser",
     [
     "history",
+    "clear",
+    "clear history",
     "delete",
     "remove",
     "erase",
