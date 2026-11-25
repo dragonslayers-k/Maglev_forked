@@ -4,6 +4,7 @@ import Svg, { Path } from 'react-native-svg';
 import { maglevEngine } from 'maglev-engine';
 import { useTheme } from '../../context/ThemeContext';
 import { ThemeColors, spacing, touch, type } from '../../constants/theme';
+import { koUiText } from '../../constants/korean';
 import { APP_ICONS, DEFAULT_APP_ICON } from '../../constants/appIcons';
 import { appIconCopy } from '../../constants/copy';
 import { APP_ICON_PREVIEWS, APP_ICON_PREVIEW_VIEWBOX } from '../../assets/app-icons/previews';
@@ -74,7 +75,7 @@ export function AppIconSection() {
               key={id}
               onPress={() => pick(id)}
               accessibilityRole="radio"
-              accessibilityLabel={appIconCopy.a11y(name, selected)}
+              accessibilityLabel={appIconCopy.a11y(koUiText(name), selected)}
               accessibilityState={{ selected, checked: selected }}
               containerStyle={s.cell}
               style={s.item}
@@ -85,7 +86,7 @@ export function AppIconSection() {
                 </View>
               </View>
               <Text style={[s.name, selected && { color: colors.text }]} numberOfLines={2}>
-                {name}
+                {koUiText(name)}
               </Text>
             </PressableScale>
           );
