@@ -244,7 +244,7 @@ export default function FeedsScreen() {
         await startTorrent(item.source);
         setSessionAdded((p) => new Set(p).add(key));
         markSeen([item]);
-        show({ tone: 'success', title: 'Added to Transfers', body: note ?? undefined, actionLabel: 'View', onAction: () => router.push('/' as never) });
+        show({ tone: 'success', title: '전송 목록에 추가했습니다', body: note ?? undefined, actionLabel: '보기', onAction: () => router.push('/' as never) });
       } catch (e) {
         const { duplicate, notice: n } = addErrorNotice(e, () => {
           void restartEngine().then((ok) => {
@@ -280,10 +280,10 @@ export default function FeedsScreen() {
   const sheet = (
     <>
       <NewFeedSheet visible={sheetOpen} onClose={() => setSheetOpen(false)} onSubmit={addFeed} />
-      <Sheet visible={!!removing} onClose={() => setRemoving(null)} title={`Remove ${removing?.name ?? 'feed'}?`} subtitle="Torrents you already added stay in your list.">
+      <Sheet visible={!!removing} onClose={() => setRemoving(null)} title={`Remove ${removing?.name ?? 'feed'}?`} subtitle="이미 추가한 토렌트는 목록에 그대로 남습니다.">
         <View style={styles.stack}>
-          <Button label="Remove feed" variant="danger" fullWidth onPress={() => removing && removeFeed(removing)} />
-          <Button label="Cancel" variant="ghost" fullWidth onPress={() => setRemoving(null)} />
+          <Button label="피드 삭제" variant="danger" fullWidth onPress={() => removing && removeFeed(removing)} />
+          <Button label="취소" variant="ghost" fullWidth onPress={() => setRemoving(null)} />
         </View>
       </Sheet>
       <MobileDataSheet
@@ -300,13 +300,13 @@ export default function FeedsScreen() {
 
   if (feeds.length === 0) {
     return (
-      <Screen title="Feeds">
+      <Screen title="피드">
         <EmptyBlock
           icon="feeds"
           title={empty.feeds.none.title}
           body={empty.feeds.none.body}
-          primary={{ label: 'New feed', icon: 'plus', onPress: () => setSheetOpen(true) }}
-          secondary={{ label: 'Auto-download rules', onPress: () => router.push('/settings/feeds' as never) }}
+          primary={{ label: '새 피드', icon: 'plus', onPress: () => setSheetOpen(true) }}
+          secondary={{ label: '자동 다운로드 규칙', onPress: () => router.push('/settings/feeds' as never) }}
         />
         {sheet}
       </Screen>
@@ -324,7 +324,7 @@ export default function FeedsScreen() {
             tone="danger"
             title={banners.feeds.loadFailed(f.name).title}
             body={states[f.id]?.error}
-            actionLabel="Retry"
+            actionLabel="다시 시도"
             onAction={() => void loadOne(f)}
           />
         </View>
@@ -333,25 +333,25 @@ export default function FeedsScreen() {
   );
 
   return (
-    <Screen title="Feeds">
+    <Screen title="피드">
       <View style={styles.sub}>
         <Text style={styles.subText} accessibilityLiveRegion="polite">
           {`${feeds.length} ${feeds.length === 1 ? 'feed' : 'feeds'} · ${newCount} new`}
         </Text>
-        <Button label="New feed" icon="plus" onPress={() => setSheetOpen(true)} />
+        <Button label="새 피드" icon="plus" onPress={() => setSheetOpen(true)} />
       </View>
       <View style={styles.autoRow}>
         {newCount > 0 ? (
           <Button
-            label="Mark all seen"
+            label="모두 읽음 처리"
             variant="ghost"
             onPress={() => markSeen(feeds.flatMap((f) => (states[f.id]?.items ?? []).map((i) => ({ feedId: f.id, id: i.id }))))}
           />
         ) : null}
-        <Button label="Auto-download rules" icon="rule" variant="ghost" onPress={() => router.push('/settings/feeds' as never)} />
+        <Button label="자동 다운로드 규칙" icon="rule" variant="ghost" onPress={() => router.push('/settings/feeds' as never)} />
       </View>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipScroll} contentContainerStyle={styles.chips}>
-        <Chip label="All" selected={selected === ALL} onPress={() => setSelected(ALL)} />
+        <Chip label="전체" selected={selected === ALL} onPress={() => setSelected(ALL)} />
         {feeds.map((f) => (
           <Chip key={f.id} label={f.name} selected={selected === f.id} onPress={() => setSelected(f.id)} />
         ))}
@@ -361,7 +361,7 @@ export default function FeedsScreen() {
           <Text style={styles.feedHost} numberOfLines={1}>
             {hostOf(selectedFeed.url)}
           </Text>
-          <Button label="Remove feed" variant="danger" onPress={() => setRemoving(selectedFeed)} />
+          <Button label="피드 삭제" variant="danger" onPress={() => setRemoving(selectedFeed)} />
         </View>
       ) : null}
       <FlatList
