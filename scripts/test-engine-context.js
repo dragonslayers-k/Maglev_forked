@@ -56,6 +56,7 @@ if (am) {
 
 // ---- root layout and hosts use the narrowest hook
 check('_layout.tsx does not call useMaglevEngine', !/useMaglevEngine/.test(layout));
+check('YouTube download is engine-first on cold share launch', /youtube-download/.test(layout.match(/const ENGINE_FIRST_ROUTE = ([^;]+);/)?.[1] ?? ''));
 check('_layout.tsx reads useEngineStatus', /useEngineStatus\(\)/.test(layout));
 check('Stack screenOptions is not inline', !/screenOptions=\{\{/.test(layout));
 check('NoticeHost uses useEngineNotice', /useEngineNotice\(\)/.test(noticeHost) && !/useMaglevEngine/.test(noticeHost));
