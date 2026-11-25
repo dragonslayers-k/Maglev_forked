@@ -66,7 +66,7 @@ async function main() {
   check('hide small is on by default', prefs.defaultBrowserPrefs().hideSmallFiles === true);
   check('hide small can be turned off and survives a parse', prefs.normalizeBrowserPrefs({ hideSmallFiles: false }).hideSmallFiles === false);
   check('a missing value means on', prefs.normalizeBrowserPrefs({}).hideSmallFiles === true);
-  check('copy has the toggle and the count', typeof copy.foundTray.hideSmall === 'string' && copy.foundTray.hidden(3) === '3 hidden');
+  check('copy has the Korean toggle and hidden count', typeof copy.foundTray.hideSmall === 'string' && copy.foundTray.hidden(3) === '3개 숨김');
 
   console.log('size sort for every kind');
   const doc = (id, size, over = {}) => mk(id, { kind: 'document', ext: 'pdf', size, ...over });
