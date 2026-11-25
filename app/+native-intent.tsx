@@ -40,7 +40,7 @@ export function redirectSystemPath({ path }: { path: string; initial: boolean })
     }
     // Explicit internal YouTube route from the share activity. Normalize the custom scheme to a router path.
     const internalPath = appPath(raw);
-    if (/^\\/?youtube-download(?:\\/)?(?:\\?|$)/i.test(internalPath)) return stripShareMarker(internalPath);
+    if (/^\/?youtube-download(?:\/)?(?:\?|$)/i.test(internalPath)) return stripShareMarker(internalPath);
     // Some Android/Expo versions provide the full URL; others provide only its path and query.
     const youtube = parseYouTubeIntent(raw) ?? parseYouTubeIntent(internalPath);
     if (youtube) return `/youtube-download?url=${encodeURIComponent(youtube.canonicalUrl)}`;
