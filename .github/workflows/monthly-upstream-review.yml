@@ -47,8 +47,8 @@ jobs:
           echo "$commits" > upstream-commits.txt
           {
             echo "## Monthly upstream Maglev review"
-            echo "- Fork main: `$fork_sha`"
-            echo "- Upstream main: `$upstream_sha`"
+            echo "- Fork main: $fork_sha"
+            echo "- Upstream main: $upstream_sha"
             echo "- Status: $state"
             echo
             echo "### Changes"
@@ -70,7 +70,8 @@ jobs:
             exit 0
           fi
           commits="$(cat upstream-commits.txt)"
-          gh issue create --title "$title" --body "## Monthly upstream review
+          cat > issue-body.md <<EOF
+          ## Monthly upstream review
 
           - Status: $REVIEW_STATE
           - Fork main: `$FORK_SHA`
@@ -90,4 +91,6 @@ jobs:
           - [ ] Review conflicts against fork modifications
           - [ ] Selectively port changes to `upstream-sync/$month`
           - [ ] Run CI and Android build/device validation
-          - [ ] Open a Draft PR to `dev` with Korean summary"
+          - [ ] Open a Draft PR to `dev` with Korean summary
+          EOF
+          gh issue create --title "$title" --body-file issue-body.md
