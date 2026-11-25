@@ -20,7 +20,7 @@ const ICON_IDS = [
   'm-bare-lime', 'm-bare-teal', 'm-bare-mono', 'nose', 'dash', 'crt', 'amber',
 ];
 const DEFAULT_ICON = 'teal';
-const PACKAGE = 'com.maglev';
+const PACKAGE = 'com.maglev.plus';
 const RES_PREFIX = 'ic_launcher_alt_';
 const RES_DIRS = ['drawable', 'mipmap-anydpi', 'mipmap-anydpi-v26', 'values'];
 
