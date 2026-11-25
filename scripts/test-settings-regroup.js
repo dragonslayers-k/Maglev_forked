@@ -109,11 +109,11 @@ async function main() {
   };
   for (const [id, section] of Object.entries(moved)) {
     const e = byId.get(id);
-    check(`${id} points to downloads / ${section}`, !!e && e.page === 'downloads' && e.pageTitle === 'Adding and finishing' && e.section === section);
+    check(`${id} points to downloads / ${section}`, !!e && e.page === 'downloads' && e.pageTitle === '추가 및 완료' && e.section === section);
   }
   check('storage-hide-gallery is not under Adding downloads', byId.get('storage-hide-gallery')?.section !== 'Adding downloads');
   check('no entry still says Speed & queue', !SETTINGS_INDEX.some((e) => e.pageTitle === 'Speed & queue'));
-  check('speed entries say Speed and sharing', SETTINGS_INDEX.filter((e) => e.page === 'speed').every((e) => e.pageTitle === 'Speed and sharing'));
+  check('speed entries say Speed and sharing', SETTINGS_INDEX.filter((e) => e.page === 'speed').every((e) => e.pageTitle === '속도 및 공유'));
 
   // Fixtures and flows.
   for (const f of ['.maestro/settings-roundtrip.yaml', '.maestro/settings-screens.yaml']) {
