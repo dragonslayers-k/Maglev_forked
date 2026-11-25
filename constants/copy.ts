@@ -553,7 +553,7 @@ export const appIconCopy = {
   label: '앱 아이콘',
   hint: 'Maglev를 나가면 변경됩니다. 홈 화면에 반영되기까지 잠시 걸릴 수 있습니다.',
   /** "Teal app icon, selected" */
-  a11y: (name: string, selected: boolean) => `${name} app icon${selected ? ', selected' : ''}`,
+  a11y: (name: string, selected: boolean) => `${name} 앱 아이콘${selected ? ', 선택됨' : ''}`,
 } as const;
 
 /** The screen shown when a screen crashes, and the crash log row in Settings > About. */
