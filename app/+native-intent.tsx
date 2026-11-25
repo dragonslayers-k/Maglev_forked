@@ -11,7 +11,7 @@ import { visibleTabs } from '../components/tabs/tabPrefs';
 import { getTabPrefs } from '../components/tabs/tabPrefsStore';
 import { shareBrowserRoute } from '../utils/browser/shareRoute';
 import { sharedDownloadRoute, stripShareMarker } from '../modules/maglev-engine/src/downloadLink';
-import { parseYouTubeLink } from '../utils/browser/youtube';
+import { parseYouTubeIntent } from '../utils/browser/youtube';
 
 const ADD_ROUTE = '/add-torrent';
 
@@ -38,8 +38,11 @@ export function redirectSystemPath({ path }: { path: string; initial: boolean })
       setShareQueue(packed.slice(1));
       return addRoute(packed[0]);
     }
-    // YouTube shares use the in-app browser entry point; the yt-dlp download adapter is a separate pending milestone.
-    const youtube = parseYouTubeLink(raw);
+    // Explicit internal YouTube route from the share activity. Normalize the custom scheme to a router path.
+    const internalPath = appPath(raw);
+    if (/^\\/?youtube-download(?:\\/)?(?:\\?|$)/i.test(internalPath)) return stripShareMarker(internalPath);
+    // Some Android/Expo versions provide the full URL; others provide only its path and query.
+    const youtube = parseYouTubeIntent(raw) ?? parseYouTubeIntent(internalPath);
     if (youtube) return `/youtube-download?url=${encodeURIComponent(youtube.canonicalUrl)}`;
     if (/^magnet:/i.test(raw)) return addRoute(raw);
     if (/^content:\/\//i.test(raw) || /^file:\/\//i.test(raw)) return addRoute(raw);
