@@ -336,7 +336,7 @@ export const historyCopy = {
     rangeTitle: '방문 기록 삭제',
     rangeSubtitle: '브라우저에서 방문한 페이지를 삭제합니다.',
     dataTitle: '인터넷 사용 데이터 삭제',
-    dataSubtitle: '쿠키를 삭제하면 사이트에서 로그아웃됩니다. 검색에서 완료한 Cloudflare 확인도 초기화됩니다.',
+    dataSubtitle: '쿠키를 삭제하면 사이트에서 로그아웃됩니다. 검색 중 완료한 보안 확인도 초기화됩니다.',
     ranges: { hour: '최근 1시간', today: '오늘', week: '최근 7일', all: '전체 기간' },
     history: '방문 기록',
     cookies: '쿠키 및 사이트 데이터',
