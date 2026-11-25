@@ -61,6 +61,15 @@ class FoundClassifierTest {
         assertNotNull(net("https://cdn.example.com/seg/0001.ts", hls = false))
     }
 
+    @Test fun knownHlsAndDashFragmentsAreSuppressedOnlyAfterTheirManifest() {
+        assertFalse(FoundClassifier.isStreamSegment("https://cdn.example.com/segment.ts?token=1", false, false))
+        assertTrue(FoundClassifier.isStreamSegment("https://cdn.example.com/segment.ts?token=1", true, false))
+        assertTrue(FoundClassifier.isStreamSegment("https://cdn.example.com/segment.m4s?token=1", false, true))
+        assertTrue(FoundClassifier.isStreamSegment("https://cdn.example.com/init.cmfv", true, false))
+        assertTrue(FoundClassifier.isStreamSegment("https://cdn.example.com/audio.cmfa", false, true))
+        assertFalse(FoundClassifier.isStreamSegment("https://cdn.example.com/movie.mp4", true, true))
+    }
+
     @Test fun networkIgnoresImagesDocumentsAndOthers() {
         for (e in listOf("jpg", "png", "gif", "webp", "svg", "pdf", "zip", "js", "css", "html", "json")) {
             assertNull(e, net("https://cdn.example.com/x/file.$e"))
