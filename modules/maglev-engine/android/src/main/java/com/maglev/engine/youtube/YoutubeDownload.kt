@@ -1,6 +1,7 @@
 package com.maglev.engine.youtube
 
 import android.content.Context
+import android.util.Log
 import android.webkit.WebSettings
 import com.maglev.engine.EngineHost
 import com.maglev.engine.browser.YouTubeUrl
@@ -21,14 +22,59 @@ import com.yausername.youtubedl_android.mapper.VideoInfo
  * Separate DASH tracks need a verified mux path before being exposed.
  */
 object YoutubeDownload {
+    private const val TAG = "MaglevYouTube"
+    private const val UPDATE_PREFS = "maglev_ytdlp_update"
+    private const val KEY_LAST_ATTEMPT = "stable_last_attempt_ms"
+    private const val KEY_LAST_SUCCESS = "stable_last_success"
+    private const val UPDATE_INTERVAL_MS = 24 * 60 * 60 * 1000L
+    private const val RETRY_INTERVAL_MS = 6 * 60 * 60 * 1000L
     private val formatIdPattern = Regex("^[A-Za-z0-9._-]{1,64}$")
+
+    /**
+     * Keep the embedded yt-dlp extractor current like YTDLnis does, without checking on every request.
+     * The wrapper bundled binary is the offline fallback; failed update checks are retried in 6 hours.
+     */
+    @Synchronized
+    private fun prepareYtDlp(context: Context) {
+        val app = context.applicationContext
+        val ytdlp = YoutubeDL.getInstance()
+        ytdlp.init(app)
+        val prefs = app.getSharedPreferences(UPDATE_PREFS, Context.MODE_PRIVATE)
+        val now = System.currentTimeMillis()
+        val lastAttempt = prefs.getLong(KEY_LAST_ATTEMPT, 0L)
+        val interval = if (prefs.getBoolean(KEY_LAST_SUCCESS, false)) UPDATE_INTERVAL_MS else RETRY_INTERVAL_MS
+        if (now - lastAttempt < interval) return
+
+        prefs.edit().putLong(KEY_LAST_ATTEMPT, now).apply()
+        try {
+            val status = ytdlp.updateYoutubeDL(app, YoutubeDL.UpdateChannel.STABLE)
+            val version = ytdlp.versionName(app) ?: "unknown"
+            prefs.edit().putBoolean(KEY_LAST_SUCCESS, true).apply()
+            Log.i(TAG, "yt-dlp stable update check: $status; version=$version")
+        } catch (e: Exception) {
+            prefs.edit().putBoolean(KEY_LAST_SUCCESS, false).apply()
+            Log.w(TAG, "yt-dlp stable update failed; using installed binary: ${safeDiagnostic(e)}")
+        }
+    }
+
+    private fun currentYtDlpVersion(context: Context): String =
+        runCatching { YoutubeDL.getInstance().versionName(context.applicationContext) }
+            .getOrNull()
+            ?.take(48)
+            ?: "unknown"
+
+    /** Keep logs and UI diagnostics useful without writing signed media URLs or query tokens. */
+    private fun safeDiagnostic(error: Throwable): String =
+        (error.message ?: error.javaClass.simpleName)
+            .replace(Regex("https?://[^\\\\s]+", RegexOption.IGNORE_CASE), "[URL]")
+            .take(240)
 
     fun info(context: Context, rawUrl: String): Map<String, Any?> {
         val link = YouTubeUrl.parse(rawUrl)
             ?: return Json.failure("INVALID_SOURCE", "지원하지 않는 YouTube 동영상 링크입니다.")
         return try {
             val app = context.applicationContext
-            YoutubeDL.getInstance().init(app)
+            prepareYtDlp(app)
             val request = YoutubeDLRequest(link.canonicalUrl).addOption("--no-playlist")
             val video = YoutubeDL.getInstance().getInfo(request)
             val formats = (video.formats ?: arrayListOf())
@@ -55,7 +101,10 @@ object YoutubeDownload {
                 "formats" to choices,
             )
         } catch (e: Exception) {
-            Json.failure("YOUTUBE_EXTRACT_FAILED", "YouTube 영상 정보를 가져오지 못했습니다. 공개 영상인지 확인하고 다시 시도하세요.")
+            val diagnostic = safeDiagnostic(e)
+            val version = currentYtDlpVersion(context)
+            Log.e(TAG, "YouTube metadata extraction failed (yt-dlp=$version): $diagnostic")
+            Json.failure("YOUTUBE_EXTRACT_FAILED", "YouTube 영상 정보를 가져오지 못했습니다. yt-dlp $version · $diagnostic")
         }
     }
 
@@ -67,7 +116,7 @@ object YoutubeDownload {
         }
         return try {
             val app = context.applicationContext
-            YoutubeDL.getInstance().init(app)
+            prepareYtDlp(app)
             val request = YoutubeDLRequest(link.canonicalUrl)
                 .addOption("--no-playlist")
                 .addOption("-f", formatId)
@@ -101,7 +150,10 @@ object YoutubeDownload {
                 ),
             )
         } catch (e: Exception) {
-            Json.failure("YOUTUBE_DOWNLOAD_FAILED", "YouTube 다운로드를 시작하지 못했습니다. 다시 시도하세요.")
+            val diagnostic = safeDiagnostic(e)
+            val version = currentYtDlpVersion(context)
+            Log.e(TAG, "YouTube download extraction failed (yt-dlp=$version): $diagnostic")
+            Json.failure("YOUTUBE_DOWNLOAD_FAILED", "YouTube 다운로드를 시작하지 못했습니다. yt-dlp $version · $diagnostic")
         }
     }
 
