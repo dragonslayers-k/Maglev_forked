@@ -6,11 +6,11 @@ const HOSTS = new Set(['youtube.com','www.youtube.com','m.youtube.com','music.yo
 
 function parseTime(value: string | null): number | undefined {
   if (!value || value.length > 32) return;
-  if (/^\d+$/.test(value)) {
+  if (/^\\d+$/.test(value)) {
     const n = Number(value);
     return Number.isSafeInteger(n) && n >= 1 && n <= 86400 ? n : undefined;
   }
-  const m = /^(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?$/.exec(value);
+  const m = /^(?:(\\d+)h)?(?:(\\d+)m)?(?:(\\d+)s)?$/.exec(value);
   if (!m || !m[1] && !m[2] && !m[3]) return;
   const h = Number(m[1] || 0), min = Number(m[2] || 0), sec = Number(m[3] || 0);
   const n = h * 3600 + min * 60 + sec;
@@ -19,8 +19,14 @@ function parseTime(value: string | null): number | undefined {
 
 export function parseYouTubeLink(raw: string | null | undefined): YouTubeLink | null {
   if (!raw || raw.length > 4096) return null;
+  const value = raw.trim();
   let url: URL;
-  try { url = new URL(raw.trim()); } catch { return null; }
+  // Pasted/shared short links are often copied without the https:// prefix.
+  // Only add it to recognized YouTube host forms; arbitrary hosts remain rejected below.
+  const normalized = /^(?:(?:www|m|music)\\.)?(?:youtube\\.com|youtu\\.be|youtube-nocookie\\.com)\\//i.test(value)
+    ? 'https://' + value
+    : value;
+  try { url = new URL(normalized); } catch { return null; }
   if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password) return null;
   const host = url.hostname.toLowerCase();
   if (!HOSTS.has(host)) return null;
@@ -65,18 +71,10 @@ export function parseYouTubeIntent(raw: string | null | undefined): YouTubeLink 
     // Continue with the path-only variants below.
   }
 
-  // Bare hostnames are common when a share/intent adapter strips the scheme.
-  if (/^(?:www\.)?(?:youtube\.com|m\.youtube\.com|music\.youtube\.com|youtu\.be|youtube-nocookie\.com|www\.youtube-nocookie\.com)\//i.test(value)) {
-    return parseYouTubeLink('https://' + value);
-  }
-
   // Expo Router may pass only the URL path and query. Only known video paths are normalized.
-  const path = value.replace(/^\//, '');
-  if (/^(?:watch|shorts|live|embed|v)(?:\/|\?)/i.test(path)) {
+  const path = value.replace(/^\\//, '');
+  if (/^(?:watch|shorts|live|embed|v)(?:\\/|\\?)/i.test(path)) {
     return parseYouTubeLink('https://www.youtube.com/' + path);
-  }
-  if (/^youtu\.be\//i.test(path)) {
-    return parseYouTubeLink('https://' + path);
   }
   return null;
 }
