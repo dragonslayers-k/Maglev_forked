@@ -44,7 +44,7 @@ const ENGINE_RESOLVE_TIMEOUT_MS = 15000;
  * once the engine can answer rather than failing with "Engine not started" (the bridge does not
  * queue calls made before start).
  */
-const ENGINE_FIRST_ROUTE = /^\/(add-torrent|add-download|torrent\/|download\/)/;
+const ENGINE_FIRST_ROUTE = /^\/(add-torrent|add-download|youtube-download|torrent\/|download\/)/;
 
 /** NATIVE_CONTRACT 44.7: runs the subtitle requests. Renders nothing; does no work while there are none. */
 function SubtitleRequestRunner() {
