@@ -1,15 +1,15 @@
-// Expo config plugin: per-ABI APK splits (+ universal) for release builds.
+// Expo config plugin: per-ABI APK splits for release builds; ARM64 is the default.
 // Needed because `expo prebuild --clean` regenerates android/ on every CI run.
 const ABIS = ['armeabi-v7a', 'arm64-v8a', 'x86_64'];
 const MARKER = 'maglev-abi-splits';
 
 /**
- * ABIs to build. MAGLEV_ABIS (comma list) narrows it; CI sets arm64-v8a on everyday
- * pushes to skip two thirds of the native compile. Unset means all three (releases).
+ * ABIs to build. MAGLEV_ABIS (comma list) selects the requested architectures.
+ * ARM64 is the default to keep the user's download small; other ABIs are opt-in.
  */
 function resolveAbis(value) {
   const list = String(value ?? '').split(',').map((s) => s.trim()).filter(Boolean);
-  if (list.length === 0) return ABIS.slice();
+  if (list.length === 0) return ['arm64-v8a'];
   for (const abi of list) {
     if (!ABIS.includes(abi)) throw new Error(`withAbiSplits: unknown ABI "${abi}" in MAGLEV_ABIS`);
   }
@@ -23,14 +23,14 @@ const splitsBlock = (abis) => `
             reset()
             // An app bundle refuses ABI splits (issuetracker 402800800); bundleRelease builds the APK set instead.
             enable !gradle.startParameter.taskNames.any { it.toLowerCase().contains("bundle") }
-            universalApk true
+            universalApk false
             include ${abis.map((a) => `"${a}"`).join(', ')}
         }
     }
 `;
 
-// One scheme for every output: versionCode = base * 10 + ABI digit. Split APKs get their ABI digit; the
-// universal APK and the app bundle (which bundletool turns into the Accrescent APK set) get digit 0.
+// One scheme for every output: versionCode = base * 10 + ABI digit. Split APKs get their ABI digit;
+// an app bundle (which bundletool turns into the Accrescent APK set) gets digit 0.
 // Android refuses an install whose versionCode is lower than the installed one, so all channels must share
 // one scheme. See https://developer.android.com/build/configure-apk-splits (version codes for multiple APKs).
 const ABI_DIGITS = { 'armeabi-v7a': 1, x86_64: 3, 'arm64-v8a': 4 };
@@ -57,7 +57,7 @@ androidComponents {
 `;
 
 /** Pure transform: inject splits + versionCode mapping into app/build.gradle text. Idempotent. */
-function applyAbiSplits(src, abis = ['arm64-v8a', 'armeabi-v7a', 'x86_64']) {
+function applyAbiSplits(src, abis = ['arm64-v8a']) {
   if (src.includes(MARKER)) return src;
   const m = /^android\s*\{[^\n]*\n/m.exec(src);
   if (!m) throw new Error('withAbiSplits: could not find `android {` block in app/build.gradle');
@@ -68,7 +68,7 @@ function applyAbiSplits(src, abis = ['arm64-v8a', 'armeabi-v7a', 'x86_64']) {
 }
 
 /** Pure transform for gradle.properties entries (array of {type,key,value}). */
-function applyArchitectures(props, abis = ABIS) {
+function applyArchitectures(props, abis = ['arm64-v8a']) {
   const value = abis.join(',');
   const out = props.filter((p) => !(p.type === 'property' && p.key === 'reactNativeArchitectures'));
   out.push({ type: 'property', key: 'reactNativeArchitectures', value });
