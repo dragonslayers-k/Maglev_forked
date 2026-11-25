@@ -195,6 +195,16 @@ object FoundClassifier {
         return if (hint == "video" || hint == "audio" || hint == "image") Classified(hint, ext, null, false) else null
     }
 
+    /**
+     * Known playlist fragments are not separate user downloads once an HLS or DASH manifest has been observed.
+     * Without a manifest, a standalone .ts or .m4s file remains a valid candidate.
+     */
+    fun isStreamSegment(url: String, hlsSeen: Boolean, dashSeen: Boolean): Boolean {
+        if (!hlsSeen && !dashSeen) return false
+        val path = url.substringBefore('?').substringBefore('#').lowercase()
+        return listOf(".ts", ".m4s", ".cmfv", ".cmfa").any(path::endsWith)
+    }
+
     /** Builds an item, or null when the URL is not http(s) or not classifiable for [source]. */
     fun item(
         url: String,
