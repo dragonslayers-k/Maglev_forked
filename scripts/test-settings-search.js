@@ -387,7 +387,7 @@ async function main() {
   );
   check(
     "settings.tsx contains 'Search sources'",
-    settingsTab.includes("Search sources"),
+    settingsTab.includes("검색 사이트"),
   );
   check(
     "settings.tsx routes to 'updates'",
