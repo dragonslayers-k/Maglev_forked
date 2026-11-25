@@ -56,7 +56,9 @@ class QuickShareActivity : Activity() {
         if (original.action == Intent.ACTION_VIEW) cls = ShareClassify.withHandOffName(cls, handOffName(original))
         val youtube = YouTubeUrl.parse(cls.source)
         if (youtube != null) {
-            openMaglev(Uri.parse(youtube.canonicalUrl))
+            // Use a first-party route instead of handing an HTTPS URL back through Android's external-link resolver.
+            // This guarantees that the shared video opens the yt-dlp format screen.
+            openMaglev(Uri.parse("maglev://youtube-download?url=" + Uri.encode(youtube.canonicalUrl)))
             return
         }
         val addable = cls.kind == ShareKind.MAGNET || cls.kind == ShareKind.TORRENT_FILE || cls.kind == ShareKind.FILE_LINK
