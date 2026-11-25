@@ -111,7 +111,7 @@ function ListRowBody({
       testID={testID}
       accessibilityRole={selected !== undefined ? 'radio' : 'button'}
       accessibilityLabel={accessibilityLabel ? koUiText(accessibilityLabel) : [title, value, subtitle].filter(Boolean).map(koUiText).join(', ')}
-      accessibilityHint={accessibilityHint}
+      accessibilityHint={koUiText(accessibilityHint)}
       accessibilityState={selected !== undefined ? { disabled: !!disabled, selected, checked: selected } : { disabled: !!disabled }}
       style={(pressed) => [styles.row, pressed && styles.pressed, disabled && styles.disabled]}
     >
