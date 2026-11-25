@@ -1,7 +1,7 @@
 # Maglev 통합 다운로더 — 종합 개발 착수·인계 기준서
 
-> 문서 버전: 1.0  
-> 기준일: 2026-11-25 (KST)  
+> 문서 버전: 1.1  
+> 기준일: 2026-11-26 (KST)  
 > 저장소: [dragonslayers-k/Maglev_forked](https://github.com/dragonslayers-k/Maglev_forked)  
 > 단일 구현 트랙: [PR #1](https://github.com/dragonslayers-k/Maglev_forked/pull/1), `feature/p1-video-detection-observer`  
 > 상태: **개발 착수 기준 확정 / 기능 완성 아님 / 실기기 E2E 미통과**
@@ -490,3 +490,45 @@ This section supplements the original 2026-11-25 Claude analysis with a current 
 - CI run #154: standalone module contract tests and existing contract job passed; JS test suite then failed because generated `constants/licenses.generated.ts` did not yet list the newly added local runtime dependency. Added its GPL-3.0-only entry to the generated list.
 - Expo prebuild/autolinking step completed successfully on #154. APK Gradle compilation was still running when this correction was committed; run was superseded by the new commit. This is not a Kotlin compile pass.
 - This scaffold is intentionally not yet connected to the existing YouTube screen or Transfers. The legacy adapter remains until the separate engine-to-transfer handoff, durable queue and media finalization are implemented, to avoid breaking existing Maglev behavior prematurely.
+
+
+## Appendix H. MPMux 벤치마크 및 통합 재설계 — 2026-11-26
+
+이 부록은 기존 Appendix G의 standalone `modules/ytdlp-engine` scaffold 이력을 삭제하지 않고, 최신 제품 아키텍처 결정을 추가한다.
+
+### H.1 MPMux 공개 기능
+- Static Downloader: HTTP Range로 정적 MP4/WebM/Ogg 등을 최대 3개 연결로 분할 요청해 저장.
+- HLS VOD: playlist/segment를 읽어 MP4로 재패키징, VOD 동시 요청 최대 3개.
+- HLS Live: 실시간 전달이므로 순차 수집, 약 2GB 단위 분할 저장.
+- Video Buffer Muxer: 화면 녹화가 아니라 HTML5 MediaSource API의 버퍼를 받아 MP4로 재패키징. VOD/live, timestamp 기준 화질 전환 병합, 약 1GB 단위 분할 저장을 설명. 암호화/비표준 버퍼는 결과가 잘못될 수 있음.
+- v1.2의 최대 5배 buffering은 VOD 한정이며 페이지 화질/재생 안정성 부작용 가능성이 있어 Maglev는 자동 적용하지 않음.
+- 공식 근거: https://chromewebstore.google.com/detail/video-downloader-mpmux/mbflpfaamifmmmkdjkcmpofpccfmlmap?hl=en-US ; https://mpmux.com/staticdownloader ; https://mpmux.com/hlsdownloader ; https://mpmux.com/buffermuxer
+
+### H.2 Maglev 직접 대조
+- `segments.rs`: Range 206 probe, 최소 8MiB, strong ETag/Last-Modified, 최대 8 part, offset write, sidecar resume, 429/503 거절 대기/동시성 축소, validator/content-range drift 시 단일 연결 fallback.
+- `hls.rs`: VOD variant/audio group, BYTERANGE/MAP, AES-128 identity parser. SAMPLE-AES/비표준 KEYFORMAT 등은 미지원.
+- `StreamMuxer.kt`: MediaExtractor/MediaMuxer 기반 A/V track 병합.
+- `MaglevBrowserView.kt`: WebView request observer 및 active-tab ServiceWorker observer.
+- `PageScan.kt`: DOM media, Resource Timing, fetch/XHR MIME, EME/Blob 징후 관찰. Blob note 자체가 MSE byte 저장을 의미하지 않음.
+- 현재 HLS parser는 ENDLIST 없는 playlist를 STREAM_LIVE로 거부하며 SourceBuffer byte capture는 없음.
+
+### H.3 최적 구현 결정
+1. Static Range/HLS VOD는 기존 Maglev 엔진을 그대로 사용하며 중복 downloader를 만들지 않음.
+2. HLS Live는 Rust stream engine에 live playlist polling/cursor를 추가하고 순차 다운로드, Stop/Finalize, 약 1GiB rotation, sidecar/persistence를 구현.
+3. MSE buffer capture는 명시적 사용자 opt-in. SourceBuffer별 init/media fragment와 timestamp를 bounded binary bridge로 native staging에 기록하고 backpressure/rotation을 적용.
+4. 별도 audio/video track은 시간축을 유지해 remux; DRM/EME는 차단, 재인코딩/DRM 우회/자동 5x는 범위 밖.
+5. 신규 기능 모두 기존 Transfers·알림·MediaStore·재시작 정책에 연결. 독립 큐 금지.
+6. MPMux 코드·바이너리·상표·비공개 API는 복제하지 않고 공개 동작만 clean-room 방식으로 구현.
+
+### H.4 YouTube 경로 정렬
+- `YoutubeDownload.kt`에 기존 extractor와 `MaglevEngineModule.kt`의 `getYouTubeInfo`, `addYouTubeDownload`가 존재한다.
+- `addYouTubeDownload`는 선택한 direct/HLS/DASH URL을 `EngineHost.addDownload`에 넣어 기존 Transfers가 소유한다.
+- 별도 `modules/ytdlp-engine`은 중복 staging/queue를 만든 실험용 scaffold였으므로 제품 dependency/autolinking에서 제거. 소스 이력은 Git 과거 commit으로 보존.
+- YouTube 화면은 `maglevEngine.getYouTubeInfo`와 `maglevEngine.addYouTubeDownload`를 사용하고 성공하면 Transfers로 복귀. 실기기 추출/저장/재생은 별도 device acceptance.
+
+### H.5 CI #159 실패 및 수정
+- Run #159 / ID `45639676759`는 `app/youtube-download.tsx:27`의 실제 줄바꿈 대신 들어간 리터럴 `\\n`로 TypeScript/Metro parse 실패.
+- commit `2458a27e6ee79ce511865d3d6864538e7013ed2e`에서 구문과 View import 수정.
+- commit `2a5d1b8fde95bff01e53eb367b9667fcaab2c871`에서 YouTube 화면의 shared Transfers 연결 및 source regression assertions 반영.
+- Run #161 / ID `45643449600`: JS/typecheck/tests, contract tests, Rust tests, ARM64 Rust build 및 16KB alignment는 성공. APK Gradle build는 확인 시점 진행 중이었음.
+- #161 최종 APK build result와 Galaxy 실기기 테스트는 이 부록 작성 시점에 별도 확인 필요. 이 기록만으로 최종/DEVICE_PASS를 선언하지 않음.

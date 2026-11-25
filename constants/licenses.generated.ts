@@ -42,5 +42,4 @@ export const LICENSES: readonly LicenseRow[] = [
   { name: "react-native-web", version: "0.21.4", license: "MIT", url: "https://github.com/necolas/react-native-web" },
   { name: "react-native-webview", version: "14.0.1", license: "MIT", url: "https://github.com/react-native-webview/react-native-webview" },
   { name: "react-native-worklets", version: "0.13.1", license: "MIT", url: "https://github.com/software-mansion/react-native-reanimated/tree/HEAD/packages/react-native-worklets" },
-  { name: "ytdlp-engine", version: "0.1.0", license: "GPL-3.0-only", url: "https://github.com/dragonslayers-k/Maglev_forked/tree/feature/p1-video-detection-observer/modules/ytdlp-engine" },
 ];
