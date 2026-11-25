@@ -139,12 +139,12 @@ async function main() {
   check('other activities are untouched', app.activity.some((a) => a.$['android:name'] === '.OtherActivity'));
   const aliases = app['activity-alias'];
   check('one alias per icon', aliases.length === 20, String(aliases.length));
-  check('aliases follow the id order', same(aliases.map((a) => a.$['android:name']), OWNER_IDS.map((id) => `com.maglev.MaglevIcon_${rid(id)}`)));
+  check('aliases follow the id order', same(aliases.map((a) => a.$['android:name']), OWNER_IDS.map((id) => `com.maglev.plus.MaglevIcon_${rid(id)}`)));
   check('every alias targets MainActivity and is exported', aliases.every((a) => a.$['android:targetActivity'] === '.MainActivity' && a.$['android:exported'] === 'true'));
   check('every alias carries MAIN and LAUNCHER', aliases.every((a) => a['intent-filter'].length === 1 && a['intent-filter'][0].action[0].$['android:name'] === 'android.intent.action.MAIN' && a['intent-filter'][0].category[0].$['android:name'] === 'android.intent.category.LAUNCHER'));
   check('every alias has its own icon and round icon', aliases.every((a, i) => a.$['android:icon'] === `@mipmap/ic_launcher_alt_${rid(OWNER_IDS[i])}` && a.$['android:roundIcon'] === a.$['android:icon']));
   const enabled = aliases.filter((a) => a.$['android:enabled'] === 'true').map((a) => a.$['android:name']);
-  check('exactly one alias is enabled, and it is teal', same(enabled, ['com.maglev.MaglevIcon_teal']), enabled.join(','));
+  check('exactly one alias is enabled, and it is teal', same(enabled, ['com.maglev.plus.MaglevIcon_teal']), enabled.join(','));
   check('the manifest transform is idempotent', same(plugin.applyManifest(JSON.parse(JSON.stringify(out))), out));
   let threw = false;
   try { plugin.applyManifest({ manifest: { application: [{ activity: [] }] } }); } catch (e) { threw = /MainActivity/.test(e.message); }
