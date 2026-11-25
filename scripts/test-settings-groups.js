@@ -17,8 +17,8 @@ const check = (name, ok) => {
 const index = read('app/(tabs)/settings.tsx');
 const at = (s) => index.indexOf(s);
 
-// Group titles, in order (0.25: App, General, Finding things, Downloads, Network and power).
-const titles = ['App', 'General', 'Finding things', 'Transfers', 'Network and power'];
+// Group titles, in order (Korean localization: 콘텐츠 찾기).
+const titles = ['App', 'General', '콘텐츠 찾기', 'Transfers', 'Network and power'];
 const tpos = titles.map((t) => at(`<SectionHeader title="${t}"`));
 check('all five group titles exist', tpos.every((p) => p > 0));
 check('groups run App, General, Finding things, Transfers, Network and power', tpos.every((p, i) => i === 0 || p > tpos[i - 1]));
@@ -31,7 +31,7 @@ const listOf = (name) => {
 };
 const expected = {
   General: ['generalRows', ['Appearance', 'Assistant', 'Notifications', 'Backup and restore']],
-  'Finding things': ['findRows', ['Search sources', 'Auto-download']],
+  '콘텐츠 찾기': ['findRows', ['Search sources', 'Auto-download', 'Subtitles']],
   Transfers: [null, ['Adding and finishing', 'Speed and sharing', 'Storage', 'Scheduling']],
   'Network and power': ['networkRows', ['Network', 'Power', 'Browser']],
   App: ['appRows', ['About', 'Updates']],
