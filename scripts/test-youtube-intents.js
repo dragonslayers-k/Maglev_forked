@@ -59,6 +59,8 @@ async function main() {
   assert.ok(youtubeAdapter.includes('YOUTUBE_AUDIO_URL_MISSING'), 'audio-only must not fall back to the default video URL');
   assert.ok(youtubeAdapter.includes('if (hasVideo) break'), 'metadata extraction must stop after a usable video client to avoid slow redundant client calls');
   assert.ok(youtubeAdapter.includes('"sizeEstimated" to (exactBytes == null && estimatedBytes != null)'), 'unknown extractor sizes must be estimated from bitrate and duration when possible');
+  assert.ok(youtubeAdapter.includes('fallbackKbps = when'), 'missing bitrate must still get a labeled resolution-based estimate');
+  assert.ok(youtubeAdapter.includes('height <= 360 -> 750.0') && youtubeAdapter.includes('height <= 1080 -> 5_500.0'), 'resolution fallback must cover common YouTube qualities');
   assert.ok(youtubeAdapter.includes('toFormat(format, client, current.duration)'), 'format size estimates must use the actual media duration');
 
   assert.ok(youtubeAdapter.includes('!hasVideo && hasAudio -> "audio"'), 'audio-only formats must be recognized even when exposed as a manifest');
