@@ -621,6 +621,7 @@ export interface DownloadOptions {
 
 export interface YouTubeFormat {
   formatId: string;
+  playerClient: string;
   kind: 'video' | 'audio';
   ext: string;
   height: number;
@@ -913,7 +914,7 @@ export interface MaglevEngineApi {
   /** Extracts public, non-DRM YouTube metadata and progressive video/audio formats via yt-dlp. */
   getYouTubeInfo(url: string): Promise<EngineResult<YouTubeInfo>>;
   /** Adds one selected progressive YouTube format to the normal transfer queue. */
-  addYouTubeDownload(url: string, formatId: string): Promise<EngineResult<{ id: string }>>;
+  addYouTubeDownload(url: string, formatId: string, playerClient: string): Promise<EngineResult<{ id: string }>>;
   pauseDownload(id: string): Promise<EngineResult>;
   resumeDownload(id: string): Promise<EngineResult>;
   /** NATIVE_CONTRACT 25.1: the same for a link download. */

@@ -80,3 +80,9 @@ Detector (browser/network observation), extractor (yt-dlp class), protocol downl
 
 ## 8. 개발 규율
 요구사항 축소 금지; automated CI와 실제 기능검증 분리; 실패는 실패/미완료로 표기; 매 변경 branch/head 확인·commit·handoff 갱신; main 보호; 불필요한 CI run/cancel 줄이기; 사용자 승인 없는 자동화/merge/release 금지; artifact는 검증 SHA와 일치할 때만 배포.
+
+
+## 2026-11-25 배포 기준 갱신
+- 기본 APK는 ARM64 단일 APK이며 Universal APK 생성은 기본 비활성화한다. PR #5 패키징 변경은 feature 브랜치에 병합되었다.
+- Debug signing은 테스트용이다. 정식 배포/업데이트는 고정된 keystore 서명이 필요하다.
+- YouTube는 parser, dedicated route, extractor client fallback, HLS/DASH stream queue를 각각 검증한다. PO Token provider와 Galaxy E2E는 아직 완료 조건이다.

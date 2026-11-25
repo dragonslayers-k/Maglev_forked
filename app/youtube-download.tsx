@@ -13,10 +13,15 @@ function durationText(value: number): string {
   return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
 }
 
+function formatKey(f: YouTubeFormat): string {
+  return `${f.playerClient}:${f.formatId}`;
+}
+
 function formatText(f: YouTubeFormat): string {
   const quality = f.kind === 'video' ? (f.height > 0 ? `${f.height}p` : '동영상') : (f.abr > 0 ? `${f.abr} kbps` : '오디오');
   const size = f.size && f.size > 0 ? formatBytes(f.size) : '용량 미상';
-  return `${quality} · ${f.ext.toUpperCase()} · ${size}`;
+  const source = f.playerClient === 'web_safari' ? 'HLS' : f.playerClient === 'android_vr' ? 'Android VR' : '웹 임베드';
+  return `${quality} · ${f.ext.toUpperCase()} · ${size} · ${source}`;
 }
 
 export default function YouTubeDownloadScreen() {
@@ -59,10 +64,10 @@ export default function YouTubeDownloadScreen() {
   const start = useCallback(async (format: YouTubeFormat) => {
     if (!url || busy) return;
     haptic('tap');
-    setBusy(format.formatId);
+    setBusy(formatKey(format));
     setError(null);
     try {
-      const result = await maglevEngine.addYouTubeDownload(url, format.formatId);
+      const result = await maglevEngine.addYouTubeDownload(url, format.formatId, format.playerClient);
       if (!result.ok) {
         setError(result.message);
       } else if (result.id) {
@@ -91,18 +96,18 @@ export default function YouTubeDownloadScreen() {
           <View style={styles.section}>
             <Text style={styles.heading}>동영상 다운로드</Text>
             {videos.length ? videos.map((f) => (
-              <Button key={f.formatId} fullWidth size="md" disabled={!!busy} loading={busy === f.formatId}
+              <Button key={formatKey(f)} fullWidth size="md" disabled={!!busy} loading={busy === formatKey(f)}
                 label={formatText(f)} onPress={() => void start(f)} />
             )) : <Text style={styles.muted}>이 영상에는 현재 지원되는 합본 동영상 형식이 없습니다.</Text>}
           </View>
           <View style={styles.section}>
             <Text style={styles.heading}>오디오 다운로드</Text>
             {audios.length ? audios.map((f) => (
-              <Button key={f.formatId} fullWidth size="md" variant="secondary" disabled={!!busy} loading={busy === f.formatId}
+              <Button key={formatKey(f)} fullWidth size="md" variant="secondary" disabled={!!busy} loading={busy === formatKey(f)}
                 label={formatText(f)} onPress={() => void start(f)} />
             )) : <Text style={styles.muted}>다운로드 가능한 오디오 형식이 없습니다.</Text>}
           </View>
-          <Text style={styles.note}>현재는 영상과 음성이 합쳐진 형식 및 오디오 전용 형식을 지원합니다. 별도 트랙 병합은 후속 개선 대상입니다.</Text>
+          <Text style={styles.note}>HLS/DASH는 Maglev 스트림 엔진으로 저장하며, 별도 오디오 트랙은 기본 언어로 자동 선택됩니다. YouTube에서 PO Token을 요구하는 영상은 일부 형식이 제한될 수 있습니다.</Text>
         </>
       ) : null}
       {!loading && !info && !error ? <Text style={styles.muted}>영상을 찾지 못했습니다. 공개 YouTube 동영상 링크인지 확인해 주세요.</Text> : null}

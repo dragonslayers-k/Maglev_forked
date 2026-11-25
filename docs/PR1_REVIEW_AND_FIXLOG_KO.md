@@ -48,3 +48,11 @@ Inspection of the exact logs:
 4. File is saved and playable; progress, cancel and pause/resume work.
 5. Korean screen/string inventory and leakage tests pass; real screen QA done.
 6. CI green, APK identity/signature/size/alignment verified, then real-device testing passed.
+
+
+## YouTube extraction / stream integration update (2026-11-25)
+- PR #4 integration branch now carries PR #3's corrected scheme-less youtu.be parser, browser address-bar paste route and Android QuickShare fallback.
+- The adapter now tries yt-dlp clients web_safari, android_vr and web_embedded; each format records its client so the selected format is re-extracted with the same client.
+- HLS/DASH manifest formats are handed to Maglev native stream probing and download with a selected variant; separate audio uses the engine's default audio track selection.
+- This is a no-app-managed-PO-token fallback, not a complete YTDLnis PO Token port. YouTube may still deny formats or return 403; PO Token generation/provider remains a required follow-up.
+- No Galaxy end-to-end success is claimed until the exact APK is installed, metadata/formats are retrieved, a file is saved and playback is confirmed.

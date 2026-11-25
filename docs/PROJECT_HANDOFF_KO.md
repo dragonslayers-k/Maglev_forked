@@ -184,3 +184,12 @@ YTDLnis의 동작을 참고하되 YTDLnis 앱의 소스/브랜드/전용 UI를 �
 - 인수인계 링크 추가: commit `6e4f32b`
 - README를 목표에 맞게 수정하고 현 실패를 명시: commit `e1594ab`
 - README는 이제 기능 목표를 축소해서 “단계적 한국어”로만 표현하지 않고, 전체 한글화/YouTube 기능을 목표로 명시하며 현재 실기기 실패를 공개합니다.
+
+
+## 2026-11-25 latest handoff (supersedes older run status)
+- PR #5 ARM64-only packaging merged into feature branch; PR #2 duplicate packaging PR closed. PR #3 was closed as superseded by PR #4 to reduce duplicate builds.
+- User's runs #45606903560, #45606626661, #45606620684, #45611626303 and #45611432139: cargo test itself reported 541 passed; exit 101 came from Clippy -D warnings, which promoted existing lints. CI now runs Clippy without -D warnings.
+- ARM64 package verification run #45616085260 completed with JS, Rust, contract, Rust Android, APK build and Kotlin unit tests successful. Artifact archive is about 37.7 MB; this run predates the final YouTube integration and is not a device-test APK.
+- PR #4 is the consolidated YouTube integration branch: scheme-less youtu.be parsing, QuickShare raw-text fallback, browser paste route, yt-dlp stable updater, client-specific extraction and HLS/DASH handoff.
+- PO Token provider remains a known YTDLnis feature gap. No YouTube download or full Korean localization completion is claimed yet.
+- Gradle 9.4.1 outdated warning and debug-certificate warning remain to address/verify; debug-signed APK is test-only.
