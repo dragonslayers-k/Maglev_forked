@@ -160,6 +160,10 @@ check('dynamic media detection observes fetch, XHR, resource timing and Service 
   assert(view.includes('ServiceWorkerController') && view.includes('ServiceWorkerClient'), 'Service Worker observer not installed');
   assert(view.includes('noteServiceWorkerRequest') && view.includes('request.method'), 'Service Worker requests are attributable and GET-filtered');
   assert(view.includes('serviceWorkerObserver.compareAndSet(this, null)'), 'inactive/destroyed browser releases the observer');
+  assert(/@Volatile\\s+private var active/.test(view), 'active tab state is visible across WebView threads');
+  for (const marker of ['streamSeen', 'video/mp2t', '.m4s', '.cmfv']) {
+    assert(scan.includes(marker), 'stream segment suppression missing ' + marker);
+  }
 });
 
 check('blocklist store: https only, atomic write, 10 MB cap, 30 s timeouts', () => {
