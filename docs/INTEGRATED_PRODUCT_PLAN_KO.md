@@ -80,3 +80,14 @@ MPMux는 정적/HLS VOD에 최대 3개 요청을 사용하고, live는 실시간
 - 중복 실험 모듈은 package dependency, lockfile, license inventory에서 제거하고 이력을 Git으로 보존합니다.
 - CI/QA/Release workflow는 목적별로 유지하며 중복 workflow/시험 release를 늘리지 않습니다.
 - CI_PASS, DEVICE_PASS, ACCEPTED를 구분하고, 확인되지 않은 기능을 완료로 표시하지 않습니다.
+
+## 2026-11-26 Release 초기화 크래시 조사/수정 (미검증)
+
+- 사용자 실기기 오류: `ExceptionInInitializerError`, cause `RuntimeException: class pe is not a concrete class`.
+- 기준서의 별도 Android yt-dlp runtime 사례와 동일한 실패 패턴을 대조해 R8이 Apache Commons Compress의 ZIP extra-field 구현 클래스를 변형하는 문제를 우선 원인으로 특정했습니다. `YoutubeDL.init()`의 ZIP runtime extraction 중 Commons Compress reflective registry에서 concrete class가 아니라고 실패하는 경로입니다. 기존 debug는 shrinking이 없어 나타나지 않고 Release에서 재현됩니다.
+- Commit `2416d16a`: yt-dlp wrapper/mapper keep-rule을 추가한 초기 수정. 이 수정은 충분하지 않은 범위였습니다.
+- Commit `467fba82`: `YoutubeDownload.kt`에서 `ExceptionInInitializerError` 등 Error 계열을 포함해 fatal VM errors 제외 Throwable을 수집하고 cause chain + 제한된 stack frame을 sanitized diagnostic에 기록하도록 수정. 이전 Exception-only catch로 initializer error가 UI 처리 밖으로 탈출하던 문제도 방지.
+- Commit `8e6efd6f`: 정확한 root package인 `org.apache.commons.compress.**` keep-rule 추가. ZIP extra-field/registry reflective class가 Release R8에서 이름·구조·constructor·concrete type을 유지하도록 보존.
+- **검증 상태: CI run과 Release APK 아직 생성/확인되지 않았습니다.** Connector API commit은 PR head를 갱신했지만 현재 workflow-run 조회에서 새 run이 반환되지 않으며, connector는 Actions workflow_dispatch 실행 기능을 제공하지 않습니다. 이 commits는 아직 CI_PASS로 표기하지 않습니다.
+- 다음 gate: PR #1의 최신 head `8e6efd6f555ccf8c4a4d3148a4a15e043be35596` Release APK build → 설치 → cold init → yt-dlp version → metadata/formats → 실제 download. 오류가 계속되면 새 diagnostic stack/cause로 다음 원인을 확정.
+- CI와 실기기 검증이 끝날 때까지 release/accepted 금지.
