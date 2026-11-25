@@ -40,3 +40,43 @@ export function parseYouTubeLink(raw: string | null | undefined): YouTubeLink | 
     (startSeconds ? '&t=' + startSeconds + 's' : '');
   return { videoId: id, playlistId, startSeconds, canonicalUrl };
 }
+
+
+/**
+ * Parses YouTube links as delivered by Android's native-intent router. Some Android/Expo paths
+ * arrive without the original scheme/host (for example "/watch?v=..."), so try the safe YouTube
+ * origin only for known YouTube route shapes. Never accept an arbitrary host or arbitrary path.
+ */
+export function parseYouTubeIntent(raw: string | null | undefined): YouTubeLink | null {
+  if (!raw || raw.length > 4096) return null;
+  const value = raw.trim();
+  const direct = parseYouTubeLink(value);
+  if (direct) return direct;
+
+  // An explicit internal Maglev+ route may be handed to this helper before router normalization.
+  try {
+    const internal = new URL(value);
+    if (internal.protocol === 'maglev:' && internal.hostname.toLowerCase() === 'youtube-download') {
+      const nested = internal.searchParams.get('url');
+      const parsed = parseYouTubeLink(nested);
+      if (parsed) return parsed;
+    }
+  } catch {
+    // Continue with the path-only variants below.
+  }
+
+  // Bare hostnames are common when a share/intent adapter strips the scheme.
+  if (/^(?:www\.)?(?:youtube\.com|m\.youtube\.com|music\.youtube\.com|youtu\.be|youtube-nocookie\.com|www\.youtube-nocookie\.com)\//i.test(value)) {
+    return parseYouTubeLink('https://' + value);
+  }
+
+  // Expo Router may pass only the URL path and query. Only known video paths are normalized.
+  const path = value.replace(/^\//, '');
+  if (/^(?:watch|shorts|live|embed|v)(?:\/|\?)/i.test(path)) {
+    return parseYouTubeLink('https://www.youtube.com/' + path);
+  }
+  if (/^youtu\.be\//i.test(path)) {
+    return parseYouTubeLink('https://' + path);
+  }
+  return null;
+}
