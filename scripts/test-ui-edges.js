@@ -54,7 +54,7 @@ function check(name, cond, extra) {
   check('a non-subtitle file never matches', !has('a/M.mkv', 'en', ['a/M.en.txt', 'a/M.en.mkv']));
   check('an unknown language never matches', !has('a/M.mkv', 'zzzz', ['a/M.zzzz.srt']));
   check('case and Windows separators do not matter', has('A\\M.MKV', 'en', ['a\\m.EN.SRT']));
-  check('the message uses the language helper', C.alreadyHasCopy('en') === 'This video already has English subtitles.' && C.alreadyHasCopy('de') === 'This video already has German subtitles.');
+  check('the message uses the language helper', C.alreadyHasCopy('en') === '이 동영상에는 이미 English 자막이 있습니다.' && C.alreadyHasCopy('de') === '이 동영상에는 이미 Deutsch 자막이 있습니다.');
   const sheet = read('components/subtitles/SubtitleSheet.tsx');
   check('the sheet says it instead of "No English subtitles found." when a file exists', /hasExistingSubtitle\(target\.existing\.videoPath, state\.language, target\.existing\.files\) \? alreadyHasCopy\(state\.language\) : errorCopy\('nothing'/.test(sheet));
   const F = await import('../components/subtitles/flow.ts');
