@@ -25,44 +25,44 @@ function check(name, cond) {
 
   console.log('[44.14 table]');
   let m = row({ started: false });
-  check('no request, no bytes: muted "When this file starts", no button', m.line === 'When this file starts' && m.muted && m.button === null);
+  check('no request, no bytes: muted "When this file starts", no button', m.line === '파일 다운로드가 시작되면' && m.muted && m.button === null);
   m = row({});
-  check('no request, bytes: "Not asked yet" + Find', m.line === 'Not asked yet' && btn(m) === 'Find/find');
+  check('no request, bytes: "Not asked yet" + Find', m.line === '아직 요청하지 않음' && btn(m) === '찾기/find');
   m = row({ phase: 'queued', fileListKnown: false });
-  check('queued, no file list: "Starts when the file list arrives" + Cancel', m.line === 'Starts when the file list arrives' && btn(m) === 'Cancel/cancel');
+  check('queued, no file list: "Starts when the file list arrives" + Cancel', m.line === '파일 목록을 받으면 시작' && btn(m) === '취소/cancel');
   m = row({ phase: 'queued' });
-  check('queued: "Waiting for the file" + Cancel', m.line === 'Waiting for the file' && btn(m) === 'Cancel/cancel' && m.glyph === 'getting');
+  check('queued: "Waiting for the file" + Cancel', m.line === '파일 대기 중' && btn(m) === '취소/cancel' && m.glyph === 'getting');
   m = row({ phase: 'searching' });
-  check('searching: "자막 검색 중…" + Cancel', m.line === 'Getting subtitles…' && btn(m) === 'Cancel/cancel');
+  check('searching: "자막 검색 중…" + Cancel', m.line === '자막 검색 중…' && btn(m) === '취소/cancel');
   m = row({ phase: 'saved', language: 'en' });
-  check('saved: "English · fits this release" + Change, saved badge', m.line === 'English · fits this release' && btn(m) === 'Change/find' && m.glyph === 'saved' && m.start === 'results');
+  check('saved: "English · fits this release" + Change, saved badge', m.line === 'English · 영상 버전 일치' && btn(m) === '변경/find' && m.glyph === 'saved' && m.start === 'results');
   m = row({ phase: 'needs-pick' });
-  check('needs-pick: "Close match found" + Pick one, on results, ? badge', m.line === 'Close match found' && btn(m) === 'Pick one/pick' && m.start === 'results' && m.glyph === 'needs-look');
+  check('needs-pick: "Close match found" + Pick one, on results, ? badge', m.line === '비슷한 자막을 찾음' && btn(m) === '선택/pick' && m.start === 'results' && m.glyph === 'needs-look');
   m = row({ phase: 'needs-pick', otherLang: 'fr' });
-  check('needs-pick in another language: "Found in French only"', m.line === 'Found in French only' && btn(m) === 'Pick one/pick');
+  check('needs-pick in another language: "Found in French only"', m.line === '프랑스어에서만 찾음' && btn(m) === 'Pick one/pick');
   m = row({ phase: 'none' });
-  check('none: "아직 찾지 못함" + 이름 수정, opens the name field', m.line === 'No match yet' && btn(m) === 'Edit name/edit-name' && m.start === 'edit-name');
+  check('none: "아직 찾지 못함" + 이름 수정, opens the name field', m.line === '아직 찾지 못함' && btn(m) === '이름 수정/edit-name' && m.start === 'edit-name');
   m = row({ phase: 'has-already', language: 'de' });
-  check('has-already: "독일어 자막 있음" + 더 찾기', m.line === 'Already has German subtitles' && btn(m) === 'Find more/find');
+  check('has-already: "독일어 자막 있음" + 더 찾기', m.line === '독일어 자막 있음' && btn(m) === '더 찾기/find');
   m = row({ phase: 'offline' });
-  check('offline: "Waiting for internet", no button', m.line === 'Waiting for internet' && m.button === null);
+  check('offline: "Waiting for internet", no button', m.line === '인터넷 연결 대기' && m.button === null);
   m = row({ phase: 'limited' });
-  check('limited: "A source is busy · retrying soon", no button', m.line === 'A source is busy · retrying soon' && m.button === null);
+  check('limited: "A source is busy · retrying soon", no button', m.line === '검색 사이트 사용량 제한 · 잠시 후 재시도' && m.button === null);
   m = row({ phase: 'skipped' });
-  check('skipped: "Skipped" + Find', m.line === 'Skipped' && btn(m) === 'Find/find');
+  check('skipped: "Skipped" + Find', m.line === '건너뜀' && btn(m) === '찾기/find');
 
   console.log('[no request: the stored state stands in]');
   m = row({ stored: { state: 'saved', lang: 'es' } });
-  check('stored saved reads as saved, in Spanish', m.line === 'Spanish · fits this release' && btn(m) === 'Change/find');
+  check('stored saved reads as saved, in Spanish', m.line === 'Spanish · 영상 버전 일치' && btn(m) === '변경/find');
   m = row({ stored: { state: 'needs-look', lang: 'en' } });
   check('stored needs-look reads as needs-pick', btn(m) === 'Pick one/pick');
   m = row({ stored: { state: 'getting', lang: 'en' } });
-  check('stored getting has nothing to cancel', m.line === 'Getting subtitles…' && m.button === null);
-  check('a request wins over the stored state', row({ phase: 'none', stored: { state: 'saved', lang: 'en' } }).line === 'No match yet');
+  check('stored getting has nothing to cancel', m.line === '자막 검색 중…' && m.button === null);
+  check('a request wins over the stored state', row({ phase: 'none', stored: { state: 'saved', lang: 'en' } }).line === '아직 찾지 못함');
 
   console.log('[sheet-opening buttons need a target]');
   check('no target: Find, Change, Pick one and Edit name give no button', ['find', 'saved', 'needs-pick', 'none', 'skipped'].every((p) => (p === 'find' ? row({ canOpenSheet: false }) : row({ canOpenSheet: false, phase: p })).button === null));
-  check('Cancel works without a target', btn(row({ canOpenSheet: false, phase: 'searching' })) === 'Cancel/cancel');
+  check('Cancel works without a target', btn(row({ canOpenSheet: false, phase: 'searching' })) === '취소/cancel');
 
   console.log('[season pack]');
   const files = { a: { phase: 'saved', tries: 1 }, b: { phase: 'needs-pick', tries: 1 }, c: { phase: 'needs-pick', tries: 1 }, d: { phase: 'queued', tries: 0 } };
@@ -70,9 +70,9 @@ function check(name, cond) {
   check('counts per file', pack.total === 4 && pack.saved === 1 && pack.needYou === 2);
   check('one video is not a pack', M.packCounts({ a: { phase: 'saved', tries: 1 } }) === null && M.packCounts(undefined) === null);
   m = row({ phase: 'needs-pick', pack: { total: 10, saved: 8, needYou: 2 }, canOpenSheet: false });
-  check('"8 of 10 saved · 2 need you" + See all (no single target needed)', m.line === '8 of 10 saved · 2 need you' && btn(m) === 'See all/see-all');
-  check('one needing you reads "needs"', copy.rowPackLine({ saved: 9, total: 10, needYou: 1 }) === '9 of 10 saved · 1 needs you' && copy.rowPackLine({ saved: 10, total: 10, needYou: 0 }) === '10 of 10 saved');
-  check('a skipped pack is just Skipped', row({ phase: 'skipped', pack: { total: 3, saved: 0, needYou: 0 } }).line === 'Skipped');
+  check('"8 of 10 saved · 2 need you" + See all (no single target needed)', m.line === '10개 중 8개 저장 · 2개 선택 필요' && btn(m) === '모두 보기/see-all');
+  check('one needing you reads "needs"', copy.rowPackLine({ saved: 9, total: 10, needYou: 1 }) === '10개 중 9개 저장 · 1개 선택 필요' && copy.rowPackLine({ saved: 10, total: 10, needYou: 0 }) === '10개 저장');
+  check('a skipped pack is just Skipped', row({ phase: 'skipped', pack: { total: 3, saved: 0, needYou: 0 } }).line === '건너뜀');
 
   console.log('[accessibility]');
   check('"Subtitles, {line}, button {label}"', row({ phase: 'needs-pick' }).a11y === '자막, 비슷한 자막을 찾음, 버튼 선택');
