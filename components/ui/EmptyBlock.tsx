@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef } from 'react';
 import { Animated, StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { ThemeColors, motion, radius, spacing, type } from '../../constants/theme';
+import { koUiText } from '../../constants/korean';
 import { PixelIcon, PixelIconName } from '../PixelIcon';
 import { animateTo, useReduceMotion } from '../motion';
 import { Button } from './Button';
