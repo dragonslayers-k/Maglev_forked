@@ -23,10 +23,10 @@ async function main() {
   const at = (s) => list.indexOf(s);
 
   // Main list: groups, order, rows.
-  const groups = ['App', 'General', 'Finding things', 'Transfers', 'Network and power'];
+  const groups = ['App', 'General', '콘텐츠 찾기', 'Transfers', 'Network and power'];
   const gpos = groups.map((g) => at(`<SectionHeader title="${g}"`));
   check('all five group titles exist', gpos.every((p) => p > 0));
-  check('groups run App, General, Finding things, Downloads, Network and power', gpos.every((p, i) => i === 0 || p > gpos[i - 1]));
+  check('groups run App, General, 콘텐츠 찾기, Transfers, Network and power', gpos.every((p, i) => i === 0 || p > gpos[i - 1]));
   check('no leftover "Connection" group', !/SectionHeader title="Connection"/.test(list));
   const end = at('</ScrollView>');
   const jsx = groups.map((g, i) => list.slice(gpos[i], i + 1 < groups.length ? gpos[i + 1] : end));
