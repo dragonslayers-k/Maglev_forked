@@ -65,7 +65,7 @@ check('TS: clearSiteStorage is on the ref', /clearSiteStorage\(\): Promise<void>
 check('screen: cookies of the host and parents, minus Search hosts, then storage, then reload, then the notice', /hostsToWipe\(\[url\], keepHosts\(\)\)[\s\S]*?clearCookies\(targets\)[\s\S]*?clearSiteStorage\(\)[\s\S]*?\.reload\(\)[\s\S]*?clearSiteDone/.test(scr) && /export function keepHosts/.test(read('utils/browser/privateSession.ts')));
 check('screen: the row asks first, in a Dialog, with a danger Clear and Cancel', /<Dialog\s+visible=\{clearSiteOpen\}[\s\S]*?clearSiteTitle[\s\S]*?clearSiteAction\}\s+variant="danger"[\s\S]*?취소/.test(scr) && /clearSiteBody\(pageHost\)/.test(scr));
 check('screen: the row is for http(s) pages and opens the Dialog, not the action', /\^https\?:\\\/\\\/\/i\.test\(page\?\.url \?\? ''\)[\s\S]{0,200}clearSiteRow[\s\S]{0,160}setClearSiteOpen\(true\)/.test(scr));
-check('copy follows the contract', /clearSiteRow: "Clear this site's data"/.test(copy) && /clearSiteDone: "Cleared this site's data"/.test(copy) && /clearSiteBody: \(host: string\) => `You'll be signed out of \$\{host\}\.`/.test(copy));
+check('copy follows the Korean contract', /clearSiteRow: '이 사이트 데이터 삭제'/.test(copy) && /clearSiteDone: '사이트 데이터를 삭제했습니다\.'/.test(copy) && /clearSiteBody: \(host: string\) => `\$\{host\}에서 로그아웃됩니다\.`/.test(copy));
 
 // ---- motion and accessibility ----
 const swipeTabs = read('components/browser/AddressSwipe.tsx');
