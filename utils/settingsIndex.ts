@@ -666,7 +666,7 @@ export const SETTINGS_INDEX: SettingEntry[] = [
   ),
   e(
     "browser-text-size",
-    "Text size",
+    "글자 크기",
     "browser",
     "Browser",
     [
@@ -683,7 +683,7 @@ export const SETTINGS_INDEX: SettingEntry[] = [
   ),
   e(
     "browser-popups-ask",
-    "Ask",
+    "확인 후 허용",
     "browser",
     "Browser",
     ["pop-up", "popup", "redirect", "window", "block"],
@@ -691,7 +691,7 @@ export const SETTINGS_INDEX: SettingEntry[] = [
   ),
   e(
     "browser-popups-block",
-    "Block without asking",
+    "항상 차단",
     "browser",
     "Browser",
     ["pop-up", "popup", "redirect", "window", "block"],
@@ -699,7 +699,7 @@ export const SETTINGS_INDEX: SettingEntry[] = [
   ),
   e(
     "browser-popups-allow",
-    "Allow",
+    "허용",
     "browser",
     "Browser",
     ["pop-up", "popup", "redirect", "window", "open"],
@@ -707,7 +707,7 @@ export const SETTINGS_INDEX: SettingEntry[] = [
   ),
   e(
     "browser-popups-sites",
-    "Sites allowed to open pop-ups",
+    "팝업 허용 사이트",
     "browser",
     "Browser",
     ["pop-up", "popup", "redirect", "allow", "exception"],
@@ -731,7 +731,7 @@ export const SETTINGS_INDEX: SettingEntry[] = [
   ),
   e(
     "browser-private-browsing",
-    "Private browsing",
+    "비공개 브라우징",
     "browser",
     "Browser",
     [
@@ -750,7 +750,7 @@ export const SETTINGS_INDEX: SettingEntry[] = [
   ),
   e(
     "browser-save-history",
-    "Save history",
+    "방문 기록 저장",
     "browser",
     "Browser",
     [
@@ -767,7 +767,7 @@ export const SETTINGS_INDEX: SettingEntry[] = [
   ),
   e(
     "browser-suggest-history",
-    "Suggest from history",
+    "방문 기록 추천",
     "browser",
     "Browser",
     [
@@ -781,7 +781,7 @@ export const SETTINGS_INDEX: SettingEntry[] = [
   ),
   e(
     "browser-clear-on-close",
-    "Clear history when Maglev closes",
+    "Maglev 종료 시 방문 기록 삭제",
     "browser",
     "Browser",
     [
@@ -802,7 +802,7 @@ export const SETTINGS_INDEX: SettingEntry[] = [
   ),
   e(
     "browser-open-bookmarks",
-    "Bookmarks",
+    "북마크",
     "browser",
     "Browser",
     [
@@ -818,7 +818,7 @@ export const SETTINGS_INDEX: SettingEntry[] = [
   ),
   e(
     "browser-open-history",
-    "History",
+    "방문 기록",
     "browser",
     "Browser",
     [
@@ -831,7 +831,7 @@ export const SETTINGS_INDEX: SettingEntry[] = [
   ),
   e(
     "browser-clear-history",
-    "Clear history",
+    "방문 기록 삭제",
     "browser",
     "Browser",
     [
@@ -1660,7 +1660,7 @@ export const SETTINGS_INDEX: SettingEntry[] = [
   ),
   e(
     "storage-add-without-asking",
-    "Add without asking",
+    "묻지 않고 바로 추가",
     "downloads",
     "Adding and finishing",
     [
@@ -1850,14 +1850,14 @@ export const SETTINGS_INDEX: SettingEntry[] = [
   ),
   e(
     "browser-swipe-tabs",
-    "Swipe the address bar to switch tabs",
+    "주소창을 밀어 탭 전환",
     "browser",
     "Browser",
     ["swipe", "gesture", "slide", "address bar", "url bar", "tabs", "switch tab", "next tab", "all tabs"],
   ),
   e(
     "browser-dark-pages",
-    "Dark pages",
+    "웹페이지 어둡게 표시",
     "browser",
     "Browser",
     ["dark", "night", "pages", "websites", "theme", "dark mode", "darken", "browser"],
