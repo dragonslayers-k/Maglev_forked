@@ -22,7 +22,7 @@ class YtdlpEngineModule : Module() {
     private val active = ConcurrentHashMap<String, Boolean>()
     private val formatSelector = Regex("^[A-Za-z0-9._+/-]{1,160}$")
     private val transferId = Regex("^[A-Za-z0-9_-]{1,80}$")
-    private val appContext: Context? get() = appContext.reactContext?.applicationContext
+    private val androidContext: Context? get() = this.appContext.reactContext?.applicationContext
 
     private fun sanitize(message: String?): String = (message ?: "Unknown error")
         .replace(Regex("https?://[^\\s]+", RegexOption.IGNORE_CASE), "[URL]")
@@ -62,7 +62,7 @@ class YtdlpEngineModule : Module() {
         Events("onProgress", "onCompleted", "onFailed", "onEngineState")
 
         AsyncFunction("init") {
-            val context = appContext ?: throw IllegalStateException("Module not attached")
+            val context = androidContext ?: throw IllegalStateException("Module not attached")
             try {
                 ensureInitialized(context)
                 val version = YoutubeDL.getInstance().versionName(context) ?: "unknown"
@@ -83,7 +83,7 @@ class YtdlpEngineModule : Module() {
         AsyncFunction("download") { id: String, url: String, selector: String ->
             if (!transferId.matches(id) || !formatSelector.matches(selector)) throw IllegalArgumentException("Invalid transfer id or format")
             if (active.putIfAbsent(id, true) != null) throw IllegalStateException("Transfer already active")
-            val context = appContext ?: run { active.remove(id); throw IllegalStateException("Module not attached") }
+            val context = androidContext ?: run { active.remove(id); throw IllegalStateException("Module not attached") }
             val directory = File(context.filesDir, "ytdlp/staging/$id")
             if (!directory.exists() && !directory.mkdirs()) { active.remove(id); throw IllegalStateException("Cannot create staging folder") }
             scope.launch {
