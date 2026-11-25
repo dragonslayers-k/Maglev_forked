@@ -202,7 +202,7 @@ object FoundClassifier {
     fun isStreamSegment(url: String, hlsSeen: Boolean, dashSeen: Boolean): Boolean {
         if (!hlsSeen && !dashSeen) return false
         val path = url.substringBefore('?').substringBefore('#').lowercase()
-        return listOf(".ts", ".m4s", ".cmfv", ".cmfa").any(path::endsWith)
+        return listOf(".ts", ".m4s", ".cmfv", ".cmfa").any { path.endsWith(it) }
     }
 
     /** Builds an item, or null when the URL is not http(s) or not classifiable for [source]. */
