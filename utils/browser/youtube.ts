@@ -6,11 +6,11 @@ const HOSTS = new Set(['youtube.com','www.youtube.com','m.youtube.com','music.yo
 
 function parseTime(value: string | null): number | undefined {
   if (!value || value.length > 32) return;
-  if (/^\\d+$/.test(value)) {
+  if (/^\d+$/.test(value)) {
     const n = Number(value);
     return Number.isSafeInteger(n) && n >= 1 && n <= 86400 ? n : undefined;
   }
-  const m = /^(?:(\\d+)h)?(?:(\\d+)m)?(?:(\\d+)s)?$/.exec(value);
+  const m = /^(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?$/.exec(value);
   if (!m || !m[1] && !m[2] && !m[3]) return;
   const h = Number(m[1] || 0), min = Number(m[2] || 0), sec = Number(m[3] || 0);
   const n = h * 3600 + min * 60 + sec;
@@ -23,7 +23,7 @@ export function parseYouTubeLink(raw: string | null | undefined): YouTubeLink | 
   let url: URL;
   // Pasted/shared short links are often copied without the https:// prefix.
   // Only add it to recognized YouTube host forms; arbitrary hosts remain rejected below.
-  const normalized = /^(?:(?:www|m|music)\\.)?(?:youtube\\.com|youtu\\.be|youtube-nocookie\\.com)\\//i.test(value)
+  const normalized = /^(?:(?:www|m|music)\.)?(?:youtube\.com|youtu\.be|youtube-nocookie\.com)\//i.test(value)
     ? 'https://' + value
     : value;
   try { url = new URL(normalized); } catch { return null; }
@@ -46,7 +46,6 @@ export function parseYouTubeLink(raw: string | null | undefined): YouTubeLink | 
     (startSeconds ? '&t=' + startSeconds + 's' : '');
   return { videoId: id, playlistId, startSeconds, canonicalUrl };
 }
-
 
 /**
  * Parses YouTube links as delivered by Android's native-intent router. Some Android/Expo paths
@@ -72,8 +71,8 @@ export function parseYouTubeIntent(raw: string | null | undefined): YouTubeLink 
   }
 
   // Expo Router may pass only the URL path and query. Only known video paths are normalized.
-  const path = value.replace(/^\\//, '');
-  if (/^(?:watch|shorts|live|embed|v)(?:\\/|\\?)/i.test(path)) {
+  const path = value.replace(/^\//, '');
+  if (/^(?:watch|shorts|live|embed|v)(?:\/|\?)/i.test(path)) {
     return parseYouTubeLink('https://www.youtube.com/' + path);
   }
   return null;
