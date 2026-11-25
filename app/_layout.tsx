@@ -163,6 +163,7 @@ function AppNavigation() {
             onboarding (0.12). scripts/test-route-guards.js keeps every route inside a guard.
           */}
           <Stack.Screen name="add-download" />
+          <Stack.Screen name="youtube-download" />
           <Stack.Screen name="browser" />
           <Stack.Screen name="browser-history" />
           <Stack.Screen name="browser-bookmarks" />
