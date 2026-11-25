@@ -44,11 +44,14 @@
 - [ ] 직접 미디어 파일에 한해 제한된 메타데이터 프로브 검토
 - [ ] 만료 URL 재탐색과 인증 실패 진단 개선
 - [ ] 사이트별 어댑터는 코드 내장형·테스트형으로만 추가 검토
-- [ ] Chrome/Samsung Internet 공유 인계 UX 검증
+- [x] 기존 Android ACTION_SEND / ACTION_VIEW 공유 카드와 Maglev 브라우저 인계 경로 확인
+- [x] Quick Share 카드 문구를 Kotlin·TypeScript 양쪽에서 한국어화
+- [ ] Galaxy의 Chrome 및 Samsung Internet에서 공유 메뉴 노출·페이지 인계 실기기 검증
 
 ## P3 — 한국어 UX
 
 - [x] 주요 하단 탭 라벨과 브라우저 핵심 조작 문구 한국어 적용
+- [x] 외부 브라우저 공유 카드의 상태·동작 문구 한국어 적용
 - [x] Found Files 목록과 스트림 화질 선택·다운로드 화면 한국어 적용
 - [x] 미디어 컨텍스트 메뉴와 주요 감지 오류 한국어 적용
 - [ ] 온보딩·설정·다운로드 목록·상세 화면 전체 문자열 정리
