@@ -22,14 +22,14 @@ function check(name, cond, extra) {
 const SHA = 'a'.repeat(64);
 const asset = (tag, abi, over = {}) => ({
   name: `Maglev-${tag}-${abi}.apk`,
-  browser_download_url: `https://github.com/Kaos599/Maglev/releases/download/${tag}/Maglev-${tag}-${abi}.apk`,
+  browser_download_url: `https://github.com/dragonslayers-k/Maglev_forked/releases/download/${tag}/Maglev-${tag}-${abi}.apk`,
   digest: `sha256:${SHA}`,
   size: 12345,
   ...over,
 });
 const release = (tag, over = {}) => ({
   tag_name: tag,
-  html_url: `https://github.com/Kaos599/Maglev/releases/tag/${tag}`,
+  html_url: `https://github.com/dragonslayers-k/Maglev_forked/releases/tag/${tag}`,
   body: '## What\'s new\n- one',
   draft: false,
   prerelease: false,
@@ -88,7 +88,7 @@ const release = (tag, over = {}) => ({
   };
   const inst = { version: '0.21', versionCode: 214 };
   const got = await c.checkForUpdate(okFetch(release('v0.22')), inst);
-  check('request is GET releases/latest with the right headers only', calls[0].url === 'https://api.github.com/repos/Kaos599/Maglev/releases/latest' && calls[0].init.headers.Accept === 'application/vnd.github+json' && calls[0].init.headers['User-Agent'] === 'Maglev/0.21' && Object.keys(calls[0].init.headers).length === 2 && !('Authorization' in calls[0].init.headers));
+  check('request is GET releases/latest with the right headers only', calls[0].url === 'https://api.github.com/repos/dragonslayers-k/Maglev_forked/releases/latest' && calls[0].init.headers.Accept === 'application/vnd.github+json' && calls[0].init.headers['User-Agent'] === 'Maglev/0.21' && Object.keys(calls[0].init.headers).length === 2 && !('Authorization' in calls[0].init.headers));
   check('parsed result', got && got.version === '0.22');
   check('the request omits credentials, so no github.com cookies go out', calls[0].init.credentials === 'omit');
   check('up to date gives null', (await c.checkForUpdate(okFetch(release('v0.21')), inst)) === null);

@@ -3,7 +3,7 @@
  * The request carries no token and nothing but the app version in its User-Agent.
  */
 
-const RELEASES_URL = 'https://api.github.com/repos/Kaos599/Maglev/releases/latest';
+const RELEASES_URL = 'https://api.github.com/repos/dragonslayers-k/Maglev_forked/releases/latest';
 const ISSUES_URL = 'https://github.com/Kaos599/Maglev/issues/new';
 const CHECK_TIMEOUT_MS = 15_000;
 const NOTES_MAX_CHARS = 4000;
@@ -105,7 +105,7 @@ export function parseRelease(json: unknown, installed: Installed): UpdateInfo | 
     version: tag.slice(1),
     tag,
     notes,
-    pageUrl: typeof r.html_url === 'string' ? r.html_url : `https://github.com/Kaos599/Maglev/releases/tag/${tag}`,
+    pageUrl: typeof r.html_url === 'string' ? r.html_url : `https://github.com/dragonslayers-k/Maglev_forked/releases/tag/${tag}`,
     apkUrl: asset.apkUrl,
     sha256: asset.sha256,
     size: asset.size,
