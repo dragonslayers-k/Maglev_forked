@@ -11,7 +11,7 @@ export type YtdlpCompletion = { id: string; outputDirectory: string; files: { na
 export type YtdlpFailure = { id: string; code: string; message: string; errorType?: string };
 
 const Native: any = requireOptionalNativeModule('YtdlpEngine');
-const emitter = Native ? new EventEmitter(Native) : null;
+const emitter: any = Native ? new EventEmitter(Native) : null;
 const unavailable = () => { throw new Error('yt-dlp native module is not installed in this build'); };
 
 export const ytdlpEngine = {
