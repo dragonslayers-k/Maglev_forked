@@ -39,8 +39,8 @@ check(/title="Add a link or torrent"/.test(read('app/add-torrent.tsx')), 'add-to
 (async () => {
   const { oneTapAddNote } = await import('../utils/addChecks.ts');
   check(oneTapAddNote({ sizeBytes: 5e9, onMetered: false, wifiOnly: false }) === null, 'oneTapAddNote: on Wi-Fi gives no note');
-  check(oneTapAddNote({ sizeBytes: 5e9, onMetered: true, wifiOnly: true }) === 'This waits for Wi-Fi.', 'oneTapAddNote: metered + Wi-Fi only waits');
-  check(/mobile data/.test(oneTapAddNote({ sizeBytes: 1.5e9, onMetered: true, wifiOnly: false }) || ''), 'oneTapAddNote: metered shows size line');
+  check(oneTapAddNote({ sizeBytes: 5e9, onMetered: true, wifiOnly: true }) === 'Wi-Fi 연결 시 다운로드합니다.', 'oneTapAddNote: metered + Wi-Fi only waits');
+  check(/모바일 데이터를 사용 중입니다/.test(oneTapAddNote({ sizeBytes: 1.5e9, onMetered: true, wifiOnly: false }) || '') && /파일 크기는/.test(oneTapAddNote({ sizeBytes: 1.5e9, onMetered: true, wifiOnly: false }) || ''), 'oneTapAddNote: metered shows size line');
   check(oneTapAddNote({ sizeBytes: null, onMetered: true, wifiOnly: false }) === null, 'oneTapAddNote: unknown size gives no note');
   check(read('utils/addChecks.ts').includes('mobileDataLine'), 'oneTapAddNote reuses mobileDataLine');
   if (failed) { console.log(`${failed} failed`); process.exit(1); }
