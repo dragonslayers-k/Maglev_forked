@@ -219,3 +219,47 @@ YTDLnis의 동작을 참고하되 YTDLnis 앱의 소스/브랜드/전용 UI를 �
 - 이 변경은 새 CI, Galaxy 실제 공유/paste → 추출 → 형식 선택 → Transfers → 저장 → 재생 → 취소/재시도/재시작 검증을 통과하기 전까지 완료/최종본으로 표시하지 않습니다.
 - PO Token provider, yt-dlp-ejs/JS runtime, runtime/Python compatibility, playlist, separate direct A/V mux, non-YouTube site coverage, full Korean localization are still pending.
 - CI success and APK artifact generation do not equal device acceptance.
+
+## 2026-11-26 기능 보존·MPMux 녹화·보호 미디어 인계 보강
+
+### 요구사항 변경 금지 원칙
+- 여러 원천 프로젝트의 기능을 합치는 것이 목표이며, 중복 구현은 공통 엔진으로 통합하되 원천별 고유 기능이나 기존 Maglev 기능을 임의로 삭제하지 않습니다.
+- 대체 기능이 동등하게 구현·검증되기 전에는 기존 기능을 제거하지 않습니다. 미구현/제약 기능은 PLANNED, IN_PROGRESS, BLOCKED, UNSUPPORTED_WITH_REASON으로 남깁니다.
+- 기능 제거/축소가 불가피한 경우 사전 영향 분석, 대체 경로, 회귀 테스트, 사용자에게 보이는 변경 기록이 필요합니다.
+- 새 엔진은 별도 전송 큐를 만들지 않고 기존 Maglev Transfers, 저장, 알림, 취소/재시도/복구를 공유합니다.
+
+### MPMux 기능 정확한 해석
+- MPMux Static Downloader: MP4/WebM 등의 Range 병렬 다운로드. Maglev Rust 엔진에 이미 Range split/validator/resume/fallback 구현이 있으므로 재작성하지 않고 회귀 검증합니다.
+- MPMux HLS Downloader: VOD segment 취합 및 remux. Maglev HLS VOD 구현을 재사용하고 오디오 트랙/암호화 범위/재생 결과를 검증합니다.
+- MPMux HLS Live: Maglev의 현재 live 거절 경로와 별개인 신규 기능. sequence cursor, playlist polling, segment 중복 방지, Stop/finalize, 저장공간 기반 파트 회전, 기존 Transfers 통합이 필요합니다.
+- MPMux Video Buffer Muxer: 일반 화면 녹화가 아닙니다. HTML5 MediaSource SourceBuffer에 append되는 미디어 버퍼(init/media fragment)를 수집해 MP4로 재패키징하는 기능입니다.
+- MSE capture는 기본 OFF이며 사용자가 명시적으로 시작해야 합니다. SourceBuffer별 MIME/codec, A/V track, append 순서, timestampOffset, appendWindow, changeType, discontinuity를 보존하고, bounded native staging/backpressure로 메모리 폭증을 막아야 합니다. 파일 파트 회전과 A/V sync 검증 후에만 완료 처리합니다.
+- Android MediaProjection 화면 녹화는 MSE buffer mux와 별도 기능입니다. 사용자가 시스템 캡처 권한을 직접 승인한 경우 일반 화면 녹화 기능으로 검토할 수 있으나, DRM/secure surface/HDCP 보호 제한을 우회하거나 검은 화면을 제거하는 기능으로 사용하지 않습니다.
+
+### DRM/EME 보호 콘텐츠 처리
+- DRM 감지 자체를 제거하지 않습니다. EME, Widevine, FairPlay, SAMPLE-AES, 보호된 key format을 식별하고 일반 MSE와 구분합니다.
+- Widevine/FairPlay 키·라이선스·세션 추출, 복호화, 보호 플래그 해제, DRM 우회 기능은 구현하지 않습니다.
+- 암호화된 SourceBuffer bytes를 수집해도 암호문은 복호화되지 않습니다. 컨테이너 변경만으로 재생 가능한 MP4가 되지 않습니다.
+- UI는 보호 상태와 실패 원인을 분명히 표시하고, 해당 서비스의 공식 오프라인 저장/다운로드 기능 및 고객지원 경로를 안내합니다.
+- PC MPMux 안내는 비암호화 MSE/HLS buffer형 플레이어에 한정된 대안입니다. DRM 해제 기능이라고 설명하지 않습니다.
+
+### 현재 저장소 변경 및 CI 기록
+- 기능 보존 정책 상세: `docs/FEATURE_PRESERVATION_AND_PROTECTED_MEDIA_KO.md`
+- 제품 수용 기준 갱신: `docs/PRODUCT_TARGET_KO.md`
+- README 한국어 안내 링크 추가: `README_KO.md`
+- 문서 변경 commit: `7c768ee4405ed9b9e10efac726dc5c377a1b65e0`
+- 해당 commit CI: run #167 / ID `45708688002`, 기록 시점 in_progress. 성공/실패를 확인한 후 별도 기재할 것.
+- #163(run `45645790936`)은 CI success였으나 사용자 설치 결과 전체 한국어화 FAIL / YouTube 다운로드 FAIL. DEVICE_PASS가 아닙니다.
+- #166(run `45655252729`)은 test-only commit `508fc49e64adda9f0f1d4655f842873ed5836ee8`의 CI success이며 Galaxy E2E/최종 APK 기능 검증 증거가 아닙니다.
+
+### 다음 구현 순서
+1. MSE capture native staging bridge와 사용자 opt-in lifecycle 구현 및 단위/contract 테스트.
+2. HLS Live recorder state machine 및 기존 Transfers 연결.
+3. DRM/EME 탐지 결과를 보호 유형별 한국어 UI로 노출하고 공식 저장 안내 제공.
+4. YouTube runtime(Python/yt-dlp/JS runtime/PO Token) 실제 단말 검증 및 format/download pipeline 수정.
+5. 전체 UI 한국어 문자열 inventory, 자동 검사 및 Galaxy 화면 검수.
+6. 기존 Maglev torrent/direct/Range/HLS VOD/DASH/browser/subtitle/settings regression.
+7. CI artifact SHA/서명/ABI/16KB alignment 확인 후 Galaxy에서 실제 파일 저장·재생·백그라운드/취소/재시도/재시작을 검증.
+8. 위 항목을 통과한 commit만 최종 후보로 지정합니다.
+
+이 문서의 추가는 요구사항과 검증 기준을 보강한 것이며, MSE capture/HLS Live/DRM detection UX/YouTube E2E/전체 한국어화가 구현 완료되었다는 뜻이 아닙니다.
