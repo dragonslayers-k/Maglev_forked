@@ -149,7 +149,7 @@ export function StreamSheet({ item, pageTitle, userAgent = '', pageUrl = '', onC
                 <RadioCard
                   key={v.id}
                   title={qualityLabel(v, probe.variants)}
-                  description={v.audio === 'none' ? 'No sound' : `${(v.bandwidth / 1_000_000).toFixed(1)} Mbps`}
+                  description={v.audio === 'none' ? '오디오 없음' : `${(v.bandwidth / 1_000_000).toFixed(1)} Mbps`}
                   icon="file"
                   selected={v.id === variantId}
                   onPress={() => {
@@ -189,7 +189,7 @@ export function StreamSheet({ item, pageTitle, userAgent = '', pageUrl = '', onC
               minLines={1}
               size="lg"
               editable={!adding}
-              accessibilityLabel="File name"
+              accessibilityLabel="파일 이름"
             />
             <SaveToRow disabled={adding} onError={setMessage} />
           </>
@@ -200,11 +200,11 @@ export function StreamSheet({ item, pageTitle, userAgent = '', pageUrl = '', onC
         {message ? <Banner tone="danger" title={message} /> : null}
 
         <View style={styles.actions}>
-          <Button label="Copy link" icon="copy" variant="ghost" onPress={() => onCopyLink(it.url)} disabled={adding} />
+          <Button label="링크 복사" icon="copy" variant="ghost" onPress={() => onCopyLink(it.url)} disabled={adding} />
           {phase === 'error' ? (
-            canRetry ? <Button label="Try again" onPress={() => setTries((n) => n + 1)} /> : <Button label="Close" onPress={onClose} />
+            canRetry ? <Button label="다시 시도" onPress={() => setTries((n) => n + 1)} /> : <Button label="닫기" onPress={onClose} />
           ) : (
-            <Button label="Start" loading={adding} disabled={phase !== 'ready' || !variant || doesntFit} onPress={() => void start()} />
+            <Button label="다운로드 시작" loading={adding} disabled={phase !== 'ready' || !variant || doesntFit} onPress={() => void start()} />
           )}
         </View>
       </View>
