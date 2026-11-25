@@ -294,8 +294,13 @@ async function main() {
       .join(","),
   );
   check(
-    "rank: 'clear history' puts the shorter exact title first",
-    top("clear history")[0] === "browser-clear-history",
+    "rank: Korean '방문 기록 삭제' puts the exact localized row first",
+    top("방문 기록 삭제")[0] === "browser-clear-history",
+    top("방문 기록 삭제", 2).join(","),
+  );
+  check(
+    "English 'clear history' still finds the localized history row",
+    top("clear history", 2).includes("browser-clear-history"),
     top("clear history", 2).join(","),
   );
   check(
