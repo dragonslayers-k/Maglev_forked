@@ -177,3 +177,10 @@ YTDLnis의 동작을 참고하되 YTDLnis 앱의 소스/브랜드/전용 UI를 �
 - 요구사항은 Maglev 기반/기존 기능 보존 + LJ Video Downloader 계열 자동 탐지 및 HTTP/HLS/DASH 다운로드 확대 + YTDLnis/yt-dlp 계열 실제 영상 추출·형식 선택·다운로드 queue 통합 + 앱 전체 완전 한국어화 + Maglev upstream 정기 review/sync를 포함합니다.
 - 이번 사용자 피드백에서 한국어·YouTube share recognition·download는 모두 실패로 확정 기록. CI run #45585266120 성공은 automated tests/build만 뜻하며 실기기 기능 성공을 뜻하지 않습니다.
 - 로드맵: P0 실패 재현/진단 → P1 YouTube end-to-end → P2 범용 탐지/다운로드 → P3 전체 한국어 → P4 upstream/회귀 → P5 안정화/릴리스. 목표 명세를 먼저 고정하고 이 문서의 DoD 기준으로 작업/보고합니다.
+
+
+## 13. 문서 상호 참조 및 README 정정 — 2026-11-25
+- 최종 목표 명세 신규: `docs/PRODUCT_TARGET_KO.md` (commit `9c39dd2`)
+- 인수인계 링크 추가: commit `6e4f32b`
+- README를 목표에 맞게 수정하고 현 실패를 명시: commit `e1594ab`
+- README는 이제 기능 목표를 축소해서 “단계적 한국어”로만 표현하지 않고, 전체 한글화/YouTube 기능을 목표로 명시하며 현재 실기기 실패를 공개합니다.
