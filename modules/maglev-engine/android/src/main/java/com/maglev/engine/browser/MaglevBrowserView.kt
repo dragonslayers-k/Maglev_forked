@@ -39,6 +39,8 @@ import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
 import android.webkit.WebSettings
+import android.webkit.ServiceWorkerClient
+import android.webkit.ServiceWorkerController
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.FrameLayout
@@ -56,6 +58,7 @@ import java.io.ByteArrayInputStream
 import java.net.URISyntaxException
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicReference
 
 /**
  * The in-app browser view (docs/NATIVE_CONTRACT.md section 24): an ExpoView that hosts one android.webkit.WebView,
@@ -187,6 +190,7 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
     private val pullSafety = Runnable { if (!destroyed) refresh.isRefreshing = false }
 
     init {
+        installServiceWorkerObserver(this)
         BlocklistStore.warm(context)
         refresh.setOnRefreshListener {
             pullLoading = false
@@ -323,6 +327,8 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
     fun setActive(value: Boolean) {
         if (value == active) return
         active = value
+        if (value) installServiceWorkerObserver(this)
+        else serviceWorkerObserver.compareAndSet(this, null)
         if (destroyed) return
         applyActive()
     }
@@ -544,6 +550,7 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
     fun destroyBrowser() {
         if (destroyed) return
         destroyed = true
+        serviceWorkerObserver.compareAndSet(this, null)
         mainHandler.removeCallbacksAndMessages(null)
         for (c in captures.toList()) destroyCapture(c)
         exitFullscreen()
@@ -1140,7 +1147,7 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
                 scheduleFlush()
                 return emptyResponse()
             }
-            noteNetwork(uri.toString(), request.requestHeaders)
+            noteNetwork(uri.toString(), request.requestHeaders, request.method)
             return null
         }
 
@@ -1429,8 +1436,25 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
     private fun emptyResponse() =
         WebResourceResponse("text/plain", "utf-8", 204, "No Content", emptyMap(), ByteArrayInputStream(ByteArray(0)))
 
-    /** A sub-resource or main request the page made (section 24.3 rule 1). Background thread. */
-    private fun noteNetwork(url: String, headers: Map<String, String>?) {
+    /**
+     * Service-worker requests are process-wide in Android WebView: there is no WebView parameter to identify their
+     * owner. Route only to the active tab, and only when Referer or Origin matches that tab's document host.
+     */
+    private fun noteServiceWorkerRequest(request: WebResourceRequest) {
+        if (destroyed || !active || !request.method.equals("GET", ignoreCase = true)) return
+        val headers = request.requestHeaders
+        val owner = headers.entries.firstOrNull { it.key.equals("Referer", true) }?.value
+            ?: headers.entries.firstOrNull { it.key.equals("Origin", true) }?.value
+        val ownerHost = owner?.let { Uri.parse(it).host?.lowercase() } ?: return
+        if (!ownerHost.equals(pageHost, ignoreCase = true)) return
+        val uri = request.url ?: return
+        if (uri.scheme != "http" && uri.scheme != "https") return
+        noteNetwork(uri.toString(), headers, request.method)
+    }
+
+    /** A sub-resource, main request or attributable Service Worker request (section 24.3 rule 1). Background thread. */
+    private fun noteNetwork(url: String, headers: Map<String, String>?, method: String = "GET") {
+        if (!method.equals("GET", ignoreCase = true)) return
         var accept: String? = null
         var hasRange = false
         if (headers != null) {
@@ -1499,6 +1523,32 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
     // endregion
 
     companion object {
+        // ServiceWorkerController is process-wide. Keep one dispatcher and point it at the active browser tab only.
+        private val serviceWorkerObserver = AtomicReference<MaglevBrowserView?>(null)
+        private val serviceWorkerInstallLock = Any()
+        @Volatile private var serviceWorkerClientInstalled = false
+
+        private fun installServiceWorkerObserver(view: MaglevBrowserView) {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) return
+            serviceWorkerObserver.set(view)
+            if (serviceWorkerClientInstalled) return
+            synchronized(serviceWorkerInstallLock) {
+                if (serviceWorkerClientInstalled) return
+                try {
+                    ServiceWorkerController.getInstance().setServiceWorkerClient(object : ServiceWorkerClient() {
+                        override fun shouldInterceptRequest(request: WebResourceRequest): WebResourceResponse? {
+                            serviceWorkerObserver.get()?.noteServiceWorkerRequest(request)
+                            // Observation only. Never consume or replace the Service Worker response.
+                            return null
+                        }
+                    })
+                    serviceWorkerClientInstalled = true
+                } catch (_: Throwable) {
+                    serviceWorkerObserver.compareAndSet(view, null)
+                }
+            }
+        }
+
         /** Found items and the blocked count go out at most this often (docs/NATIVE_CONTRACT.md section 24.2). */
         const val FLUSH_MS = 250L
 
