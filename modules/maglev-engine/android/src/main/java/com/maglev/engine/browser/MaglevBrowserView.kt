@@ -1467,9 +1467,7 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
         val path = url.substringBefore('?').substringBefore('#').lowercase()
         if (path.endsWith(".m3u8")) hlsSeen = true
         if (path.endsWith(".mpd")) dashSeen = true
-        val segment = path.endsWith(".ts") || path.endsWith(".m4s") ||
-            path.endsWith(".cmfv") || path.endsWith(".cmfa")
-        if (segment && (hlsSeen || dashSeen)) return
+        if (FoundClassifier.isStreamSegment(url, hlsSeen, dashSeen)) return
         var accept: String? = null
         var hasRange = false
         if (headers != null) {
