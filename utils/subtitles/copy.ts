@@ -114,7 +114,7 @@ export function errorCopy(code: SubtitleErrorCode, a: CopyArgs = {}): ErrorCopy 
       return { message: NAME_TAKEN_TITLE, action: NAME_TAKEN_ACTIONS.replace };
     case 'unsupported_archive':
     default:
-      return { message: UNSUPPORTED_FILE, action: 'Pick another' };
+      return { message: UNSUPPORTED_FILE, action: '다른 파일 선택' };
   }
 }
 
@@ -166,10 +166,10 @@ export const nonVideoMany = (k: number): string => `동영상이 아닌 항목 $
 /** 44.9 status mode: a phase in words. */
 export const PHASE_WORDS = {
   queued: '파일 대기 중',
-  searching: 'Getting\u2026',
+  searching: '검색 중…',
   saved: '저장됨',
-  'needs-pick': 'Close match \u00B7 pick',
-  none: 'None found \u00B7 edit name',
+  'needs-pick': '비슷한 자막 · 선택',
+  none: '없음 · 이름 수정',
   'has-already': '자막 있음',
   offline: '오프라인',
   limited: '검색 사이트 제한',
@@ -224,7 +224,7 @@ export function rowPackLine(c: { saved: number; total: number; needYou: number }
   return c.needYou > 0 ? `${base} · ${c.needYou}개 선택 필요` : base;
 }
 /** What TalkBack reads: "Subtitles, {line}, button {label}". */
-export const rowLabel = (line: string, button: string | null): string => (button ? `${ROW_LABEL}, ${line}, button ${button}` : `${ROW_LABEL}, ${line}`);
+export const rowLabel = (line: string, button: string | null): string => (button ? `${ROW_LABEL}, ${line}, 버튼 ${button}` : `${ROW_LABEL}, ${line}`);
 
 // ---------------------------------------------------------------- NATIVE_CONTRACT 45.5: sources that are off
 
