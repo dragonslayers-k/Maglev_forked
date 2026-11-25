@@ -53,21 +53,21 @@ export interface MediaMenu {
 }
 
 export const mediaMenuCopy = {
-  saveImage: 'Save image',
-  openImageNewTab: 'Open image in new tab',
-  copyImageAddress: 'Copy image address',
-  shareImageLink: 'Share image link',
-  downloadVideo: 'Download video',
-  downloadStream: 'Download stream',
-  savePoster: 'Save preview image',
-  openVideoNewTab: 'Open video in new tab',
-  copyVideoAddress: 'Copy video address',
-  showFound: 'Show files found on this page',
-  linkOptions: 'Link options',
-  imageInline: "This image is part of the page, so Maglev can't save it from here.",
-  videoBlob: "This video plays in a way Maglev can't save directly. Try the files found on this page.",
-  videoInline: "This video is part of the page, so Maglev can't save it from here.",
-  videoNone: 'This video has no address Maglev can save.',
+  saveImage: '이미지 저장',
+  openImageNewTab: '새 탭에서 이미지 열기',
+  copyImageAddress: '이미지 주소 복사',
+  shareImageLink: '이미지 링크 공유',
+  downloadVideo: '동영상 다운로드',
+  downloadStream: '스트림 다운로드',
+  savePoster: '미리보기 이미지 저장',
+  openVideoNewTab: '새 탭에서 동영상 열기',
+  copyVideoAddress: '동영상 주소 복사',
+  showFound: '이 페이지에서 감지한 파일 보기',
+  linkOptions: '링크 옵션',
+  imageInline: '페이지에 포함된 이미지라 여기에서 저장할 수 없습니다.',
+  videoBlob: '이 영상은 직접 저장할 수 없는 방식으로 재생됩니다. 감지 파일 목록을 확인하세요.',
+  videoInline: '페이지에 포함된 영상이라 여기에서 저장할 수 없습니다.',
+  videoNone: '저장할 수 있는 영상 주소를 찾지 못했습니다.',
 } as const;
 
 const MAX_URL = 4096;
