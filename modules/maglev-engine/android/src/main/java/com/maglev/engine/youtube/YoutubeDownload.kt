@@ -66,7 +66,7 @@ object YoutubeDownload {
     /** Keep logs and UI diagnostics useful without writing signed media URLs or query tokens. */
     private fun safeDiagnostic(error: Throwable): String =
         (error.message ?: error.javaClass.simpleName)
-            .replace(Regex("https?://[^\\\\s]+", RegexOption.IGNORE_CASE), "[URL]")
+            .replace(Regex("https?://[^\\s]+", RegexOption.IGNORE_CASE), "[URL]")
             .take(240)
 
     fun info(context: Context, rawUrl: String): Map<String, Any?> {
