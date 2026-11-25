@@ -184,3 +184,25 @@ YTDLnis의 동작을 참고하되 YTDLnis 앱의 소스/브랜드/전용 UI를 �
 - 인수인계 링크 추가: commit `6e4f32b`
 - README를 목표에 맞게 수정하고 현 실패를 명시: commit `e1594ab`
 - README는 이제 기능 목표를 축소해서 “단계적 한국어”로만 표현하지 않고, 전체 한글화/YouTube 기능을 목표로 명시하며 현재 실기기 실패를 공개합니다.
+
+## 13. 2026-11-25 이어서 진행한 실제 수정
+
+### APK 크기 / 배포 정책
+- 별도 작업 브랜치 `fix/arm64-only-apk-delivery`에서 Universal APK 생성·릴리스 경로를 제거하고 기본 ARM64 단일 APK로 바꾸는 PR #2를 열었습니다: https://github.com/dragonslayers-k/Maglev_forked/pull/2
+- CI run #111: ABI split test, full JS/typecheck/tests, Rust tests 및 ARM64 native build 성공. APK assemble 당시 진행 중이었으며 완료 여부는 별도 확인해야 합니다.
+- 첫 ABI test assertion은 versionCode map의 다른 ABI 이름까지 확인해 실패했습니다. 실제 Gradle `include` 라인만 검사하도록 수정 후 run #111의 Contract tests와 JS checks가 통과했습니다.
+
+### YouTube 공유 경로 결함
+- 별도 stacked branch `fix/youtube-share-deeplink` 및 PR #3: https://github.com/dragonslayers-k/Maglev_forked/pull/3
+- 확인된 root cause: `utils/browser/youtube.ts`의 HOSTS set에 `www.youtube.com`이 누락되어, 가장 흔한 `https://www.youtube.com/watch?v=...` 주소가 JS parser에서 거부됐습니다. Kotlin parser에는 해당 host가 있었으나 JS router는 generic shared-download flow로 빠질 수 있었습니다.
+- 수정: `www.youtube.com` 추가; YouTube share activity에서 HTTPS를 다시 외부 intent로 넘기지 않고 `maglev://youtube-download?url=...` 내부 route를 직접 사용; Expo native-intent가 full URL, bare host, path-only URL 및 내부 route를 처리하도록 보강.
+- 회귀 테스트 `scripts/test-youtube-intents.js` 추가: watch, www/non-www, youtu.be, Shorts, Live, scheme-less, path-only, custom-scheme, invalid host/path.
+- CI run #112는 이 새 테스트에서 `www.youtube.com` 누락을 정확히 잡아 실패했습니다. 이후 host와 테스트를 수정한 commit `254ef4a9c1536286e97ac990a756dab3a2ab35ca`로 run #113이 시작됐으며, 그 결과를 확인해야 합니다.
+- 현재까지 YouTube 실제 다운로드 또는 Galaxy 실기기 성공은 확인하지 않았습니다. Parser/route 수정은 실제 yt-dlp extraction/download 성공의 증거가 아닙니다.
+
+### 이어서 해야 할 일
+1. CI run #113의 JS checks, contract tests, Rust Android, APK build 및 Kotlin tests 전체 결과 확인.
+2. CI APK의 ABI, 실제 크기, package ID, versionCode, 서명 및 SHA-256 확인.
+3. Galaxy에서 YouTube 앱, Chrome, Samsung Internet 공유 및 URL paste를 각각 시험해 전용 형식 선택 화면이 열리는지 확인.
+4. yt-dlp info extraction → formats → format ID → Maglev queue → file storage → playback을 end-to-end로 확인하고 오류 로그를 확보.
+5. 전체 한국어화, LJ 계열 미디어 탐지 및 Maglev upstream sync는 기존 제품 목표/로드맵 기준으로 계속 진행. 기능 완료/릴리스 선언 금지.
