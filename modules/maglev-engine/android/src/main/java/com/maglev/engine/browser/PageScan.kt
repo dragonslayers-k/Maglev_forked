@@ -101,7 +101,10 @@ object PageScan {
     els = document.querySelectorAll('video,audio');
     for (i = 0; i < els.length; i++) {
       m = els[i]; t = m.tagName.toLowerCase();
-      push(list, m.currentSrc, t); push(list, m.getAttribute('src'), t);
+      var vw = t === 'video' && m.readyState >= 1 ? m.videoWidth : 0;
+      var vh = t === 'video' && m.readyState >= 1 ? m.videoHeight : 0;
+      push(list, m.currentSrc, t, vw, vh, m.getAttribute('type'));
+      push(list, m.getAttribute('src'), t, vw, vh, m.getAttribute('type'));
       ss = m.querySelectorAll('source');
       for (j = 0; j < ss.length; j++) push(list, ss[j].getAttribute('src'), t);
       if (m.mediaKeys) eme();
