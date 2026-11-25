@@ -100,7 +100,7 @@ const KO_UI: Record<string, string> = {
   'About': '앱 정보',
   'Updates': '업데이트',
   'Stats': '통계',
-  'Search sources': '검색 사이트',
+
   'Auto-download': '자동 다운로드',
   'Subtitles': '자막',
   'Downloads': '다운로드',
