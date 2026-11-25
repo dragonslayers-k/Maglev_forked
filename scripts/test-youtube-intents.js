@@ -55,6 +55,12 @@ async function main() {
   assert.match(youtubeAdapter, /private fun prepareYtDlp\(context: Context\)\s*\{\s*YoutubeDL\.getInstance\(\)\.init\(context\.applicationContext\)\s*\}/, 'interactive analysis must initialize the bundled yt-dlp without blocking on an update download');
   assert.ok(youtubeAdapter.includes('groupBy { it["formatId"].toString() }'), 'duplicate format IDs from different player clients must collapse to one row');
   assert.ok(youtubeAdapter.includes('formatId == "bestaudio"'), 'bestaudio selector must bypass video stream selection');
+  assert.ok(youtubeAdapter.includes('YOUTUBE_AUDIO_FORMAT_UNRESOLVED'), 'audio-only must fail explicitly when yt-dlp did not resolve an audio-only requested format');
+  assert.ok(youtubeAdapter.includes('YOUTUBE_AUDIO_URL_MISSING'), 'audio-only must not fall back to the default video URL');
+  assert.ok(youtubeAdapter.includes('if (hasVideo) break'), 'metadata extraction must stop after a usable video client to avoid slow redundant client calls');
+  assert.ok(youtubeAdapter.includes('"sizeEstimated" to (exactBytes == null && estimatedBytes != null)'), 'unknown extractor sizes must be estimated from bitrate and duration when possible');
+  assert.ok(youtubeAdapter.includes('toFormat(format, client, current.duration)'), 'format size estimates must use the actual media duration');
+
   assert.ok(youtubeAdapter.includes('!hasVideo && hasAudio -> "audio"'), 'audio-only formats must be recognized even when exposed as a manifest');
   assert.match(youtubeAdapter, /safeDiagnostic\(e\)/, 'extractor errors must surface a sanitized diagnostic');
 
