@@ -46,6 +46,16 @@ class FoundClassifierTest {
         assertEquals("dash", c.stream)
     }
 
+    @Test fun responseMimeIdentifiesExtensionlessStreamsAndMedia() {
+        assertEquals("hls", FoundClassifier.classifyMime("application/vnd.apple.mpegurl; charset=utf-8")!!.stream)
+        assertEquals("hls", FoundClassifier.classifyMime("application/x-mpegURL")!!.stream)
+        assertEquals("dash", FoundClassifier.classifyMime("application/dash+xml")!!.stream)
+        assertEquals("video", FoundClassifier.classifyMime("video/mp4")!!.kind)
+        assertEquals("audio", FoundClassifier.classifyMime("audio/mpeg")!!.kind)
+        assertNull(FoundClassifier.classifyMime("text/html"))
+        assertNull(FoundClassifier.classifyMime(null))
+    }
+
     @Test fun tsIsIgnoredOnceAnHlsPlaylistWasSeen() {
         assertNull(net("https://cdn.example.com/seg/0001.ts", hls = true))
         assertNotNull(net("https://cdn.example.com/seg/0001.ts", hls = false))
@@ -216,6 +226,21 @@ class FoundClassifierTest {
         assertEquals(0, t.drain().size)
         t.add(it(3))
         assertEquals(listOf("v3.mp4"), t.drain().map { x -> x.name })
+    }
+
+    @Test fun trackerUpgradesAnExtensionlessVideoWhenResponseMimeArrives() {
+        val t = FoundTracker()
+        val url = "https://e.com/playback/manifest?id=7"
+        val early = FoundClassifier.item(url, Classified("video", null, null, false), "page", "https://e.com/", "P")!!
+        val later = early.copy(mime = "application/vnd.apple.mpegurl", stream = "hls")
+        assertTrue(t.add(early))
+        assertTrue(t.add(later))
+        assertEquals(1, t.size())
+        val out = t.drain()
+        assertEquals(1, out.size)
+        assertEquals("hls", out[0].stream)
+        assertEquals("application/vnd.apple.mpegurl", out[0].mime)
+        assertFalse(t.add(early))
     }
 
     @Test fun trackerKeepsTheNewestFiveHundred() {
