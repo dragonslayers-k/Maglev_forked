@@ -152,6 +152,16 @@ check('page scan bridge exposes exactly one method and validates input', () => {
   assert.strictEqual((view.match(/addJavascriptInterface\(/g) || []).length, 1, 'no other JS interface');
 });
 
+check('dynamic media detection observes fetch, XHR, resource timing and Service Worker GET requests', () => {
+  for (const marker of ['window.fetch', 'XMLHttpRequest', "getEntriesByType('resource')", 'application/vnd.apple.mpegurl', 'application/dash+xml']) {
+    assert(scan.includes(marker), 'page scan missing ' + marker);
+  }
+  assert(scan.includes('MAX_MIME_CHARS') && scan.includes('mimeTypePattern'), 'bounded MIME validation');
+  assert(view.includes('ServiceWorkerController') && view.includes('ServiceWorkerClient'), 'Service Worker observer not installed');
+  assert(view.includes('noteServiceWorkerRequest') && view.includes('request.method'), 'Service Worker requests are attributable and GET-filtered');
+  assert(view.includes('serviceWorkerObserver.compareAndSet(this, null)'), 'inactive/destroyed browser releases the observer');
+});
+
 check('blocklist store: https only, atomic write, 10 MB cap, 30 s timeouts', () => {
   const store = read(`${BROWSER}/BlocklistStore.kt`);
   const parser = read(`${BROWSER}/Blocklist.kt`);
