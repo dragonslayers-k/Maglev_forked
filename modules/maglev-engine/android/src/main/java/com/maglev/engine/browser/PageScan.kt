@@ -20,7 +20,7 @@ object PageScan {
     const val MAX_ENTRIES = 300
     const val MAX_URL_CHARS = 2048
     const val MAX_MIME_CHARS = 128
-    private val mimeTypePattern = Regex("^[a-z0-9!#    const val MAX_URL_CHARS = 2048
+    private val mimeTypePattern = Regex("^[a-z0-9!#&^_.+-]+/[a-z0-9!#&^_.+-]+$")
     private val types =^_.+-]+/[a-z0-9!#    const val MAX_URL_CHARS = 2048
     private val types =^_.+-]+$")
     private val types = setOf("video", "audio", "image", "meta-image", "meta-video", "link")
