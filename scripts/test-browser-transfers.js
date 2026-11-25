@@ -47,8 +47,8 @@ async function main() {
   const unk = t.activeSummary([dl('a', 'https://x.test/a', { size: 100, downloaded: 50 }), dl('b', 'https://x.test/b', { size: null, downloaded: 30 })]);
   check('a running download of unknown size leaves the percent unknown', unk && unk.count === 2 && unk.percent === null);
   check('percent never passes 100', t.activeSummary([dl('a', 'https://x.test/a', { size: 10, downloaded: 99 })]).percent === 100);
-  check('label with a percent', t.activeLabel({ count: 2, percent: 40 }) === '2 downloading · 40%');
-  check('label without a percent', t.activeLabel({ count: 1, percent: null }) === '1 downloading');
+  check('Korean label with a percent', t.activeLabel({ count: 2, percent: 40 }) === '2개 다운로드 중 · 40%');
+  check('Korean label without a percent', t.activeLabel({ count: 1, percent: null }) === '1개 다운로드 중');
 
   console.log('wiring');
   const scr = read('app/browser.tsx');
@@ -63,7 +63,7 @@ async function main() {
   check('the notice offers View', /actionLabel:\s*foundTray\.view/.test(sheet) && /onAction/.test(sheet));
   check('the sheet is told how to open a transfer', /onView/.test(sheet) && /onView=/.test(scr));
   const copy = await import('../constants/copy.ts');
-  check('copy exists', copy.foundTray.inTransfers === 'In Transfers' && copy.foundTray.view === 'View');
+  check('Korean copy exists', copy.foundTray.inTransfers === '다운로드 목록에 있음' && copy.foundTray.view === '보기');
 }
 
 main().then(() => {
