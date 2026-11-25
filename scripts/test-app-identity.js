@@ -23,5 +23,5 @@ assert(read('plugins/withShareIntents.js').includes("const PACKAGE = 'com.maglev
 assert(read('plugins/withAppIcons.js').includes("const PACKAGE = 'com.maglev.plus';"));
 assert(read('modules/maglev-engine/android/src/main/java/com/maglev/engine/appicon/AppIconManager.kt').includes('private const val PACKAGE = "com.maglev.plus"'));
 assert(read('modules/maglev-engine/android/src/main/java/com/maglev/engine/update/AppUpdater.kt').includes('private const val PACKAGE = "com.maglev.plus"'));
-assert(!app.android.package.includes('com.maglev"'), 'fork applicationId must not equal upstream com.maglev');
+assert.notStrictEqual(app.android.package, 'com.maglev', 'fork applicationId must differ from upstream');
 console.log('Maglev+ identity/package contract passed');
