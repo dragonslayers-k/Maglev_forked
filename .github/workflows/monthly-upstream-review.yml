@@ -1,0 +1,83 @@
+name: Monthly upstream Maglev review
+
+on:
+  schedule:
+    # 09:00 Korea Standard Time on the first day of each month
+    - cron: "0 0 1 * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  compare-upstream:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout fork main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Compare upstream
+        id: compare
+        run: |
+          git remote add upstream https://github.com/Kaos599/Maglev.git
+          git fetch upstream main --tags
+          fork_sha="$(git rev-parse origin/main)"
+          upstream_sha="$(git rev-parse upstream/main)"
+          echo "fork_sha=$fork_sha" >> "$GITHUB_OUTPUT"
+          echo "upstream_sha=$upstream_sha" >> "$GITHUB_OUTPUT"
+          if git merge-base --is-ancestor "$fork_sha" "$upstream_sha"; then
+            echo "behind=true" >> "$GITHUB_OUTPUT"
+            commits="$(git log --oneline --decorate "$fork_sha..$upstream_sha")"
+          else
+            echo "behind=false" >> "$GITHUB_OUTPUT"
+            commits="Fork main is not a simple ancestor of upstream main. Manual divergence review is required."
+          fi
+          {
+            echo "## Upstream Maglev monthly review"
+            echo "- Fork main: `$fork_sha`"
+            echo "- Upstream main: `$upstream_sha`"
+            echo "- Upstream ahead: ${{ steps.compare.outputs.behind }}"
+            echo
+            echo "### Changes"
+            echo "$commits"
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "$commits" > upstream-commits.txt
+
+      - name: Create review issue when upstream has changes
+        if: steps.compare.outputs.behind == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FORK_SHA: ${{ steps.compare.outputs.fork_sha }}
+          UPSTREAM_SHA: ${{ steps.compare.outputs.upstream_sha }}
+        run: |
+          month="$(date -u +%Y-%m)"
+          title="Monthly upstream Maglev review: $month"
+          if gh issue list --state open --search "$title in:title" --json title --jq '.[].title' | grep -Fxq "$title"; then
+            echo "Review issue already exists: $title"
+            exit 0
+          fi
+          commits="$(cat upstream-commits.txt)"
+          gh issue create --title "$title" --body "## Monthly upstream review
+
+          - Fork main: `$FORK_SHA`
+          - Upstream main: `$UPSTREAM_SHA`
+          - Source: https://github.com/Kaos599/Maglev
+
+          ## Upstream commits
+
+          ```
+          $commits
+          ```
+
+          ## Required review
+
+          - [ ] Check relevant media detection / browser / HLS / DASH / downloader changes
+          - [ ] Check dependency and security changes
+          - [ ] Review conflicts against fork modifications
+          - [ ] Selectively port changes to `upstream-sync/$month`
+          - [ ] Run CI and Android build/device validation
+          - [ ] Open a Draft PR to `dev` with Korean summary"
