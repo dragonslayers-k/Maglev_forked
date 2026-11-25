@@ -1,6 +1,6 @@
-# Maglev 기반 동영상 다운로더
+# Maglev+ 기반 동영상 다운로더
 
-이 저장소는 [Kaos599/Maglev](https://github.com/Kaos599/Maglev)을 기반으로 동영상·스트리밍 감지 성공률과 한국어 사용성을 개선하는 공개 개발 포크입니다.
+이 저장소는 **Maglev+** (독립 설치 패키지)이며 [Kaos599/Maglev](https://github.com/Kaos599/Maglev)을 기반으로 동영상·스트리밍 감지 성공률과 한국어 사용성을 개선하는 공개 개발 포크입니다.
 
 - 원본 프로젝트: [Kaos599/Maglev](https://github.com/Kaos599/Maglev)
 - 기준 원본 버전: Maglev v0.33
@@ -24,6 +24,14 @@ Maglev의 화면 구성과 다운로드 엔진을 유지하면서 일반 동영�
 - 태그 규칙: `v주버전.부버전` (예: `v0.34`)
 - ABI별 APK와 SHA-256 digest가 포함된 정식 Release만 앱 내 자동 업데이트 대상으로 인식합니다.
 - 현재는 아직 자체 Release가 없으므로 앱 내 업데이트 경로의 배포 검증은 남아 있습니다.
+
+## APK 독립 식별
+
+- 표시 이름: **Maglev+**
+- Android applicationId: `com.maglev.plus` (원본 `com.maglev`과 다름)
+- Android versionCode: `34` / app version: `0.34`
+- 원본 Maglev과 별도 설치·데이터 공간을 사용합니다. 원본 앱을 덮어쓰지 않습니다.
+- Release APK는 포크의 전용 서명 키로 서명하여 업데이트 체인을 분리합니다. CI의 테스트 APK는 debug 서명일 수 있으므로 정식 배포 APK와 구분하십시오.
 
 ## 주요 지원 방향
 
