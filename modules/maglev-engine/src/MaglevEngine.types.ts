@@ -630,6 +630,8 @@ export interface YouTubeFormat {
   tbr: number;
   abr: number;
   size: number | null;
+  /** True when size is calculated from bitrate × duration rather than reported by the extractor. */
+  sizeEstimated?: boolean;
   format: string | null;
 }
 
