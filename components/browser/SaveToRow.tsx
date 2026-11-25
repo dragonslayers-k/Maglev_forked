@@ -5,7 +5,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { useMaglevEngine } from '../../context/EngineContext';
 import { ThemeColors, radius, spacing, touch, type } from '../../constants/theme';
 import { haptic } from '../../constants/haptics';
-import { notices } from '../../constants/copy';
+import { notices, saveTo } from '../../constants/copy';
 import { Button } from '../ui';
 import { friendlyPath } from '../settings/SettingsParts';
 
@@ -35,12 +35,12 @@ export function SaveToRow({ disabled, onError }: { disabled?: boolean; onError?:
   return (
     <View style={styles.row}>
       <View style={styles.text}>
-        <Text style={styles.meta}>Save to</Text>
-        <Text style={styles.dest} numberOfLines={1} ellipsizeMode="middle" accessibilityLabel={`Save to ${shown}`}>
+        <Text style={styles.meta}>{saveTo.title}</Text>
+        <Text style={styles.dest} numberOfLines={1} ellipsizeMode="middle" accessibilityLabel={`${saveTo.title} ${shown}`}>
           {shown}
         </Text>
       </View>
-      <Button label="Change" variant="secondary" disabled={disabled} onPress={() => void change()} />
+      <Button label="변경" variant="secondary" disabled={disabled} onPress={() => void change()} />
     </View>
   );
 }
