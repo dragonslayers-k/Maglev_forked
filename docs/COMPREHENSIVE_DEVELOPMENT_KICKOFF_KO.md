@@ -445,3 +445,27 @@ Options must be built as typed argument arrays, not shell-string concatenation. 
 ### Appendix D. YTDLnis APK/source evidence
 
 YTDLnis Android source reference: https://github.com/deniscerri/ytdlnis ; package ecosystem: https://github.com/deniscerri/ytdlnis-packages/ . This conversation's mounted uploads did not include a YTDLnis APK binary, so its APK manifest/DEX/native-library inventory and SHA-256 are not yet independently inspected. The current engine integration design relies on the separately referenced youtubedl-android source, not on copying the YTDLnis APK binary. If a YTDLnis APK is later supplied, record package/version/hash and inspect manifest, service/receiver/intent, runtime package manager, Python/JS/FFmpeg/aria2 assets, downloader command construction, and storage/notification flow before changing this document.
+
+
+## Appendix E. Upstream source snapshot — 2026-11-25
+
+This section supplements the original 2026-11-25 Claude analysis with a current upstream README/changelog check. It does not mean the integration has been implemented.
+
+### youtubedl-android
+- Current upstream README lists dependency version `0.18.1` for `library`, `ffmpeg`, and optional `aria2c`; release page shows 0.18.1 dated 2026-11-16 and 0.18.0 includes 16 KB page-size support. This supersedes the original Claude document's illustrative 0.16.0 coordinate; implementation must pin and test 0.18.1 (or a newer verified version), not blindly copy 0.16.0.
+- README documents bundled yt-dlp executable + Python 3.8, init, getInfo, execute progress callback, process ID cancellation, stable/nightly updater, FFmpeg init for post-processing, optional Aria2c and `--downloader libaria2c.so`.
+- README requires `android:extractNativeLibs="true"`, ABI filters/splits, and describes Android scoped-storage constraints. Verify against current target SDK and actual Maglev storage implementation.
+- References: https://github.com/yausername/youtubedl-android/blob/master/README.md ; https://github.com/yausername/youtubedl-android/releases
+
+### yt-dlp upstream runtime requirements
+- Current yt-dlp README says supported Python versions are 3.11+ and recommends `ffmpeg`, `ffprobe`, `yt-dlp-ejs`, and a supported JavaScript runtime; yt-dlp-ejs is required for full YouTube support. The engine library README's bundled Python 3.8 is therefore a compatibility risk to test against the exact packaged yt-dlp/lazy-extractor build. Do not assume the latest upstream yt-dlp can simply be swapped into the bundled Python 3.8 environment.
+- Reference: https://github.com/yt-dlp/yt-dlp/blob/master/README.md
+
+### YTDLnis current source/release notes
+- Current official README lists audio/video/custom commands, playlists/batch editing, queue/schedule/concurrency, retry, file editing, cookies, custom templates/terminal, share card, logs, incognito, backup/restore, MVVM + WorkManager, and plugin management for Python/JS runtimes/FFmpeg/aria2c.
+- Current changelog/release notes mention package integration (separate package repository), a rewritten/integrated YoutubeDL engine, Python 3.14 with curl-cffi and related packages, and BGUtils PO Token provider using Deno/Node package runtime. These are current source observations and supersede the older analysis where it differs; they are **feature/runtime references**, not code copied into Maglev.
+- References: https://github.com/deniscerri/ytdlnis/blob/main/README.md ; https://github.com/deniscerri/ytdlnis/blob/main/CHANGELOG.md ; https://github.com/deniscerri/ytdlnis-packages/
+
+### Architecture decision after this source check
+- Keep youtubedl-android as a candidate engine integration, but G1 must validate whether its bundled Python 3.8/lazy yt-dlp package satisfies current YouTube requirements. If not, evaluate (a) upstream-compatible runtime/package upgrade path, (b) YTDLnis-style managed Python/JS/runtime packages, or (c) a different maintained Android embedding. Decision requires a reproducible device spike, APK size measurement, 16 KB ABI validation, and update/rollback strategy.
+- YouTube acceptance explicitly includes yt-dlp-ejs/JS runtime and PO Token behavior. “getInfo works for a public URL” is not enough to claim current YouTube compatibility.
