@@ -129,7 +129,7 @@ check('in the tab bar the screen skips the bottom inset (the tab bar already pad
 // 24.11 history from a blank tab
 const recent = read('components/browser/StartPage.tsx'); // the Recent list now lives in StartPage (RecentHistory.tsx is gone)
 check('⋮ is enabled on a blank tab (gated on ready, not on a page)', /icon="more" accessibilityLabel="더보기" disabled=\{!ready\}/.test(scr) && !/icon="more"[^\n]*disabled=\{!hasPage\}/.test(scr));
-check('with no page the sheet is titled Browser', /title=\{hasPage \? historyCopy\.menuTitlePage : historyCopy\.menuTitleBlank\}/.test(scr) && /menuTitleBlank: 'Browser'/.test(read('constants/copy.ts')));
+check('with no page the sheet is titled Browser', /title=\{hasPage \? historyCopy\.menuTitlePage : historyCopy\.menuTitleBlank\}/.test(scr) && /menuTitleBlank: '브라우저'/.test(read('constants/copy.ts')));
 check('page-only rows sit behind hasPage; Bookmarks, History and Browser settings do not', /\{hasPage \? \(\s*<>[\s\S]*?title="앞으로"[\s\S]*?findCopy\.menuRow[\s\S]*?textSizeCopy\.menuRow[\s\S]*?데스크톱 사이트[\s\S]*?페이지 링크 복사[\s\S]*?<\/>\s*\) : null\}\s*<ListRow\s+icon="bookmark"[\s\S]*?<ListRow\s+icon="clock"/.test(scr));
 check('a blank tab shows the start page (Recent folded in, with its own empty state)', /<StartPage[\s\S]{0,200}onOpen=/.test(scr) && /<EmptyBlock icon="bookmark"/.test(recent));
 check('Recent lists 6 from history, refreshes on change, and links to the History screen', /listHistory\(\{ limit: HISTORY_SAMPLE \}\)/.test(recent) && /START_RECENT_LIMIT = 6/.test(recent) && /useHistoryVersion\(\)/.test(recent) && /\/browser-history/.test(recent) && /bookmarkCopy\.seeAll/.test(recent));
