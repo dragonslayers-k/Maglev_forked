@@ -33,7 +33,7 @@ function check(name, cond) {
   m = row({ phase: 'queued' });
   check('queued: "Waiting for the file" + Cancel', m.line === 'Waiting for the file' && btn(m) === 'Cancel/cancel' && m.glyph === 'getting');
   m = row({ phase: 'searching' });
-  check('searching: "Getting subtitles…" + Cancel', m.line === 'Getting subtitles…' && btn(m) === 'Cancel/cancel');
+  check('searching: "자막 검색 중…" + Cancel', m.line === 'Getting subtitles…' && btn(m) === 'Cancel/cancel');
   m = row({ phase: 'saved', language: 'en' });
   check('saved: "English · fits this release" + Change, saved badge', m.line === 'English · fits this release' && btn(m) === 'Change/find' && m.glyph === 'saved' && m.start === 'results');
   m = row({ phase: 'needs-pick' });
@@ -41,9 +41,9 @@ function check(name, cond) {
   m = row({ phase: 'needs-pick', otherLang: 'fr' });
   check('needs-pick in another language: "Found in French only"', m.line === 'Found in French only' && btn(m) === 'Pick one/pick');
   m = row({ phase: 'none' });
-  check('none: "No match yet" + Edit name, opens the name field', m.line === 'No match yet' && btn(m) === 'Edit name/edit-name' && m.start === 'edit-name');
+  check('none: "아직 찾지 못함" + 이름 수정, opens the name field', m.line === 'No match yet' && btn(m) === 'Edit name/edit-name' && m.start === 'edit-name');
   m = row({ phase: 'has-already', language: 'de' });
-  check('has-already: "Already has German subtitles" + Find more', m.line === 'Already has German subtitles' && btn(m) === 'Find more/find');
+  check('has-already: "독일어 자막 있음" + 더 찾기', m.line === 'Already has German subtitles' && btn(m) === 'Find more/find');
   m = row({ phase: 'offline' });
   check('offline: "Waiting for internet", no button', m.line === 'Waiting for internet' && m.button === null);
   m = row({ phase: 'limited' });
@@ -75,8 +75,8 @@ function check(name, cond) {
   check('a skipped pack is just Skipped', row({ phase: 'skipped', pack: { total: 3, saved: 0, needYou: 0 } }).line === 'Skipped');
 
   console.log('[accessibility]');
-  check('"Subtitles, {line}, button {label}"', row({ phase: 'needs-pick' }).a11y === 'Subtitles, Close match found, button Pick one');
-  check('no button: no "button" word', row({ phase: 'offline' }).a11y === 'Subtitles, Waiting for internet');
+  check('"Subtitles, {line}, button {label}"', row({ phase: 'needs-pick' }).a11y === '자막, 비슷한 자막을 찾음, 버튼 선택');
+  check('no button: no "button" word', row({ phase: 'offline' }).a11y === '자막, 인터넷 연결 대기');
 
   console.log('[when the row shows]');
   const vid = (path, progressBytes, length = 1000) => ({ path, length, progressBytes, included: true, priority: 'normal', index: 0 });

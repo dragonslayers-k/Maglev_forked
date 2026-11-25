@@ -29,15 +29,15 @@ function check(name, cond, extra) {
   console.log('[page]');
   const page = read('app/settings/subtitles.tsx');
   check('the three screens exist and are registered in the layout', ['subtitles', 'subtitle-languages', 'subtitle-sources'].every((n) => exists(`app/settings/${n}.tsx`) && read('app/_layout.tsx').includes(`name="settings/${n}"`)));
-  check('master switch "Subtitles" with the contract subtitle', copy.SETTINGS_TITLE === 'Subtitles' && copy.SETTINGS_SWITCH_SUBTITLE === 'Show Find subtitles on videos' && /SETTINGS_SWITCH_SUBTITLE/.test(page) && /patch\(\{ enabled \}\)/.test(page));
+  check('master switch "Subtitles" with the contract subtitle', copy.SETTINGS_TITLE === '자막' && copy.SETTINGS_SWITCH_SUBTITLE === '동영상에서 자막 찾기 표시' && /SETTINGS_SWITCH_SUBTITLE/.test(page) && /patch\(\{ enabled \}\)/.test(page));
   check('rows in order: switch, Languages, Hearing impaired, Sources, privacy line', (() => { const p = ['patch({ enabled })', 'copy.languages.title', 'copy.hearing.title', 'copy.sources.title', '<Caption>{PRIVACY_LINE}'].map((x) => page.indexOf(x)); return p.every((x, i) => x > 0 && (i === 0 || x > p[i - 1])); })());
   check('hearing options are Show both / Prefer / Avoid', eq(Object.values(copy.HEARING_OPTIONS), ['Show both', 'Prefer', 'Avoid']) && /hearingImpaired/.test(page));
   check('with the master switch off the other rows stay visible but are disabled', /const off = !sub\.enabled/.test(page) && /pointerEvents=\{off \? 'none' : 'auto'\}/.test(page) && /opacity: 0\.45/.test(page) && (page.match(/disabled=\{off\}/g) || []).length >= 2);
-  check('the privacy line is the contract text', copy.PRIVACY_LINE === "Looking up subtitles sends the video's file name and a fingerprint of the file to the source you use. Nothing is sent until you tap Find subtitles.");
+  check('the privacy line is the contract text', copy.PRIVACY_LINE === "자막을 검색하면 동영상 파일명과 파일 식별 정보가 선택한 검색 사이트로 전송됩니다. '자막 찾기'를 누르기 전에는 전송하지 않습니다.");
   check('the OpenSubtitles row is gated by hasOpenSubtitlesKey, which is false without a build key', /hasOpenSubtitlesKey\(\) \? \(/.test(page) && S.hasOpenSubtitlesKey() === false);
   check('settings are UI only: written through updateSettings({subtitles}), never toNativeConfig', /subtitles: \{ \.\.\.prev\.subtitles/.test(read('components/subtitles-settings/useSubtitleSettings.ts')) && !/subtitle/i.test(read('modules/maglev-engine/src/toNativeConfig.ts')));
   const tab = read('app/(tabs)/settings.tsx');
-  check('the Settings tab lists Subtitles under Finding things', /findRows: RowSpec\[\][\s\S]*title: 'Subtitles'[^}]*route: 'subtitles'[\s\S]*?\];/.test(tab) && /icon: 'subtitles'/.test(tab));
+  check('the Settings tab lists Subtitles under Finding things', /findRows: RowSpec\[\][\s\S]*title: '자막'[^}]*route: 'subtitles'[\s\S]*?\];/.test(tab) && /icon: 'subtitles'/.test(tab));
   check('the subtitles icon exists', read('components/icons.generated.ts').includes('"subtitles":') && /subtitles: 'badge-captions'/.test(read('scripts/gen-icons.js')));
   check('every new row and screen is in the search index (rule 7)', ['subtitles-enabled', 'subtitles-languages', 'subtitles-hearing', 'subtitles-sources', 'subtitles-privacy', 'subtitle-languages-yours', 'subtitle-sources-list', 'updates-highlights'].every((id) => SETTINGS_INDEX.some((x) => x.id === id)));
   const kw = (id) => (SETTINGS_INDEX.find((x) => x.id === id) || { keywords: [] }).keywords.join(' ');
@@ -69,7 +69,7 @@ function check(name, cond, extra) {
   check('a turned-off source is locked and shows the note', /locked=\{!!r\.turnedOff\}/.test(src) && /turnedOffWithNote\(r\.turnedOff\.note\)/.test(src));
   check('the list-updated line is shown, with the same words as Updates', /listsCopy\.sources\.updated/.test(src) && /listsCopy\.sources\.builtIn/.test(src) && /copy\.listLine\(listLine\)/.test(src));
   check('re-reads when a new list is applied', /useListsVersion\(\)/.test(src) && /listSubtitleEntries\(\)/.test(src));
-  check('an empty registry shows "No sources yet"', /rows\.length === 0/.test(src) && /empty: 'No sources yet'/.test(read('constants/copy.ts')));
+  check('an empty registry shows "No sources yet"', /rows\.length === 0/.test(src) && /empty: '검색 사이트가 없습니다'/.test(read('constants/copy.ts')));
 
   console.log('[sources: rows with fake providers]');
   const fake = (id, o = {}) => ({ id, name: o.name || id.toUpperCase(), homepage: `https://${id}.example`, mirrors: [`https://${id}.example`], languages: 'many', kinds: ['movie', 'episode'], matches: ['name'], group: 'A', enabledByDefault: true, search: async () => [], download: async () => ({ kind: 'text', bytes: new Uint8Array(), format: 'srt' }), ...o });
