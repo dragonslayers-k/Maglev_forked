@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { ThemeColors, alpha, radius, spacing, type, touch } from '../../constants/theme';
+import { koUiText } from '../../constants/korean';
 import { PressableScale } from './PressableScale';
 
 export interface ChipProps {
