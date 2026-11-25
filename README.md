@@ -1,3 +1,5 @@
+> **한국어 안내:** [한국어 프로젝트 문서](README_KO.md)에서 개발 목적, 현재 구현 범위, 라이선스 및 실기기 검증 절차를 확인할 수 있습니다. 이 저장소는 Maglev GPL-3.0-only 기반의 공개 개발 포크입니다.
+
 <p align="center">
   <img src="assets/brand/readme-header.svg" alt="Maglev, an open-source download manager, video downloader and torrent client for Android" width="100%">
 </p>
