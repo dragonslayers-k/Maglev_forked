@@ -59,10 +59,31 @@ object YoutubeDownload {
             ?.take(48)
             ?: "unknown"
 
-    private fun safeDiagnostic(error: Throwable): String =
-        (error.message ?: error.javaClass.simpleName)
-            .replace(Regex("https?://[^\\s]+", RegexOption.IGNORE_CASE), "[URL]")
-            .take(240)
+    private fun safeDiagnostic(error: Throwable): String {
+        // Include nested causes and a short stack excerpt: initializer/linkage errors otherwise
+        // escape the old Exception-only catches and are impossible to diagnose from the UI.
+        val parts = mutableListOf<String>()
+        var current: Throwable? = error
+        var depth = 0
+        while (current != null && depth < 4) {
+            val message = (current.message ?: current.javaClass.simpleName)
+                .replace(Regex("https?://[^\\s]+", RegexOption.IGNORE_CASE), "[URL]")
+                .replace(Regex("(?i)(cookie|authorization|token|key)=([^&\\s]+)"), "$1=[REDACTED]")
+                .take(180)
+            parts += current.javaClass.simpleName + ": " + message
+            current = current.cause
+            depth++
+        }
+        val frames = error.stackTrace.take(5).map { frame ->
+            frame.className.take(120) + "." + frame.methodName.take(80) + ":" + frame.lineNumber
+        }
+        return (parts + frames.map { "at " + it }).joinToString(" <- ").take(900)
+    }
+
+    private fun rethrowFatal(error: Throwable) {
+        if (error is ThreadDeath) throw error
+        if (error is VirtualMachineError) throw error
+    }
 
     /**
      * YouTube needs an explicit player client. Other yt-dlp-supported HTTP(S) pages use the site's
@@ -108,8 +129,9 @@ object YoutubeDownload {
                     val hasVideo = found.any { it["kind"] == "video" }
                     val hasAudio = found.any { it["kind"] == "audio" }
                     if (hasVideo && hasAudio) break
-                } catch (e: Exception) {
-                    lastError = e
+                } catch (e: Throwable) {
+                    rethrowFatal(e)
+                    lastError = e as? Exception ?: RuntimeException(e)
                     Log.w(TAG, "yt-dlp client " + client + " failed: " + safeDiagnostic(e))
                 }
             }
@@ -141,10 +163,11 @@ object YoutubeDownload {
                 "thumbnail" to video.thumbnail,
                 "formats" to choices,
             )
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
+            rethrowFatal(e)
             val diagnostic = safeDiagnostic(e)
             val version = currentYtDlpVersion(context)
-            Log.e(TAG, "yt-dlp metadata extraction failed (yt-dlp=" + version + "): " + diagnostic)
+            Log.e(TAG, "yt-dlp metadata extraction failed (yt-dlp=" + version + "): " + diagnostic, e)
             val subject = if (link != null) "YouTube 영상" else "웹페이지 영상"
             Json.failure("YOUTUBE_EXTRACT_FAILED", subject + " 정보를 가져오지 못했습니다. yt-dlp " + version + " · " + diagnostic)
         }
