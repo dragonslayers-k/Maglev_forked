@@ -6,7 +6,7 @@ import { useTheme } from '../context/ThemeContext';
 import { ThemeColors, spacing, type } from '../constants/theme';
 import { formatBytes } from '../constants/format';
 import { haptic } from '../constants/haptics';
-import { Button, EmptyBlock, Screen } from '../components/ui';
+import { Button, Screen } from '../components/ui';
 
 function durationText(value: number): string {
   const seconds = Math.max(0, Math.floor(value || 0));
@@ -64,7 +64,6 @@ export default function YouTubeDownloadScreen() {
     try {
       const result = await maglevEngine.addYouTubeDownload(url, format.formatId);
       if (result.ok && result.id) {
-        haptic('done');
         router.replace({ pathname: '/download/[id]', params: { id: result.id } });
       } else {
         setError(result.message || '다운로드를 시작하지 못했습니다.');
@@ -104,9 +103,7 @@ export default function YouTubeDownloadScreen() {
           <Text style={styles.note}>현재는 영상과 음성이 합쳐진 형식 및 오디오 전용 형식을 지원합니다. 별도 트랙 병합은 후속 개선 대상입니다.</Text>
         </>
       ) : null}
-      {!loading && !info && !error ? (
-        <EmptyBlock icon="video" title="영상을 찾지 못했습니다" body="공개 YouTube 동영상 링크인지 확인해 주세요." primary={{ label: '돌아가기', onPress: back }} />
-      ) : null}
+      {!loading && !info && !error ? <Text style={styles.muted}>영상을 찾지 못했습니다. 공개 YouTube 동영상 링크인지 확인해 주세요.</Text> : null}
     </Screen>
   );
 }
@@ -114,11 +111,11 @@ export default function YouTubeDownloadScreen() {
 function makeStyles(c: ThemeColors) {
   return StyleSheet.create({
     content: { padding: spacing.lg, gap: spacing.md },
-    title: { color: c.text, fontSize: type.title, fontWeight: '700' },
-    heading: { color: c.text, fontSize: type.body, fontWeight: '700', marginBottom: spacing.sm },
-    muted: { color: c.muted, fontSize: type.body },
+    title: { color: c.text, fontSize: type.size.xl, fontWeight: '700' },
+    heading: { color: c.text, fontSize: type.size.base, fontWeight: '700', marginBottom: spacing.sm },
+    muted: { color: c.textMuted, fontSize: type.size.base },
     error: { color: c.danger, fontSize: type.body },
-    note: { color: c.muted, fontSize: type.caption, lineHeight: 18 },
+    note: { color: c.textMuted, fontSize: type.size.sm, lineHeight: 18 },
     section: { gap: spacing.sm },
   });
 }
