@@ -11,6 +11,7 @@ import { visibleTabs } from '../components/tabs/tabPrefs';
 import { getTabPrefs } from '../components/tabs/tabPrefsStore';
 import { shareBrowserRoute } from '../utils/browser/shareRoute';
 import { sharedDownloadRoute, stripShareMarker } from '../modules/maglev-engine/src/downloadLink';
+import { parseYouTubeLink } from '../utils/browser/youtube';
 
 const ADD_ROUTE = '/add-torrent';
 
