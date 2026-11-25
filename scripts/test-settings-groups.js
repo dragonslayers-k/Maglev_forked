@@ -21,7 +21,7 @@ const at = (s) => index.indexOf(s);
 const titles = ['App', 'General', '콘텐츠 찾기', 'Transfers', 'Network and power'];
 const tpos = titles.map((t) => at(`<SectionHeader title="${t}"`));
 check('all five group titles exist', tpos.every((p) => p > 0));
-check('groups run App, General, Finding things, Transfers, Network and power', tpos.every((p, i) => i === 0 || p > tpos[i - 1]));
+check('groups run App, General, 콘텐츠 찾기, Transfers, Network and power', tpos.every((p, i) => i === 0 || p > tpos[i - 1]));
 
 const endPos = at('</ScrollView>');
 const jsx = Object.fromEntries(titles.map((t, i) => [t, index.slice(tpos[i], i + 1 < titles.length ? tpos[i + 1] : endPos)]));
