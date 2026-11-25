@@ -6,6 +6,7 @@ import { scheduleOnRN } from 'react-native-worklets';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../context/ThemeContext';
 import { ThemeColors, backdropOpacity, motion, radius, sheetDragOffset, shouldDismissSheet, spacing, type } from '../../constants/theme';
+import { koUiText } from '../../constants/korean';
 import { useMotion } from './useMotion';
 import { useKeyboardInset } from '../assistant/useKeyboardInset';
 import { useOverlayTracking } from '../../utils/overlayTracker';
