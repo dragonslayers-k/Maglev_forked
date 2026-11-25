@@ -146,11 +146,11 @@ export function FoundDownloadSheet({ target, onClose, onView }: { target: Downlo
   };
 
   return (
-    <FloatingSheet visible={target != null} onClose={onClose} title="Download" subtitle={hostOf(t.url)}>
+    <FloatingSheet visible={target != null} onClose={onClose} title="파일 다운로드" subtitle={hostOf(t.url)}>
       <View style={styles.body}>
         <TextField
           onSurface
-          label="Name"
+          label="파일 이름"
           value={name}
           onChangeText={setName}
           mono
@@ -158,20 +158,20 @@ export function FoundDownloadSheet({ target, onClose, onView }: { target: Downlo
           minLines={1}
           size="lg"
           editable={phase === 'ready'}
-          accessibilityLabel="File name"
+          accessibilityLabel="파일 이름"
         />
-        <Text style={styles.meta}>{phase === 'probing' ? 'Checking the file' : size != null ? formatBytes(size) : 'Size unknown'}</Text>
+        <Text style={styles.meta}>{phase === 'probing' ? '파일 정보를 확인하고 있습니다' : size != null ? formatBytes(size) : '크기 확인 불가'}</Text>
         <SaveToChoice value={sub} onChange={setSub} root={root} disabled={adding} />
         {mobileNote ? <NoteRow text={mobileNote} /> : null}
         {t.installer ? <Banner tone="warning" title={banners.browser.installer.title} body={banners.browser.installer.body} /> : null}
         {doesntFit ? <Banner tone="danger" title={banners.addDownload.notEnoughSpace.title} body={noSpace} /> : null}
         {message ? <Banner tone="danger" title={message} /> : null}
         <View style={styles.actions}>
-          <Button label="Cancel" variant="ghost" onPress={onClose} disabled={adding} />
+          <Button label="취소" variant="ghost" onPress={onClose} disabled={adding} />
           {phase === 'error' ? (
-            <Button label="Try again" onPress={() => setTries((n) => n + 1)} />
+            <Button label="다시 시도" onPress={() => setTries((n) => n + 1)} />
           ) : (
-            <Button label="Start" loading={adding} disabled={phase !== 'ready' || doesntFit || folderMissing} onPress={() => void start()} />
+            <Button label="다운로드 시작" loading={adding} disabled={phase !== 'ready' || doesntFit || folderMissing} onPress={() => void start()} />
           )}
         </View>
       </View>
