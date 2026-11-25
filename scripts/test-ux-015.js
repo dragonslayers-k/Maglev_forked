@@ -78,7 +78,7 @@ check('section no longer renders MoveButton arrows', !/MoveButton/.test(section)
 check('section keeps Move up / Move down accessibility actions', /accessibilityActions=/.test(section) && /Move up/.test(section) && /Move down/.test(section) && /onAccessibilityAction/.test(section));
 check('section lifts with scale 1.03, lime border and no shadow', /LIFT_SCALE = 1\.03/.test(section) && /colors\.accent/.test(section) && !/shadow|elevation/.test(section));
 check('section buzzes on lift and on each slot change via the haptic vocabulary', /haptic\('tap'\)/.test(section) && /haptic\('select'\)/.test(section));
-check('section commits through reorderTabs and shows the caption', /reorderTabs\(/.test(section) && /Hold a tab and drag to reorder\./.test(copy) && /tabsCopy\.reorderHint/.test(section));
+check('section commits through reorderTabs and shows the caption', /reorderTabs\(/.test(section) && /탭을 길게 눌러 드래그하면 순서를 바꿀 수 있습니다\./.test(copy) && /tabsCopy\.reorderHint/.test(section));
 check('section keeps locked rows and the Assistant filter', /LOCKED_TABS/.test(section) && /assistant\.enabled/.test(section));
 check('app root is wrapped in GestureHandlerRootView', /<GestureHandlerRootView/.test(layout));
 
