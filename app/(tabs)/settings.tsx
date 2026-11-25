@@ -288,7 +288,7 @@ export default function SettingsIndex() {
               </Card>
             </View>
             <View style={styles.section}>
-              <SectionHeader title="Finding things" />
+              <SectionHeader title="콘텐츠 찾기" />
               <Card>
                 {findRows.map((r) => (
                   <SettingsRow key={r.route} {...r} />

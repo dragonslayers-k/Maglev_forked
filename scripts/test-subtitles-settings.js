@@ -37,7 +37,7 @@ function check(name, cond, extra) {
   check('the OpenSubtitles row is gated by hasOpenSubtitlesKey, which is false without a build key', /hasOpenSubtitlesKey\(\) \? \(/.test(page) && S.hasOpenSubtitlesKey() === false);
   check('settings are UI only: written through updateSettings({subtitles}), never toNativeConfig', /subtitles: \{ \.\.\.prev\.subtitles/.test(read('components/subtitles-settings/useSubtitleSettings.ts')) && !/subtitle/i.test(read('modules/maglev-engine/src/toNativeConfig.ts')));
   const tab = read('app/(tabs)/settings.tsx');
-  check('the Settings tab lists Subtitles under Finding things', /findRows: RowSpec\[\][\s\S]*title: '자막'[^}]*route: 'subtitles'[\s\S]*?\];/.test(tab) && /icon: 'subtitles'/.test(tab));
+  check('the Settings tab lists Subtitles under 콘텐츠 찾기', /findRows: RowSpec\[\][\s\S]*title: '자막'[^}]*route: 'subtitles'[\s\S]*?\];/.test(tab) && /icon: 'subtitles'/.test(tab));
   check('the subtitles icon exists', read('components/icons.generated.ts').includes('"subtitles":') && /subtitles: 'badge-captions'/.test(read('scripts/gen-icons.js')));
   check('every new row and screen is in the search index (rule 7)', ['subtitles-enabled', 'subtitles-languages', 'subtitles-hearing', 'subtitles-sources', 'subtitles-privacy', 'subtitle-languages-yours', 'subtitle-sources-list', 'updates-highlights'].every((id) => SETTINGS_INDEX.some((x) => x.id === id)));
   const kw = (id) => (SETTINGS_INDEX.find((x) => x.id === id) || { keywords: [] }).keywords.join(' ');

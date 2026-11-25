@@ -854,7 +854,7 @@ export const subtitleSettingsCopy = {
     title: 'Subtitle sources',
     pageTitle: 'Subtitle sources',
     caption: 'Maglev asks the sources you turn on when you tap Find subtitles.',
-    empty: 'No sources yet',
+    empty: '검색 사이트가 없습니다',
     emptyBody: 'Sources arrive with app and list updates.',
     on: (n: number) => `On · ${n}`,
     off: 'Off',
