@@ -1,4 +1,4 @@
-// "Download with Maglev" in the text-selection menu (ACTION_PROCESS_TEXT) and the Home clipboard chip using the quick share card.
+// "Download with Maglev+" in the text-selection menu (ACTION_PROCESS_TEXT) and the Home clipboard chip using the quick share card.
 // https://developer.android.com/reference/android/content/Intent#ACTION_PROCESS_TEXT
 const assert = require('assert');
 const fs = require('fs');
@@ -20,8 +20,8 @@ const read = (p) => fs.readFileSync(path.join(root, p), 'utf8');
   assert.strictEqual(quick.$['android:excludeFromRecents'], 'true', 'recents setting kept');
   const pt = quick['intent-filter'].filter((f) => f.action.some((a) => a.$['android:name'] === 'android.intent.action.PROCESS_TEXT'));
   assert.strictEqual(pt.length, 1, 'one PROCESS_TEXT filter');
-  assert.strictEqual(pt[0].$['android:label'], 'Download with Maglev', 'filter label');
-  assert.strictEqual(plugin.PROCESS_TEXT_LABEL, 'Download with Maglev');
+  assert.strictEqual(pt[0].$['android:label'], 'Download with Maglev+', 'filter label');
+  assert.strictEqual(plugin.PROCESS_TEXT_LABEL, 'Download with Maglev+');
   assert(pt[0].category.some((c) => c.$['android:name'] === 'android.intent.category.DEFAULT'), 'DEFAULT category');
   assert(pt[0].data.some((d) => d.$['android:mimeType'] === 'text/plain'), 'text/plain');
   assert.strictEqual(quick['intent-filter'].filter((f) => f.$ && f.$['android:label']).length, 1, 'only the PROCESS_TEXT filter is labelled');
