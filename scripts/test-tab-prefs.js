@@ -70,7 +70,7 @@ check('layout draws non-glyph icons with PixelIcon', /PixelIcon/.test(layout) &&
 check('browse tab route reuses the browser screen', /from '\.\.\/browser'/.test(read('app/(tabs)/browse.tsx')));
 check('interface screen shows the Tabs section', /TabsSection/.test(iface));
 // 0.15: arrow buttons became hold-and-drag; Move up / Move down stay as accessibility actions on the grip.
-check('section reorders by drag and keeps Move up / Move down for TalkBack', /GestureDetector/.test(section) && /Move up/.test(section) && /Move down/.test(section) && /accessibilityActions/.test(section));
+check('section reorders by drag and keeps Move up / Move down for TalkBack', /GestureDetector/.test(section) && /위로 이동/.test(section) && /아래로 이동/.test(section) && /accessibilityActions/.test(section));
 check('section captions locked tabs "Always shown"', /alwaysShown/.test(section) && /항상 표시/.test(read('constants/copy.ts')));
 check('section hides the Assistant row when the assistant is off', /assistant\.enabled/.test(section));
 check('section uses a 44px target', /touch\./.test(section) || /44/.test(section));
