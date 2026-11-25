@@ -67,7 +67,7 @@ async function main() {
   const copy = read('constants/copy.ts');
   const m = /\/\/ region quick share[\s\S]*?\/\/ endregion quick share/.exec(copy);
   check('copy block is marked', !!m);
-  check('copy has the card strings', m && /No link in what you shared/.test(m[0]) && /This is a web page, not a file/.test(m[0]) && /Added to Maglev/.test(m[0]));
+  check('copy has the Korean card strings', m && /공유한 항목에서 링크를 찾지 못했습니다/.test(m[0]) && /웹 페이지이며 파일이 아닙니다/.test(m[0]) && /Maglev에 추가했습니다/.test(m[0]));
   const text = read(ENGINE_KT + 'share/QuickShareText.kt');
   const plain = m ? m[0].slice(m[0].indexOf('gettingDetails')) : '';
   const strings = [...plain.matchAll(/'([^'\n]{6,})'|"([^"\n]{6,})"/g)].map((x) => x[1] || x[2]).filter((s) => s.length > 0);
