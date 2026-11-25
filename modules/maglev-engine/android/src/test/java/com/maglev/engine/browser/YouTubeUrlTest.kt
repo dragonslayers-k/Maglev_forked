@@ -30,6 +30,12 @@ class YouTubeUrlTest {
         )) assertEquals(url, "AbCdEf12345", YouTubeUrl.parse(url)?.videoId)
     }
 
+    @Test fun schemeLessShortAndWatchLinks() {
+        assertEquals("AbCdEf12345", YouTubeUrl.parse("youtu.be/AbCdEf12345")?.videoId)
+        assertEquals("AbCdEf12345", YouTubeUrl.parse("youtu.be/AbCdEf12345/")?.videoId)
+        assertEquals("AbCdEf12345", YouTubeUrl.parse("www.youtube.com/watch?v=AbCdEf12345")?.videoId)
+    }
+
     @Test fun invalidAndPlaylistOnly() {
         assertNull(YouTubeUrl.parse("https://youtube.com/playlist?list=PLabcdefghij"))
         assertNull(YouTubeUrl.parse("https://youtu.be/not-a-valid-id"))
@@ -42,6 +48,7 @@ class YouTubeUrlTest {
 
     @Test fun hostRecognition() {
         assertTrue(YouTubeUrl.isYouTubeHost("https://youtu.be/AbCdEf12345"))
+        assertTrue(YouTubeUrl.isYouTubeHost("youtu.be/AbCdEf12345"))
         assertTrue(YouTubeUrl.isYouTubeHost("https://m.youtube.com/"))
         assertFalse(YouTubeUrl.isYouTubeHost("https://youtube.com.evil.test/"))
         assertFalse(YouTubeUrl.isYouTubeHost("ftp://youtube.com/"))
