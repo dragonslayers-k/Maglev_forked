@@ -113,7 +113,7 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
     private var requestedUrl: String? = null
 
     // 24.10. Main thread only.
-    private var active = true
+    @Volatile private var active = true
     private var popupPolicy = "ask"
     private var popupAllowHosts: List<String> = emptyList()
     // The current document has finished loading at least once. Redirects during its first load are part of the page.
