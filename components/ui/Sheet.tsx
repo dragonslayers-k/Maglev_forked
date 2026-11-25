@@ -169,7 +169,7 @@ export function Sheet({ visible, onClose, title, subtitle, children, testID, ret
               style={StyleSheet.absoluteFill}
               onPress={onClose}
               accessibilityRole="button"
-              accessibilityLabel="Close"
+              accessibilityLabel="닫기"
             />
           </Animated.View>
           <Animated.View
@@ -184,7 +184,7 @@ export function Sheet({ visible, onClose, title, subtitle, children, testID, ret
                 <Text ref={titleRef} style={styles.title} accessibilityRole="header">
                   {title}
                 </Text>
-                {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
+                {subtitle ? <Text style={styles.subtitle}>{koUiText(subtitle)}</Text> : null}
               </View>
             </GestureDetector>
             <View style={styles.content}>{children}</View>
