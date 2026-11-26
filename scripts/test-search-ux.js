@@ -103,11 +103,11 @@ function check(name, cond, extra) {
   const copySrc = read('constants/copy.ts');
   check('search: Korean idle title and body come from copy', /empty\.search\.idle\(enabledCount\)/.test(code) && /개 사이트 검색/.test(copySrc) && /검색창을 눌러 최근 검색어를 확인하세요\./.test(copySrc));
   check('search: recent dropdown on focus, with remove and Clear', /onFocus/.test(code) && /onBlur/.test(code) && /removeRecentSearch/.test(code) && /Clear/.test(code));
-  check('search: one progress line while searching', /Searching… \$\{[^}]+\} of \$\{[^}]+\}/.test(code) && !/sources answered, results appear/.test(code));
-  check('search: exactly one Stop button', (code.match(/label="Stop"/g) || []).length === 1);
-  check('search: result count line', /'results'/.test(code));
+  check('search: one Korean progress line while searching', /검색 중… \$\{[^}]+\} \/ \$\{[^}]+\}개 사이트 응답/.test(code) && !/sources answered, results appear/.test(code));
+  check('search: exactly one Korean Stop button', (code.match(/label="중지"/g) || []).length === 1);
+  check('search: Korean result count line', /\$\{shown\.length\}개 검색 결과/.test(code));
   check('search: source filter lives in the sort sheet', /Source/.test(code) && /sourceFilter/.test(code) && /setSourceFilter/.test(code));
-  check('search: fix line copy and actions', /need[s]? a quick check/.test(code) && /They'll add more results\./.test(code) && /Fix/.test(code) && /fixHintDismissedAt/.test(code) && /shouldShowFixHint/.test(code));
+  check('search: Korean fix line copy and actions', /개 검색 사이트를 확인해야 합니다/.test(code) && /확인하면 검색 결과가 더 늘어납니다/.test(code) && /label="수정"/.test(code) && /fixHintDismissedAt/.test(code) && /shouldShowFixHint/.test(code));
   check('search: remembers needsCheck after a search and on solve', /nextNeedsCheck/.test(code) && /needsCheck/.test(code));
   const ib = read('components/ui/IconButton.tsx');
   check('IconButton: dot prop, badge kept', /dot\?: boolean/.test(ib) && /badge\?: number/.test(ib));
