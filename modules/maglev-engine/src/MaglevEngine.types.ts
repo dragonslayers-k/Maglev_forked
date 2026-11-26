@@ -920,7 +920,7 @@ export interface MaglevEngineApi {
   /** Extracts public, non-DRM YouTube metadata and progressive video/audio formats via yt-dlp. */
   getYouTubeInfo(url: string): Promise<EngineResult<YouTubeInfo>>;
   /** Adds a selected YouTube format. Optional audio bitrate is a ceiling for separate adaptive audio tracks. */
-  addYouTubeDownload(url: string, formatId: string, playerClient: string, audioBitrateKbps?: number | null): Promise<EngineResult<{ id: string }>>;
+  addYouTubeDownload(url: string, formatId: string, playerClient: string, formatKind: 'video' | 'audio', audioBitrateKbps?: number | null, outputContainer?: string): Promise<EngineResult<{ id: string }>>;
   pauseDownload(id: string): Promise<EngineResult>;
   resumeDownload(id: string): Promise<EngineResult>;
   /** NATIVE_CONTRACT 25.1: the same for a link download. */
