@@ -54,7 +54,7 @@ async function main() {
   assert.ok(ytdlGradle.includes('NewPipeExtractor:v0.26.5'), 'use the same NewPipe extractor version as YTDLnis');
   assert.ok(poToken.includes('NewPipePoTokenGenerator') && poToken.includes('getWebClientPoToken'), "generate Web PO tokens to avoid YouTube's 360p-only fallback");
 
-  assert.ok(youtubeAdapter.includes('PLAYER_CLIENTS = listOf("newpipe", "android_vr", "web_safari")'), 'fast NewPipe extraction is primary with two yt-dlp fallbacks');
+  assert.ok(youtubeAdapter.includes('PLAYER_CLIENTS = listOf("android_vr", "web_safari", "web_embedded")'), 'fast NewPipe extraction is primary with two yt-dlp fallbacks');
   assert.ok(youtubeAdapter.includes('playerClient != "generic"'), 'generic extraction does not force a YouTube player client');
   assert.ok(youtubeAdapter.includes('httpMediaUrl(rawUrl)'), 'generic extraction validates HTTP(S) page URLs');
   assert.ok(youtubeAdapter.includes('playerClient == "generic"'), 'generic page formats are tagged separately from YouTube clients');
@@ -89,9 +89,11 @@ async function main() {
   assert.ok(nativeModuleSource.includes('root.message ?: root.javaClass.simpleName'), 'native IO failures must not collapse to generic Engine call failed');
   assert.ok(nativeModuleSource.includes('Regex("""https?://[^\\s]+""", RegexOption.IGNORE_CASE)'), 'native diagnostics must redact complete URLs including query tokens');
   const screen = fs.readFileSync(path.join(root, 'app/youtube-download.tsx'), 'utf8');
+  assert.ok(screen.includes('maglev_ytdlp=1') && screen.includes('추가 화질·오디오 형식 조회'), 'slow yt-dlp formats are fetched only on user request, after fast NewPipe results');
+  assert.ok(youtubeAdapter.includes('if (hasVideo && !forceYtDlp) break'), 'explicit refresh aggregates multiple valid yt-dlp player clients');
   assert.ok(screen.includes('maglevEngine.getYouTubeInfo'), 'YouTube screen must use the existing native extractor');
   assert.ok(screen.includes('maglevEngine.addYouTubeDownload'), 'selected formats must enter the shared native transfer queue');
-  assert.ok(screen.includes('maglev_ytdlp=1') && screen.includes('추가 화질·오디오 형식 조회'), 'slow yt-dlp formats are fetched only on user request, after fast NewPipe results');
+
   assert.ok(screen.includes('format.playerClient'), 'the selected extractor client must be preserved');
   assert.ok(screen.includes("formatId: 'bestaudio'"), 'a bestaudio fallback remains available only when no real audio formats were extracted');
   assert.ok(screen.includes("formatId: 'bestaudio', playerClient: 'android_vr'"), 'the placeholder bestaudio must route to yt-dlp, not NewPipe format-ID parsing');
