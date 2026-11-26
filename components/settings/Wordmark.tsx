@@ -1,6 +1,6 @@
 import React from 'react';
 import { useWindowDimensions } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
+import Svg, { Circle, Path } from 'react-native-svg';
 import { useTheme } from '../../context/ThemeContext';
 
 /** Pixel wordmark from assets/brand/maglev-wordmark.svg, filled with the accent on dark themes and the text colour (mono) on light. */
@@ -12,18 +12,21 @@ const crisp = { shapeRendering: 'crispEdges' } as object;
 export function Wordmark({ width }: { width?: number }) {
   const { colors, dark } = useTheme();
   const { width: screenW } = useWindowDimensions();
-  const w = width ?? Math.min(168, Math.round(screenW * 0.4));
+  const w = width ?? Math.min(192, Math.round(screenW * 0.44));
+  const fill = dark ? colors.accent : colors.text;
   return (
     <Svg
       width={w}
-      height={(w * 56) / 280}
-      viewBox="0 0 280 56"
+      height={(w * 56) / 320}
+      viewBox="0 0 320 56"
       accessible
       accessibilityRole="image"
       accessibilityLabel="Maglev"
       {...crisp}
     >
-      <Path fill={dark ? colors.accent : colors.text} d={PATH} {...crisp} />
+      <Path fill={fill} d={PATH} {...crisp} />
+      <Circle cx={300} cy={28} r={18} fill={fill} />
+      <Path fill={colors.onAccent} d="M296 16 H304 V24 H312 V32 H304 V40 H296 V32 H288 V24 H296 Z" {...crisp} />
     </Svg>
   );
 }
