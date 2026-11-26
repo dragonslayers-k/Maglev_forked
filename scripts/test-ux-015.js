@@ -43,7 +43,7 @@ check('ticket burst respects reduce motion', /useReduceMotion/.test(ticket) && /
 check('ticket has no shadow or hex', !/shadow|elevation/.test(ticket) && !/#[0-9a-fA-F]{3,8}\b/.test(ticket));
 check('About renders the ticket', /<StarTicket \/>/.test(about));
 check('About has no License row', !/License/.test(about));
-check('About identifies the Maglev+ integrated community build', about.includes('title="Maglev+ 통합 다운로드 앱"') && about.includes('subtitle="Maglev 기반 · 공개 추출기와 다운로드 엔진을 통합한 커뮤니티 빌드"') && /icon="github"/.test(about) && !/Made with love/.test(about));
+check('About identifies the Maglev+ integrated community build', about.includes('title="Maglev+ 통합 다운로드 앱"') && about.includes('subtitle="Maglev+ 기반 · 공개 추출기와 다운로드 엔진을 통합한 커뮤니티 빌드"') && /icon="github"/.test(about) && !/Made with love/.test(about));
 
 // 3. Settings "More below"
 const settings = read('app/(tabs)/settings.tsx');
