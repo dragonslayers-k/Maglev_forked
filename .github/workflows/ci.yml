@@ -293,14 +293,6 @@ jobs:
             [ "$GOT" = "$WANT" ] || { echo "::error::$NAME has versionCode $GOT, expected $WANT"; exit 1; }
           done
 
-      - name: Upload APKs
-        uses: actions/upload-artifact@v7
-        with:
-          name: apks
-          path: android/app/build/outputs/apk/release/*.apk
-          if-no-files-found: error
-          retention-days: 7
-
       - name: Build signed APK set for Accrescent (main, pull requests into main and tags, when signing secrets exist)
         if: env.MAGLEV_KEYSTORE_PATH != '' && (github.ref == 'refs/heads/main' || github.base_ref == 'main' || startsWith(github.ref, 'refs/tags/'))
         env:
@@ -334,6 +326,21 @@ jobs:
             --ks-pass="file:$RUNNER_TEMP/ks.pass" --key-pass="file:$RUNNER_TEMP/key.pass"
           ls -lh apkset/maglev.apks
 
+      # After the upload, so a test failure never costs us the APK. AGP 9 creates host tests for debug only.
+      - name: Kotlin unit tests (schedule, feed rules, restart policy)
+        run: |
+          cd android
+          ./gradlew :maglev-engine:testDebugUnitTest --stacktrace
+
+      # Upload only after every validation in this APK job passes; no artifact from a failing build.
+      - name: Upload APKs
+        uses: actions/upload-artifact@v7
+        with:
+          name: apks
+          path: android/app/build/outputs/apk/release/*.apk
+          if-no-files-found: error
+          retention-days: 7
+
       - name: Upload APK set
         if: env.MAGLEV_KEYSTORE_PATH != '' && (github.ref == 'refs/heads/main' || github.base_ref == 'main' || startsWith(github.ref, 'refs/tags/'))
         uses: actions/upload-artifact@v7
@@ -342,12 +349,6 @@ jobs:
           path: apkset/maglev.apks
           if-no-files-found: error
           retention-days: 7
-
-      # After the upload, so a test failure never costs us the APK. AGP 9 creates host tests for debug only.
-      - name: Kotlin unit tests (schedule, feed rules, restart policy)
-        run: |
-          cd android
-          ./gradlew :maglev-engine:testDebugUnitTest --stacktrace
 
   contracts:
     name: Contract tests
