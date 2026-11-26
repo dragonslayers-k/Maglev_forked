@@ -171,7 +171,7 @@ export default function YouTubeDownloadScreen() {
   // selected audio-quality ceiling through the native bridge.
   const selectedAudioBitrateKbps = selectedAudioFormat?.abr && selectedAudioFormat.abr > 0
     ? selectedAudioFormat.abr
-    : Number(/^bestaudio_(\\d+)$/.exec(selectedAudioFormat?.formatId ?? '')?.[1]) || undefined;
+    : Number(/^bestaudio_(\d+)$/.exec(selectedAudioFormat?.formatId ?? '')?.[1]) || undefined;
 
   return (
     <Screen title={screenTitle} onBack={back} scroll contentStyle={styles.content}>
