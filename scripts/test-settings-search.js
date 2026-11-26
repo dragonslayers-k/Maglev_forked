@@ -155,12 +155,12 @@ async function main() {
     searchSettings("xq zzzz").length === 0,
   );
   check(
-    "short words: 'ai' alone finds Assistant",
-    searchSettings("ai").some((e) => e.id === "assistant-enable"),
+    "short words: 'ai' no longer surfaces the removed Assistant setting",
+    !searchSettings("ai").some((e) => e.id === "assistant-enable"),
   );
   check(
-    "short words: 'ai chat' finds Assistant first",
-    top("ai chat")[0] === "assistant-enable",
+    "short words: 'ai chat' no longer surfaces the removed Assistant setting",
+    !top("ai chat").includes("assistant-enable"),
     top("ai chat").join(","),
   );
   check(
