@@ -142,7 +142,7 @@ export default function AboutSettings() {
       </Card>
       <SectionHeader title="기본 기능" />
       <Card>
-        <ListRow title="광고 차단" subtitle="MAGLEV 차단 목록과 브라우저 필터를 유지합니다. 차단 목록 업데이트는 APK 업데이트와 별도로 관리됩니다." icon="shield-check" />
+        <ListRow title="광고 차단" subtitle="MAGLEV 차단 목록과 브라우저 필터를 유지합니다. 차단 목록 업데이트는 APK 업데이트와 별도로 관리됩니다." icon="filter" />
       </Card>
       {crashCount > 0 ? (
         <Card>
