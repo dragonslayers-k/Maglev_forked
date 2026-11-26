@@ -34,7 +34,7 @@ const expected = {
   '콘텐츠 찾기': ['findRows', ['검색 사이트', '자동 다운로드', '자막']],
   전송: [null, ['추가 및 완료', '속도 및 공유', '저장 공간', '예약']],
   '네트워크 및 전원': ['networkRows', ['네트워크', '전원', '브라우저']],
-  앱: ['appRows', ['앱 정보', '업데이트']],
+  앱: ['appRows', ['앱 정보', '목록 업데이트']],
 };
 for (const [g, [list, rows]] of Object.entries(expected)) {
   if (list) check(`${g} renders ${list}`, jsx[g].includes(`${list}.map`));
@@ -51,7 +51,7 @@ check('전송은 추가 및 완료, 속도 및 공유, 저장 공간, 예약, �
 })());
 check('App group is Korean app info, updates, then Stats, with no sections of their own', (() => {
   const appInfo = index.indexOf("title: '앱 정보'");
-  const updates = index.indexOf("title: '업데이트'");
+  const updates = index.indexOf("title: '목록 업데이트'");
   return appInfo >= 0 && updates > appInfo && /<SettingsRow key=\{r\.route\} \{\.\.\.r\} \/>\s*\)\)\}\s*<StatsRow \/>/.test(index) && !/SectionHeader title="About"/.test(index);
 })());
 check('NeedsAttention banners sit above the groups', at('<NeedsAttention />') > 0 && at('<NeedsAttention />') < tpos[0]);
