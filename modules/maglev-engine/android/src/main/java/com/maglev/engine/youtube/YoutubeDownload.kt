@@ -23,7 +23,7 @@ import kotlin.math.abs
 object YoutubeDownload {
     private const val TAG = "MaglevYouTube"
     private val formatIdPattern = Regex("^[A-Za-z0-9._-]{1,64}$")
-    private val PLAYER_CLIENTS = listOf("android_vr", "web_safari", "web_embedded")
+    private val PLAYER_CLIENTS = listOf("newpipe", "android_vr", "web_safari")
 
     /**
      * Initialize the bundled extractor only. Never check/download an yt-dlp update on the
@@ -71,11 +71,14 @@ object YoutubeDownload {
      * YouTube needs an explicit player client. Other yt-dlp-supported HTTP(S) pages use the site's
      * registered extractor. Generic extraction is only invoked by an explicit user action.
      */
-    private fun requestFor(url: String, playerClient: String): YoutubeDLRequest {
+    private fun requestFor(url: String, playerClient: String, ffmpegDirectory: String? = null): YoutubeDLRequest {
         val request = YoutubeDLRequest(url).addOption("--no-playlist")
         if (playerClient != "generic") {
             request.addOption("--extractor-args", "youtube:player_client=" + playerClient)
         }
+        // The wrapper appends a stale nativeLibraryDir/libffmpeg.so path even when FFmpeg is excluded.
+        // Override it with an existing directory to avoid the missing-path warning on metadata/audio.
+        if (!ffmpegDirectory.isNullOrBlank()) request.addOption("--ffmpeg-location", ffmpegDirectory)
         return request
     }
 
@@ -97,6 +100,24 @@ object YoutubeDownload {
         val clients = if (link != null) PLAYER_CLIENTS else listOf("generic")
         return try {
             val app = context.applicationContext
+            if (link != null) {
+                val fastInfo = runCatching { NewPipeYoutube.get(sourceUrl) }.getOrNull()
+                if (fastInfo != null) {
+                    val fastFormats = NewPipeYoutube.formats(fastInfo)
+                    if (fastFormats.any { it["kind"] == "video" }) {
+                        return linkedMapOf(
+                            "ok" to true,
+                            "videoId" to link.videoId,
+                            "title" to fastInfo.name,
+                            "uploader" to fastInfo.uploaderName,
+                            "extractor" to "NewPipe",
+                            "duration" to fastInfo.duration,
+                            "thumbnail" to ("https://i.ytimg.com/vi/" + link.videoId + "/hqdefault.jpg"),
+                            "formats" to fastFormats,
+                        )
+                    }
+                }
+            }
             prepareYtDlp(app)
             var metadata: VideoInfo? = null
             var lastError: Exception? = null
@@ -104,7 +125,7 @@ object YoutubeDownload {
 
             for (client in clients) {
                 try {
-                    val current = YoutubeDL.getInstance().getInfo(requestFor(sourceUrl, client))
+                    val current = YoutubeDL.getInstance().getInfo(requestFor(sourceUrl, client, app.applicationInfo.nativeLibraryDir))
                     if (metadata == null || metadata?.title.isNullOrBlank()) metadata = current
                     val found = (current.formats ?: arrayListOf()).mapNotNull { format -> toFormat(format, client, current.duration) }
                     allFormats.addAll(found)
@@ -173,18 +194,29 @@ object YoutubeDownload {
         if (!formatIdPattern.matches(formatId) || !validClient) {
             return Json.failure("INVALID_ARGUMENT", "선택한 형식이 올바르지 않습니다.")
         }
+        if (link != null && playerClient == "newpipe") {
+            return try {
+                val app = context.applicationContext
+                if (!QuickShareAdd.startEngine(app)) return Json.failure("ENGINE_UNAVAILABLE", "다운로드 엔진을 시작하지 못했습니다.")
+                BackgroundStart.start(app, MaglevTorrentService.ACTION_START)
+                NewPipeYoutube.add(app, sourceUrl, formatId)
+                    ?: Json.failure("INVALID_ARGUMENT", "선택한 NewPipe 형식을 처리하지 못했습니다.")
+            } catch (e: Exception) {
+                Json.failure("YOUTUBE_DOWNLOAD_FAILED", "YouTube 다운로드를 시작하지 못했습니다. " + safeDiagnostic(e))
+            }
+        }
         return try {
             val app = context.applicationContext
             prepareYtDlp(app)
-            val selected = YoutubeDL.getInstance().getInfo(requestFor(sourceUrl, playerClient).addOption("-f", formatId))
+            val selected = YoutubeDL.getInstance().getInfo(requestFor(sourceUrl, playerClient, app.applicationInfo.nativeLibraryDir))
             val audioOnly = formatId == "bestaudio"
-            val requestedFormats = selected.requestedFormats.orEmpty()
+            val availableFormats = selected.formats.orEmpty()
             val requested = if (audioOnly) {
-                requestedFormats.firstOrNull { format ->
+                availableFormats.filter { format ->
                     !format.acodec.isNullOrBlank() && format.acodec != "none" &&
                         (format.vcodec.isNullOrBlank() || format.vcodec == "none")
-                }
-            } else requestedFormats.firstOrNull()
+                }.maxByOrNull { it.abr }
+            } else availableFormats.firstOrNull { it.formatId == formatId }
             if (audioOnly && requested == null) {
                 return Json.failure(
                     "YOUTUBE_AUDIO_FORMAT_UNRESOLVED",
@@ -199,6 +231,12 @@ object YoutubeDownload {
             } else {
                 requested?.url ?: selected.url ?: requested?.manifestUrl ?: selected.manifestUrl
                     ?: return Json.failure("YOUTUBE_NO_FORMAT", "선택한 형식의 다운로드 주소를 가져오지 못했습니다.")
+            }
+            if (!audioOnly && requested != null &&
+                !requested.vcodec.isNullOrBlank() && requested.vcodec != "none" &&
+                (requested.acodec.isNullOrBlank() || requested.acodec == "none") &&
+                requested.manifestUrl.isNullOrBlank() && selected.manifestUrl.isNullOrBlank()) {
+                return Json.failure("YOUTUBE_VIDEO_AUDIO_UNAVAILABLE", "이 형식은 분리 영상 트랙입니다. 오디오와 병합할 수 있는 DASH 형식이 없습니다.")
             }
             val manifestUrl = requested?.manifestUrl?.takeIf { it.isNotBlank() }
                 ?: selected.manifestUrl?.takeIf { it.isNotBlank() }
@@ -283,8 +321,7 @@ object YoutubeDownload {
         val hasAudio = !f.acodec.isNullOrBlank() && f.acodec != "none"
         val isStream = manifest != null || url?.let { isPlaylistUrl(it) } == true
         val kind = when {
-            hasVideo && hasAudio -> "video"
-            hasVideo && isStream -> "video"
+            hasVideo -> "video"
             !hasVideo && hasAudio -> "audio"
             else -> return null
         }
