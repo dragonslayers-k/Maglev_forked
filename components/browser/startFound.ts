@@ -5,6 +5,7 @@
  */
 import type { DownloadOptions, EngineResult, UrlProbe } from '../../modules/maglev-engine/src/MaglevEngine.types';
 import { pageUrlOption } from './pageUrlOption';
+import { parseNaverClipMediaId, resolveNaverClip } from '../../utils/browser/naverClip';
 
 export interface StartDeps {
   headersFor: (t: { url: string; pageUrl: string; userAgent: string }) => Promise<NonNullable<DownloadOptions['headers']>>;
@@ -17,9 +18,16 @@ export async function startFound(
   t: { url: string; pageUrl: string; userAgent: string },
   extra: Pick<DownloadOptions, 'name' | 'folder'> = {},
 ): Promise<{ ok: true; id: string } | { ok: false; code?: string; message?: string }> {
-  const headers = await deps.headersFor(t);
-  const probe = await deps.probeUrl(t.url, { headers });
+  // If this is a NAVER Clip page (or a synthetic clip item), resolve it to the progressive MP4.
+  // The visible browser tray deliberately represents the whole clip once, not each TS fragment.
+  const naverClipPage = parseNaverClipMediaId(t.pageUrl) ? t.pageUrl : parseNaverClipMediaId(t.url) ? t.url : null;
+  const downloadUrl = naverClipPage ? (await resolveNaverClip(naverClipPage)).url : t.url;
+  const headers = {
+    ...(await deps.headersFor({ ...t, url: downloadUrl })),
+    ...(naverClipPage ? { Referer: naverClipPage } : {}),
+  };
+  const probe = await deps.probeUrl(downloadUrl, { headers, ...pageUrlOption(t.pageUrl) });
   if (!probe.ok) return { ok: false, code: probe.code, message: probe.message };
-  const res = await deps.startDownload(t.url, { headers, ...pageUrlOption(t.pageUrl), ...extra });
+  const res = await deps.startDownload(downloadUrl, { headers, ...pageUrlOption(t.pageUrl), ...extra });
   return res.ok ? { ok: true, id: res.id } : { ok: false, code: res.code, message: res.message };
 }
