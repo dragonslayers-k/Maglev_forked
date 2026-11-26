@@ -321,7 +321,7 @@ object YoutubeDownload {
         val hasAudio = !f.acodec.isNullOrBlank() && f.acodec != "none"
         val isStream = manifest != null || url?.let { isPlaylistUrl(it) } == true
         val kind = when {
-            hasVideo -> "video"
+            hasVideo && (hasAudio || isStream) -> "video"
             !hasVideo && hasAudio -> "audio"
             else -> return null
         }
