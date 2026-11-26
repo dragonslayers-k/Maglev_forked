@@ -190,7 +190,7 @@ export default function YouTubeDownloadScreen() {
             <Card>
               <ListRow icon={selectedVideoExt === 'all' ? "check" : "filter"} title="모든 확장자" subtitle="지원되는 원본 형식 전체" value={selectedVideoExt === 'all' ? "선택됨" : undefined} disabled={busy} onPress={() => setSelectedVideoExt('all')} />
               {videoExtensions.map((ext) => (
-                <ListRow key={'video-ext-' + ext} icon={selectedVideoExt === ext ? "check" : "file-video"} title={ext.toUpperCase()} subtitle={videos.filter((format) => format.ext.toLowerCase() === ext).length + '개 화질 형식'} value={selectedVideoExt === ext ? "선택됨" : undefined} disabled={busy}
+                <ListRow key={'video-ext-' + ext} icon={selectedVideoExt === ext ? "check" : "download"} title={ext.toUpperCase()} subtitle={videos.filter((format) => format.ext.toLowerCase() === ext).length + '개 화질 형식'} value={selectedVideoExt === ext ? "선택됨" : undefined} disabled={busy}
                   onPress={() => { setSelectedVideoExt(ext); const first = videos.filter((format) => format.ext.toLowerCase() === ext).sort((a, b) => b.height - a.height || b.tbr - a.tbr)[0]; if (first) setSelectedVideo(formatKey(first)); }} />
               ))}
             </Card>
@@ -218,7 +218,7 @@ export default function YouTubeDownloadScreen() {
             <Card>
               <ListRow icon={selectedAudioExt === 'all' ? "check" : "filter"} title="모든 확장자" subtitle="지원되는 원본 오디오 형식 전체" value={selectedAudioExt === 'all' ? "선택됨" : undefined} disabled={busy} onPress={() => setSelectedAudioExt('all')} />
               {audioExtensions.map((ext) => (
-                <ListRow key={'audio-ext-' + ext} icon={selectedAudioExt === ext ? "check" : "file-audio"} title={ext.toUpperCase()} subtitle={audios.filter((format) => format.ext.toLowerCase() === ext).length + '개 음질 형식'} value={selectedAudioExt === ext ? "선택됨" : undefined} disabled={busy}
+                <ListRow key={'audio-ext-' + ext} icon={selectedAudioExt === ext ? "check" : "download"} title={ext.toUpperCase()} subtitle={audios.filter((format) => format.ext.toLowerCase() === ext).length + '개 음질 형식'} value={selectedAudioExt === ext ? "선택됨" : undefined} disabled={busy}
                   onPress={() => { setSelectedAudioExt(ext); const first = audios.filter((format) => format.ext.toLowerCase() === ext).sort((a, b) => b.abr - a.abr)[0]; if (first) setSelectedAudio(formatKey(first)); }} />
               ))}
             </Card>
