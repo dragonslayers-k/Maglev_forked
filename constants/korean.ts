@@ -720,35 +720,41 @@ export function koUiText(value: string | null | undefined): string {
   if (value == null) return '';
   const exact = KO_UI[value];
   if (exact) return exact;
-  const month = /^(January|February|March|April|May|June|July|August|September|October|November|December)(?: (\\d{4}))?$/.exec(value);
+  const month = /^(January|February|March|April|May|June|July|August|September|October|November|December)(?: (\d{4}))?$/.exec(value);
   if (month) {
     const names: Record<string, string> = { January: '1월', February: '2월', March: '3월', April: '4월', May: '5월', June: '6월', July: '7월', August: '8월', September: '9월', October: '10월', November: '11월', December: '12월' };
     return (month[2] ? month[2] + '년 ' : '') + names[month[1]];
   }
-  const date = /^(?:([A-Za-z]{3}), )?([A-Za-z]{3}) (\\d{1,2})(?:[–-](\\d{1,2}))?$/.exec(value);
+  const date = /^(?:([A-Za-z]{3}), )?([A-Za-z]{3}) (\d{1,2})(?:[–-](\d{1,2}))?$/.exec(value);
   if (date) {
     const months: Record<string, string> = { Jan: '1월', Feb: '2월', Mar: '3월', Apr: '4월', May: '5월', Jun: '6월', Jul: '7월', Aug: '8월', Sep: '9월', Oct: '10월', Nov: '11월', Dec: '12월' };
     const days: Record<string, string> = { Sun: '일', Mon: '월', Tue: '화', Wed: '수', Thu: '목', Fri: '금', Sat: '토' };
     return (date[1] ? '(' + days[date[1]] + ') ' : '') + months[date[2]] + ' ' + date[3] + '일' + (date[4] ? '–' + date[4] + '일' : '');
   }
+  const pastMonth = /^in (January|February|March|April|May|June|July|August|September|October|November|December)(?: (\\d{4}))?$/.exec(value);
+  if (pastMonth) return (pastMonth[2] ? pastMonth[2] + '년 ' : '') + ({ January: '1월', February: '2월', March: '3월', April: '4월', May: '5월', June: '6월', July: '7월', August: '8월', September: '9월', October: '10월', November: '11월', December: '12월' } as Record<string, string>)[pastMonth[1]];
   return value
     .replace(/\\bThis week\\b/g, '이번 주')
-    .replace(/\\bLast week\\b/g, '지난주')
-    .replace(/\\bthis week so far\\b/g, '이번 주 현재까지')
-    .replace(/\\bthis week\\b/g, '이번 주')
-    .replace(/\\bthis month\\b/g, '이번 달')
-    .replace(/\\bthis year\\b/g, '올해')
-    .replace(/\\bToday\\b/g, '오늘')
-    .replace(/\\bYesterday\\b/g, '어제')
-    .replace(/\\b(\\d+) finished\\b/g, '$1건 완료')
-    .replace(/\\b(\\d+) failed\\b/g, '$1건 실패')
-    .replace(/\\b(\\d+) cancelled\\b/g, '$1건 취소')
-    .replace(/\\bdownloads finished\\b/g, '건 다운로드 완료')
-    .replace(/\\bdownload finished\\b/g, '건 다운로드 완료')
-    .replace(/\\bso far\\b/g, '현재까지')
-    .replace(/\\bbusiest day\\b/g, '최다 다운로드 날짜')
-    .replace(/\\bNothing downloaded in (.+)$/g, '$1 다운로드 기록이 없습니다')
-    .replace(/\\bNot here yet\\b/g, '아직 해당 기간이 아닙니다')
-    .replace(/\\bNothing downloaded\\b/g, '다운로드 기록 없음')
-    .replace(/\\bToday is the busiest day so far\\./g, '오늘 현재 다운로드가 가장 많습니다.');
+    .replace(/\bLast week\b/g, '지난주')
+    .replace(/\bthis week so far\b/g, '이번 주 현재까지')
+    .replace(/\bthis week\b/g, '이번 주')
+    .replace(/\bthis month\b/g, '이번 달')
+    .replace(/\bthis year\b/g, '올해')
+    .replace(/\blast week\b/g, '지난주')
+    .replace(/\blast month\b/g, '지난달')
+    .replace(/\blast year\b/g, '지난해')
+    .replace(/\bdownloaded (this week so far|this week|last week|this month|last month|this year|last year)\b/g, (_m, p) => ({ 'this week so far': '이번 주 현재까지 다운로드', 'this week': '이번 주 다운로드', 'last week': '지난주 다운로드', 'this month': '이번 달 다운로드', 'last month': '지난달 다운로드', 'this year': '올해 다운로드', 'last year': '지난해 다운로드' } as Record<string, string>)[p])
+    .replace(/\bToday\b/g, '오늘')
+    .replace(/\bYesterday\b/g, '어제')
+    .replace(/\b(\d+) finished\b/g, '$1건 완료')
+    .replace(/\b(\d+) failed\b/g, '$1건 실패')
+    .replace(/\b(\d+) cancelled\b/g, '$1건 취소')
+    .replace(/\bdownloads finished\b/g, '건 다운로드 완료')
+    .replace(/\bdownload finished\b/g, '건 다운로드 완료')
+    .replace(/\bso far\b/g, '현재까지')
+    .replace(/\bbusiest day\b/g, '최다 다운로드 날짜')
+    .replace(/\bNothing downloaded in (.+)$/g, '$1 다운로드 기록이 없습니다')
+    .replace(/\bNot here yet\b/g, '아직 해당 기간이 아닙니다')
+    .replace(/\bNothing downloaded\b/g, '다운로드 기록 없음')
+    .replace(/\bToday is the busiest day so far\\./g, '오늘 현재 다운로드가 가장 많습니다.');
 }
