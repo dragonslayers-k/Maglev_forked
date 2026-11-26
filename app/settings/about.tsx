@@ -86,7 +86,7 @@ export default function AboutSettings() {
       </View>
       <StarTicket />
       <Card>
-        <ListRow title={updateCopy.report.title} subtitle={updateCopy.report.subtitle} icon="external" onPress={reportBug} />
+        <ListRow title="오류 신고" subtitle="앱 버전과 휴대전화 정보가 입력된 GitHub 신고 화면을 엽니다." icon="external" onPress={reportBug} />
         <ListRow
           title={aboutExtrasCopy.debugLog.title}
           subtitle={aboutExtrasCopy.debugLog.subtitle}
