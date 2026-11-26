@@ -637,8 +637,8 @@ export class MaglevEngineBridge implements MaglevEngineApi {
   public getYouTubeInfo(url: string): Promise<EngineResult<YouTubeInfo>> {
     return this.route('getYouTubeInfo', url);
   }
-  public addYouTubeDownload(url: string, formatId: string, playerClient: string): Promise<EngineResult<{ id: string }>> {
-    return this.route('addYouTubeDownload', url, formatId, playerClient);
+  public addYouTubeDownload(url: string, formatId: string, playerClient: string, audioBitrateKbps?: number | null): Promise<EngineResult<{ id: string }>> {
+    return this.route('addYouTubeDownload', url, formatId, playerClient, audioBitrateKbps ?? null);
   }
   public pauseDownload(id: string): Promise<EngineResult> {
     return this.route('pauseDownload', id);
