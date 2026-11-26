@@ -192,6 +192,7 @@ export default function YouTubeDownloadScreen() {
           </View>
           <View style={styles.section}>
             <SectionHeader title="오디오 형식 · 음질" />
+            <Text style={styles.muted}>목록에서 원본 코덱·컨테이너를 선택합니다. MP3 변환은 아직 지원하지 않으며 파일 확장자만 바꾸지 않습니다.</Text>
             <Card>
               {(audios.length > 0 ? audios : audioFallbacks).map((format, index) => (
                 <ListRow key={formatKey(format)} icon={selectedAudio === formatKey(format) ? "check" : "download"} title={formatTitle(format, index === 0)}
