@@ -52,7 +52,7 @@ async function main() {
   assert.ok(newPipe.includes('EngineHost.probeStream') && newPipe.includes('"audioId"'), 'selected video quality must mux a separate audio track in the existing queue');
   assert.ok(newPipe.includes('info.audioStreams'), 'audio-only choices must enumerate real NewPipe audio formats and bitrates');
   assert.ok(ytdlGradle.includes('NewPipeExtractor:v0.26.5'), 'use the same NewPipe extractor version as YTDLnis');
-  assert.ok(poToken.includes('NewPipePoTokenGenerator') && poToken.includes('getWebClientPoToken'), 'generate Web PO tokens to avoid YouTube's 360p-only fallback');
+  assert.ok(poToken.includes('NewPipePoTokenGenerator') && poToken.includes('getWebClientPoToken'), "generate Web PO tokens to avoid YouTube's 360p-only fallback");
 
   assert.ok(youtubeAdapter.includes('PLAYER_CLIENTS = listOf("newpipe", "android_vr", "web_safari")'), 'fast NewPipe extraction is primary with two yt-dlp fallbacks');
   assert.ok(youtubeAdapter.includes('playerClient != "generic"'), 'generic extraction does not force a YouTube player client');
@@ -65,7 +65,7 @@ async function main() {
   assert.ok(youtubeAdapter.includes('groupBy { it["formatId"].toString() }'), 'duplicate format IDs from different player clients must collapse to one row');
   assert.ok(youtubeAdapter.includes('formatId == "bestaudio"'), 'yt-dlp fallback still recognizes its bestaudio selector');
   assert.ok(youtubeAdapter.includes('availableFormats.filter'), 'audio fallback selects an actual audio-only format from the extractor metadata');
-  assert.ok(youtubeAdapter.includes('NewPipeYoutube.get(sourceUrl)'), 'YouTube metadata uses the fast NewPipe extractor first');
+  assert.ok(youtubeAdapter.includes('NewPipeYoutube.get(app, sourceUrl)'), 'YouTube metadata uses the fast NewPipe extractor first');
   assert.ok(youtubeAdapter.includes('NewPipeYoutube.add(app, sourceUrl, formatId)'), 'NewPipe format selection is handled by the native adapter');
   assert.ok(youtubeAdapter.includes('--ffmpeg-location'), 'override the wrapper stale FFmpeg path when FFmpeg package is absent');
   assert.ok(youtubeAdapter.includes('YOUTUBE_AUDIO_FORMAT_UNRESOLVED'), 'audio-only must fail explicitly when yt-dlp did not resolve an audio-only requested format');
