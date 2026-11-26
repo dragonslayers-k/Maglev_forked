@@ -357,8 +357,13 @@ def main():
             owner[text] = wanted
             files[f"drawable/{wanted}.xml"] = text
         return owner[text]
-    for icon_id, tile, build in ICONS:
+    BADGE_CIRCLE = "M84 11 C90.075 11 95 15.925 95 22 C95 28.075 90.075 33 84 33 C77.925 33 73 28.075 73 22 C73 15.925 77.925 11 84 11 Z"
+BADGE_PLUS = "M82 16 H86 V20 H90 V24 H86 V28 H82 V24 H78 V20 H82 Z"
+
+for icon_id, tile, build in ICONS:
         layers, mono, mkey = build(tile)
+        layers = layers + [("#FFB000", BADGE_CIRCLE, False, ""), ("#05070A", BADGE_PLUS, False, "")]
+        mono = mono + [(BADGE_PLUS, False, "")]
         r, base = rid(icon_id), name(icon_id)
         bg = tile_layers(icon_id, tile)
         fg = share(vd(layers), f"{base}_fg")
@@ -371,7 +376,7 @@ def main():
         files[f"mipmap-anydpi-v26/{base}.xml"] = adaptive(bg_ref, fg, mn)
         # API 24-25: tile + artwork in one 48dp vector whose viewport is the middle 72 of 108.
         files[f"mipmap-anydpi/{base}.xml"] = vd(bg + layers, size_dp=48, viewport=72, inner_translate=-18)
-        preview_rows[icon_id] = bg + layers
+        preview_rows[icon_id] = bg + layers[:-2]  # AppIconSection adds the common plus badge overlay
     files["values/ic_launcher_alt_colors.xml"] = (
         f'{HEAD}<resources>\n' + "".join(f'    <color name="{k}">{colors[k]}</color>\n' for k in sorted(colors)) + "</resources>\n")
     total = 0

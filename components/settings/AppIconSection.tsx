@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Platform, StyleSheet, Text, View } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
+import Svg, { Circle, Path } from 'react-native-svg';
 import { maglevEngine } from 'maglev-engine';
 import { useTheme } from '../../context/ThemeContext';
 import { ThemeColors, spacing, touch, type } from '../../constants/theme';
@@ -24,6 +24,8 @@ function IconPreview({ id }: { id: string }) {
       {layers.map(([fill, d, evenOdd, transform], i) => (
         <Path key={i} d={d} fill={fill} fillRule={evenOdd ? 'evenodd' : undefined} transform={transform} />
       ))}
+      <Circle cx={84} cy={22} r={11} fill="#FFB000" />
+      <Path d="M82 16 H86 V20 H90 V24 H86 V28 H82 V24 H78 V20 H82 Z" fill="#05070A" />
     </Svg>
   );
 }
