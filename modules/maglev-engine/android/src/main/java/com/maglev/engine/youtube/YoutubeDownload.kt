@@ -173,13 +173,13 @@ object YoutubeDownload {
                 )
             }
             val grouped = unique.groupBy { it["kind"] as String }
+            // Keep the complete format inventory. The UI already groups equivalent rows;
+            // truncating here hid lower resolutions, codecs, and audio bitrates from the user.
             val videoFormats = grouped["video"].orEmpty()
                 .sortedWith(compareByDescending<Map<String, Any?>> { (it["height"] as? Number)?.toInt() ?: 0 }
                     .thenByDescending { (it["tbr"] as? Number)?.toInt() ?: 0 })
-                .take(8)
             val audioFormats = grouped["audio"].orEmpty()
                 .sortedByDescending { (it["abr"] as? Number)?.toInt() ?: 0 }
-                .take(5)
             val choices = videoFormats + audioFormats
             if (choices.isEmpty()) {
                 return Json.failure(
