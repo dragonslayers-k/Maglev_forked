@@ -16,13 +16,15 @@ permissions:
   contents: read
 
 concurrency:
-  group: ci-${{ github.ref }}
+  # v2 separates this recovery run from a stale PR merge-ref run that remained in progress.
+  group: ci-${{ github.ref }}-v2
   cancel-in-progress: true
 
 jobs:
   rust-test:
     name: Rust tests (no JNI feature)
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -51,6 +53,7 @@ jobs:
   js:
     name: JS checks (typecheck, tests, assistant eval)
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     # Runs in parallel with the APK build (which takes far longer); a failure here still fails the run.
     steps:
       - name: Checkout repository
@@ -353,6 +356,7 @@ jobs:
   contracts:
     name: Contract tests
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
