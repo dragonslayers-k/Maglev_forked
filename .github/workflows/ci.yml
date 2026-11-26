@@ -40,6 +40,20 @@ jobs:
         with:
           workspaces: native/maglev-core
 
+      - name: Setup Go for WireGuard core tests
+        uses: actions/setup-go@v6
+        with:
+          go-version: '1.26.10'
+          cache-dependency-path: native/wireguard/go.sum
+
+      - name: Test app-local WireGuard userspace core
+        working-directory: native/wireguard
+        run: go test -race -count=1 .
+
+      - name: Vet app-local WireGuard userspace core
+        working-directory: native/wireguard
+        run: go vet .
+
       - name: Run tests
         run: cargo test --manifest-path native/maglev-core/Cargo.toml --no-default-features
 
@@ -208,6 +222,31 @@ jobs:
           pattern: jniLibs-*
           merge-multiple: true
           path: modules/maglev-engine/android/src/main/jniLibs
+
+      - name: Setup Go for Android WireGuard native library
+        uses: actions/setup-go@v6
+        with:
+          go-version: '1.26.10'
+          cache-dependency-path: native/wireguard/go.sum
+
+      - name: Build app-local WireGuard userspace proxy (no system VPN)
+        shell: bash
+        run: |
+          set -euo pipefail
+          NDK="$ANDROID_HOME/ndk/27.1.12297006"
+          HOST="$NDK/toolchains/llvm/prebuilt/linux-x86_64/bin"
+          test -x "$HOST/aarch64-linux-android26-clang"
+          mkdir -p modules/maglev-engine/android/src/main/jniLibs/arm64-v8a
+          (
+            cd native/wireguard
+            GOOS=android GOARCH=arm64 CGO_ENABLED=1 CC="$HOST/aarch64-linux-android26-clang" \
+              go build -tags jni -buildmode=c-shared -trimpath -buildvcs=false \
+              -ldflags="-s -w -linkmode=external -extldflags=-Wl,-z,max-page-size=16384" \
+              -o "$RUNNER_TEMP/libmorphewireguard.so" ./cmd/jni
+          )
+          cp "$RUNNER_TEMP/libmorphewireguard.so" modules/maglev-engine/android/src/main/jniLibs/arm64-v8a/
+          test -s modules/maglev-engine/android/src/main/jniLibs/arm64-v8a/libmorphewireguard.so
+          "$HOST/llvm-readelf" -lW modules/maglev-engine/android/src/main/jniLibs/arm64-v8a/libmorphewireguard.so | awk '$1 == "LOAD" { if ($NF != "0x4000") bad=1; found=1 } END { if (!found || bad) exit 1 }'
 
       - name: Verify jniLibs layout
         run: |
