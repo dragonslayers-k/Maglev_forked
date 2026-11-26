@@ -52,7 +52,7 @@ object NewPipeYoutube {
             }
             client.newCall(builder.build()).execute().use { response ->
                 if (response.code == 429) throw ReCaptchaException("YouTube requested a reCAPTCHA challenge", request.url())
-                val body = response.body.string()
+                val body = response.body?.string().orEmpty()
                 return Response(response.code, response.message, response.headers.toMultimap(), body, response.request.url.toString())
             }
         }
@@ -90,7 +90,7 @@ object NewPipeYoutube {
         for ((height, candidates) in videos.groupBy { it.height }.toSortedMap(compareByDescending { it })) {
             val selected = candidates.maxByOrNull { it.bitrate } ?: continue
             val videoKbps = selected.bitrate / 1000.0
-            val audioLength = audio.firstOrNull()?.idItem?.contentLength ?: 0L
+            val audioLength = audio.firstOrNull()?.itagItem?.contentLength ?: 0L
             val selectedLength = selected.itagItem!!.contentLength
             val exactBytes = when {
                 !selected.isVideoOnly && selectedLength > 0 -> selectedLength
