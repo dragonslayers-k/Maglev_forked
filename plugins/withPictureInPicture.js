@@ -4,7 +4,7 @@ const { withAndroidManifest } = require('expo/config-plugins');
 function applyPictureInPictureManifest(manifest) {
   const application = manifest?.manifest?.application?.[0];
   const activities = application?.activity ?? [];
-  const main = activities.find((activity) => /(^|\\.)MainActivity$/.test(activity.$?.['android:name'] ?? ''));
+  const main = activities.find((activity) => /(^|\.)MainActivity$/.test(activity.$?.['android:name'] ?? ''));
   if (!main) throw new Error('withPictureInPicture: MainActivity not found in AndroidManifest.xml');
 
   const attrs = main.$ ?? (main.$ = {});

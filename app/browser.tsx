@@ -1084,7 +1084,8 @@ export default function BrowserScreen({ inTab = false }: { inTab?: boolean }) {
           title="화면 속 화면(PiP)"
           subtitle="동영상을 작은 창으로 계속 재생"
           onPress={() => void enterPictureInPicture()}
-        />        <BookmarkToggle url={page?.url ?? tab?.url ?? ''} title={page?.title ?? tab?.title ?? ''} onDone={() => setMenuOpen(false)} />
+        />
+        <BookmarkToggle url={page?.url ?? tab?.url ?? ''} title={page?.title ?? tab?.title ?? ''} onDone={() => setMenuOpen(false)} />
         {/^https?:\/\//i.test(page?.url ?? '') ? (
           <ListRow
             icon="trash"
