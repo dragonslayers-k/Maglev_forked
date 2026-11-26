@@ -262,6 +262,30 @@ object EngineHost {
 
     private fun isOk(m: Map<String, Any?>) = m["ok"] == true
 
+    fun isEngineInitialized(): Boolean = initialized
+
+    /** App-local proxy affects Maglev HTTP downloads only, never Android system routing. */
+    fun getAppWireGuardProxy(): Map<String, Any?> = synchronized(lifecycleLock) {
+        if (!initialized) return@synchronized Json.failure("NOT_INITIALIZED", "다운로드 엔진이 아직 시작되지 않았습니다.")
+        val result = call { NativeCore.nativeGetEffectiveConfig() }
+        if (!isOk(result)) return@synchronized result
+        val config = result["config"] as? Map<*, *>
+            ?: return@synchronized Json.failure("INTERNAL", "다운로드 엔진 설정을 읽지 못했습니다.")
+        mapOf("ok" to true, "proxy_url" to (config["proxy_url"] as? String))
+    }
+
+    fun setAppWireGuardProxy(proxyUrl: String?): Map<String, Any?> = synchronized(lifecycleLock) {
+        if (!initialized) return@synchronized Json.failure("NOT_INITIALIZED", "다운로드 엔진이 아직 시작되지 않았습니다.")
+        val result = call { NativeCore.nativeGetEffectiveConfig() }
+        if (!isOk(result)) return@synchronized result
+        val config = result["config"] as? Map<*, *>
+            ?: return@synchronized Json.failure("INTERNAL", "다운로드 엔진 설정을 읽지 못했습니다.")
+        val mutable = LinkedHashMap<String, Any?>()
+        config.forEach { (key, value) -> mutable[key.toString()] = value }
+        mutable["proxy_url"] = proxyUrl
+        call { NativeCore.nativeApplyConfig(Json.toJson(mutable)) }
+    }
+
     // endregion
 
     // region lifecycle
