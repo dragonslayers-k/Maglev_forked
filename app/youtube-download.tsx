@@ -93,7 +93,7 @@ export default function YouTubeDownloadScreen() {
   // Always offer yt-dlp's bestaudio selector even when the selected player client
   // does not expose audio-only formats in its metadata response.
   const audioFallback: YouTubeFormat = {
-    formatId: 'bestaudio', playerClient: formats[0]?.playerClient ?? 'android_vr', kind: 'audio',
+    formatId: 'bestaudio', playerClient: 'android_vr', kind: 'audio',
     ext: 'm4a', height: 0, width: 0, fps: 0, tbr: 0, abr: 0, size: null, format: '원본 오디오',
   };
 
