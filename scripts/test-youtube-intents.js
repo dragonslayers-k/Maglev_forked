@@ -118,8 +118,11 @@ async function main() {
   assert.ok(addDownload.includes('yt-dlp로 페이지 분석'), 'NOT_A_FILE pages expose explicit yt-dlp analysis');
   const browserScreen = fs.readFileSync(path.join(root, 'app/browser.tsx'), 'utf8');
   assert.ok(browserScreen.includes('yt-dlp로 페이지 분석'), 'browser page menu exposes explicit generic site analysis');
-  assert.ok(browserScreen.includes('MPMux 사용 안내'), 'DRM/blob refusal offers MPMux information');
-  assert.ok(browserScreen.includes('MPMux도 DRM을 복호화하거나 보호를 우회하지 못합니다'), 'MPMux is not described as a DRM bypass');
+  assert.ok(browserScreen.includes('브라우저 녹화 기능이 아직 연결되지 않았습니다'), 'unsupported buffer recording is stated honestly in-app');
+  assert.ok(!browserScreen.includes('MPMux 사용 안내') && !browserScreen.includes('Chrome 확장 프로그램'), 'Android browser does not show misleading external MPMux/Chrome extension popup links');
+  const streamSheet = fs.readFileSync(path.join(root, 'components/browser/StreamSheet.tsx'), 'utf8');
+  assert.ok(!streamSheet.includes('PC MPMux 안내') && !streamSheet.includes('mpmux.com/ko'), 'Android stream sheet does not offer a PC-only recorder as an app feature');
+  assert.ok(browserScreen.includes('DRM 보호 영상은 저장할 수 없습니다'), 'DRM refusal remains explicit');
   assert.ok(!browserScreen.includes('decryptDrm') && !browserScreen.includes('widevineDecrypt'), 'no DRM decryption adapter is shipped');
   console.log('test-youtube-intents: all assertions passed');
 }
