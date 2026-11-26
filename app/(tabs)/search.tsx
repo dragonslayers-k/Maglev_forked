@@ -233,7 +233,7 @@ export default function SearchScreen() {
     const debounce = setTimeout(() => {
       if (spoken.current.start !== mine) {
         spoken.current.start = mine;
-        announce(`Searching ${plural(eligible.length, 'source', 'sources')}`);
+        announce(`${eligible.length}개 검색 사이트 검색 중`);
       }
       const current = getSearchPrefs();
       loadExtraProviders(current.torznab).then((extraProviders) =>
@@ -556,11 +556,11 @@ export default function SearchScreen() {
   }, [challenged]);
   const needsCheckOn = prefs.needsCheck.filter((id) => prefs.enabled.includes(id)).length > 0;
 
-  const fixLine = `${plural(challenged.length, 'source needs', 'sources need')} a quick check. They'll add more results.`;
-  const fixTitleText = challenged.length === 1 ? '1 source needs a quick check' : `${challenged.length} sources need a quick check`;
+  const fixLine = `${challenged.length}개 검색 사이트를 확인해야 합니다. 확인하면 검색 결과가 더 늘어납니다.`;
+  const fixTitleText = `${challenged.length}개 검색 사이트 확인 필요`;
   const dismissFix = useCallback(() => {
     updatePrefs({ fixHintDismissedAt: Date.now() });
-    announce('Hidden for a day');
+    announce('하루 동안 숨겼습니다');
     focusView(inputRef.current);
   }, [updatePrefs]);
   // Said once per search, the first time the line shows.
@@ -585,8 +585,8 @@ export default function SearchScreen() {
             <Text style={styles.fixTitle}>{fixTitleText}</Text>
             <Text style={styles.fixBody}>검색 사이트를 추가하면 더 많은 결과를 확인할 수 있습니다.</Text>
           </View>
-          <Button label="Fix" variant="ghost" buttonRef={fixBtnRef} onPress={startFix} accessibilityLabel="Fix sources that need a quick check" />
-          <IconButton icon="close" size={16} onPress={dismissFix} accessibilityLabel="Dismiss" />
+          <Button label="수정" variant="ghost" buttonRef={fixBtnRef} onPress={startFix} accessibilityLabel="확인이 필요한 검색 사이트 수정" />
+          <IconButton icon="close" size={16} onPress={dismissFix} accessibilityLabel="닫기" />
         </View>
       </Reveal>
     ),
@@ -636,11 +636,11 @@ export default function SearchScreen() {
     if (searching || trimmed.length < MIN_QUERY || failed || (!update && !stopped)) return;
     if (spoken.current.end === reqId.current) return;
     spoken.current.end = reqId.current;
-    announce(shown.length === 0 ? 'No results' : plural(shown.length, 'result', 'results'));
+    announce(shown.length === 0 ? '검색 결과가 없습니다' : `${shown.length}개 검색 결과`);
   }, [searching, trimmed, failed, update, stopped, shown.length]);
   const showRecents = focused && idle && recents.length > 0;
   useEffect(() => {
-    if (showRecents) announce(`Recent searches, ${recents.length}`);
+    if (showRecents) announce(`최근 검색어 ${recents.length}개`);
     // Said when the list opens, not on each change.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showRecents]);
@@ -649,7 +649,7 @@ export default function SearchScreen() {
       const at = recents.indexOf(text);
       const next = removeRecentSearch(text);
       setRecents(next);
-      announce(`Removed ${text}`);
+      announce(`${text} 검색어 삭제`);
       const nextText = next[at] ?? next[at - 1];
       focusView(nextText !== undefined ? recentRows.current.get(nextText) : inputRef.current);
     },
@@ -657,7 +657,7 @@ export default function SearchScreen() {
   );
   const clearRecents = useCallback(() => {
     setRecents(clearRecentSearches());
-    announce('Recent searches cleared');
+    announce('최근 검색어를 지웠습니다');
     focusView(inputRef.current);
   }, []);
   const hasResults = (update?.results.length ?? 0) > 0;
@@ -760,8 +760,8 @@ export default function SearchScreen() {
           {searching ? (
             <>
               <View style={styles.summaryRow}>
-                <Text style={styles.summary}>{`Searching… ${answered} of ${total || eligible.length} sources`}</Text>
-                <Button label="Stop" variant="ghost" onPress={stop} accessibilityLabel="Stop searching" />
+                <Text style={styles.summary}>{`검색 중… ${answered} / ${total || eligible.length}개 사이트 응답`}</Text>
+                <Button label="중지" variant="ghost" onPress={stop} accessibilityLabel="검색 중지" />
               </View>
               <View style={styles.track} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
                 <View style={[styles.trackFill, { width: `${Math.min(100, Math.round((answered / Math.max(1, total || eligible.length)) * 100))}%` }]} />
