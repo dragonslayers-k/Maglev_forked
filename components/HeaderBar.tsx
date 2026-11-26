@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { AppState, StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { ThemeColors, spacing, type } from '../constants/theme';
+import { APP_ICON_BADGE_CIRCLE, APP_ICON_BADGE_PLUS } from '../constants/appIcons';
 import { IconButton } from './ui';
 import { MaglevMark } from './brand/MaglevMark';
 import { MARK_FX_COMPACT } from './brand/markPaths';
@@ -118,8 +119,8 @@ const makeStyles = (c: ThemeColors) =>
     // zIndex: the mark flies over the action buttons when tapped.
     brand: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingLeft: spacing.sm, zIndex: 1 },
     markBadgeWrap: { position: 'relative', width: 22 * (107 / 44), height: 22, alignItems: 'center', justifyContent: 'center' },
-    plusBadge: { position: 'absolute', right: -2, top: -5, width: 12, height: 12, borderRadius: 6, backgroundColor: '#FFB000', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: c.bg },
-    plusBadgeText: { color: '#05070A', fontSize: 11, lineHeight: 12, fontWeight: '900', includeFontPadding: false },
+    plusBadge: { position: 'absolute', right: -2, top: -5, width: 12, height: 12, borderRadius: 6, backgroundColor: APP_ICON_BADGE_CIRCLE, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: c.bg },
+    plusBadgeText: { ...type.bodyStrong, color: APP_ICON_BADGE_PLUS, fontSize: type.size.sm, lineHeight: type.size.sm, includeFontPadding: false },
     brandTitle: { ...type.brand, fontSize: type.size.base, color: c.text },
     actions: { flexDirection: 'row', alignItems: 'center' },
     selectedText: { ...type.bodyStrong, fontSize: type.size.xl, color: c.text, flex: 1, marginLeft: spacing.xs },
