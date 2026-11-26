@@ -265,13 +265,28 @@ object EngineHost {
 
     fun isEngineInitialized(): Boolean = initialized
 
+    /**
+     * Rust EffectiveConfig serializes NativeConfig with #[serde(flatten], so the config fields
+     * live beside "ok", "restart_pending" and "blocklist" rather than under a "config" object.
+     * Keep this contract normalization here; never send response metadata back to nativeApplyConfig.
+     */
+    private fun nativeWireGuardConfig(result: Map<String, Any?>): Map<String, Any?> {
+        val config = LinkedHashMap<String, Any?>()
+        result.forEach { (key, value) ->
+            if (key != "ok" && key != "restart_pending" && key != "blocklist") {
+                config[key] = value
+            }
+        }
+        return config
+    }
+
     /** App-local proxy affects Maglev HTTP downloads only, never Android system routing. */
     fun getAppWireGuardProxy(): Map<String, Any?> = synchronized(lifecycleLock) {
         if (!initialized) return@synchronized Json.failure("NOT_INITIALIZED", "다운로드 엔진이 아직 시작되지 않았습니다.")
         val result = call { NativeCore.nativeGetEffectiveConfig() }
         if (!isOk(result)) return@synchronized result
-        val config = result["config"] as? Map<*, *>
-            ?: return@synchronized Json.failure("INTERNAL", "다운로드 엔진 설정을 읽지 못했습니다.")
+        val config = nativeWireGuardConfig(result)
+        if (config.isEmpty()) return@synchronized Json.failure("INTERNAL", "다운로드 엔진 설정 응답이 비어 있습니다.")
         mapOf("ok" to true, "proxy_url" to (config["proxy_url"] as? String))
     }
 
@@ -279,12 +294,10 @@ object EngineHost {
         if (!initialized) return@synchronized Json.failure("NOT_INITIALIZED", "다운로드 엔진이 아직 시작되지 않았습니다.")
         val result = call { NativeCore.nativeGetEffectiveConfig() }
         if (!isOk(result)) return@synchronized result
-        val config = result["config"] as? Map<*, *>
-            ?: return@synchronized Json.failure("INTERNAL", "다운로드 엔진 설정을 읽지 못했습니다.")
-        val mutable = LinkedHashMap<String, Any?>()
-        config.forEach { (key, value) -> mutable[key.toString()] = value }
-        mutable["proxy_url"] = proxyUrl
-        call { NativeCore.nativeApplyConfig(Json.toJson(mutable)) }
+        val config = nativeWireGuardConfig(result)
+        if (config.isEmpty()) return@synchronized Json.failure("INTERNAL", "다운로드 엔진 설정 응답이 비어 있습니다.")
+        config["proxy_url"] = proxyUrl
+        call { NativeCore.nativeApplyConfig(Json.toJson(config)) }
     }
 
     // endregion
