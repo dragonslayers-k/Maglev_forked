@@ -62,7 +62,7 @@ async function main() {
   assert.ok(youtubeAdapter.includes('playerClient == "generic"'), 'generic page formats are tagged separately from YouTube clients');
   assert.ok(youtubeAdapter.includes('EngineHost.probeStream'), 'HLS/DASH formats must use Maglev stream engine');
   assert.ok(youtubeAdapter.includes('youtube:player_client='), 'selected format must be re-extracted with its original client');
-  assert.match(nativeModule, /formatId: String, playerClient: String, audioBitrateKbps: Double\?/, 'native bridge must carry the selected audio bitrate ceiling for video downloads');
+  assert.match(nativeModule, /formatId: String, playerClient: String, formatKind: String, audioBitrateKbps: Double\\?, outputContainer: String/, 'native bridge must carry format kind, audio bitrate ceiling and output container');
   assert.ok(youtubeAdapter.includes('targetAudioBps') && youtubeAdapter.includes('YOUTUBE_AUDIO_BITRATE_UNAVAILABLE'), 'adaptive video downloads must enforce the selected separate-audio bitrate ceiling');
   assert.match(youtubeScreen, /addYouTubeDownload\(String\(url\), format\.formatId, format\.playerClient, audioBitrateKbps \?\? null\)/, 'the chosen audio quality must reach the native download request');
   assert.ok(youtubeAdapter.includes('ytdlp.init(app)') && youtubeAdapter.includes('field.set(ytdlp, File(app.applicationInfo.nativeLibraryDir))'), 'initialize bundled yt-dlp and reset the wrapper ffmpeg path without downloading updates');
@@ -77,7 +77,7 @@ async function main() {
   assert.ok(youtubeAdapter.includes('NewPipeYoutube.get(app, sourceUrl)'), 'YouTube metadata uses the fast NewPipe extractor first');
   assert.ok(youtubeAdapter.includes('getQueryParameter("maglev_ytdlp") == "1"') && youtubeAdapter.includes('link != null && !forceYtDlp'), 'on-demand format refresh must bypass NewPipe and force yt-dlp');
   assert.ok(youtubeAdapter.includes('fastFormats.any { it["kind"] == "audio" }'), 'only return NewPipe primary formats when real audio choices exist');
-  assert.ok(youtubeAdapter.includes('NewPipeYoutube.add(app, sourceUrl, formatId, audioBitrateKbps)'), 'NewPipe format selection and chosen audio bitrate are handled by the native adapter');
+  assert.ok(youtubeAdapter.includes('NewPipeYoutube.add(app, sourceUrl, formatId, audioBitrateKbps, outputContainer)'), 'NewPipe format selection and chosen audio bitrate are handled by the native adapter');
   assert.ok(youtubeAdapter.includes('getDeclaredField("ffmpegPath")') && youtubeAdapter.includes('field.set(ytdlp, File(app.applicationInfo.nativeLibraryDir))'), 'reset the wrapper stale FFmpeg path after its unconditional append');
   assert.ok(youtubeAdapter.includes('YOUTUBE_AUDIO_FORMAT_UNRESOLVED'), 'audio-only must fail explicitly when yt-dlp did not resolve an audio-only requested format');
   assert.ok(youtubeAdapter.includes('YOUTUBE_AUDIO_URL_MISSING'), 'audio-only must not fall back to the default video URL');
