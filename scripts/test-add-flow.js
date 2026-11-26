@@ -22,6 +22,7 @@ const addDownload = read('app', 'add-download.tsx');
 const empty = read('components', 'transfers', 'TeachingEmptyState.tsx');
 const chip = read('components', 'transfers', 'ClipboardChip.tsx');
 const copy = read('constants', 'copy.ts');
+const clipboard = read('constants', 'clipboardCopy.ts');
 const fab = read('components', 'FloatingActionButton.tsx');
 
 const inputStart = addTorrent.indexOf('// ---------- Input');
@@ -36,11 +37,11 @@ check('add-download has a Save to row', addDownload.includes('Save to'));
 check('add-download can change the folder', /maglevEngine\.pickFolder\(\)/.test(addDownload) && /Change/.test(addDownload));
 check('add-download keeps 44px row', /touch\.min/.test(addDownload));
 
-check('empty state copy mentions links and torrents', /Nothing downloading/.test(copy) && /link/i.test(copy.match(/none:\s*\{[^}]*\}/)[0]) && /torrent/i.test(copy.match(/none:\s*\{[^}]*\}/)[0]));  // 0.15: new title
+check('Korean empty state copy mentions links and torrent files', /다운로드 중인 항목이 없습니다/.test(copy) && /링크나 \.torrent/.test(copy.match(/none:\s*\{[^}]*\}/)[0]));
 // 0.15: Search and Browser are now always-shown tiles (required props), not optional quiet buttons.
 check('empty state offers Search and Browser tiles', /onSearch:/.test(empty) && /onBrowse:/.test(empty) && /title="Search"/.test(empty) && /title="Browser"/.test(empty));
 check('empty state tiles are wired to Search and Browser', /onPress=\{onSearch\}/.test(empty) && /onPress=\{onBrowse\}/.test(empty));
-check('clipboard copy works for any link', /Add the link you copied/.test(copy) && !/Magnet link in clipboard/.test(copy));
+check('clipboard prompt supports ordinary links and torrents', /clipboardUsesCard/.test(clipboard) && /https?:\\/\\//.test(clipboard) && /clipboardRoute/.test(clipboard) && /Download the copied link/.test(clipboard) && !/Magnet link in clipboard/.test(clipboard));
 check('clipboard chip can show the link host', /link\?:\s*string/.test(chip) && /new URL|host/i.test(chip));
 check('FAB label mentions link and torrent', /Add a link or torrent/.test(fab));
 
