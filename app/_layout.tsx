@@ -188,6 +188,7 @@ function AppNavigation() {
           <Stack.Screen name="settings/subtitle-languages" />
           <Stack.Screen name="settings/subtitle-sources" />
           <Stack.Screen name="settings/subtitles" />
+          <Stack.Screen name="settings/updates" />
           <Stack.Screen name="settings/whats-new" />
           <Stack.Screen name="settings/watch" />
           <Stack.Screen name="stats" />

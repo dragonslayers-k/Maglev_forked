@@ -23,6 +23,6 @@ check('Settings exposes list-data updates, not app updates', settings.includes("
 check('Updates page is list-only', up.includes('<SettingsPage title="목록 업데이트">') && up.includes('checkListsNow') && up.includes('useListPrefs'));
 check('Updates page has no app version/check/download/install controls', !/useHasUpdate|checkNow\(\{|downloadNow|installNow|UpdateCard|SectionHeader title="App"/.test(up));
 check('Root starts list updates independently', layout.includes('startListUpdates') && !layout.includes('startUpdates'));
-check('Root no longer registers app updater route', !layout.includes('settings/updates'));
+check('Root registers the protected list-updates route', layout.includes('<Stack.Screen name="settings/updates" />'));
 
 process.exit(failed ? 1 : 0);
