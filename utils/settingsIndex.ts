@@ -36,7 +36,7 @@ export const SETTINGS_INDEX: SettingEntry[] = [
   // About
   e(
     "about-report-bug",
-    "Report a bug",
+    "오류 신고",
     "about",
     "앱 정보",
     [
