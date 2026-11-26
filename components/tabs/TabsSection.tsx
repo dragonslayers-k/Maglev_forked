@@ -6,7 +6,6 @@ import { useTheme } from '../../context/ThemeContext';
 import { ThemeColors, motion, radius, spacing, touch, type } from '../../constants/theme';
 import { tabsCopy } from '../../constants/copy';
 import { haptic } from '../../constants/haptics';
-import { useAssistantPrefs } from '../../utils/prefs/assistantApp';
 import { useReduceMotion } from '../motion';
 import { Toggle } from '../ui';
 import { Caption } from '../settings/SettingsParts';
@@ -165,9 +164,7 @@ function DraggableRow({ id, index, count, name, locked, shown, drag, onReorder, 
 /** Settings > Interface > Tabs: which tabs show, and their order. Hold a row and drag to reorder. Applies live. */
 export function TabsSection() {
   const prefs = useTabPrefs();
-  const assistant = useAssistantPrefs();
-  // The Assistant setting decides whether the assistant exists, so its row appears only while it is on.
-  const rows = prefs.order.filter((id) => id !== 'assistant' || assistant.enabled);
+  const rows = prefs.order.filter((id) => id !== 'assistant');
 
   const active = useSharedValue(-1);
   const target = useSharedValue(-1);
@@ -220,7 +217,7 @@ export function TabsSection() {
       </View>
       <View style={s.caption}>
         <Caption>{tabsCopy.reorderHint}</Caption>
-        <Caption>{assistant.enabled ? tabsCopy.hint : `${tabsCopy.hint} ${tabsCopy.assistantNote}`}</Caption>
+        <Caption>{tabsCopy.hint}</Caption>
       </View>
     </>
   );
