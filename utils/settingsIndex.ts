@@ -902,6 +902,27 @@ export const SETTINGS_INDEX: SettingEntry[] = [
     ["advanced", "port", "proxy", "dht", "upnp", "blocklist", "torrent", "peers"],
   ),
   e(
+    "app-wireguard-profile",
+    "WireGuard .conf 프로필",
+    "wireguard",
+    "앱 내부 WireGuard",
+    ["wireguard", "conf", "profile", "private key", "import", "vpn", "tunnel", "앱 내부 vpn"],
+  ),
+  e(
+    "app-wireguard-enabled",
+    "HTTP/HTTPS 다운로드에 사용",
+    "wireguard",
+    "앱 내부 WireGuard",
+    ["wireguard", "http proxy", "https proxy", "download only", "local tunnel", "enable", "disable"],
+  ),
+  e(
+    "app-wireguard-status",
+    "로컬 프록시 상태",
+    "wireguard",
+    "앱 내부 WireGuard",
+    ["wireguard", "local proxy", "running", "status", "handshake"],
+  ),
+  e(
     "network-port",
     "수신 포트",
     "network-advanced",
