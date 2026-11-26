@@ -32,7 +32,7 @@ check('empty state uses no raw hex', !/#[0-9a-fA-F]{3,8}\b/.test(emptyState));
 // 2. Star ticket and About
 const ticket = read('components/settings/StarTicket.tsx');
 const about = read('app/settings/about.tsx');
-check('REPO_URL is the Maglev repo', /export const REPO_URL = 'https:\/\/github\.com\/Kaos599\/Maglev'/.test(ticket));
+check('REPO_URL is the Maglev+ project repo', /export const REPO_URL = 'https:\/\/github\.com\/dragonslayers-k\/Maglev_forked'/.test(ticket));
 for (const t of ['FREE · NO ADS · OPEN SOURCE', 'Like Maglev? Give it a star', 'It takes a second on GitHub and helps others find the app.', 'STAR', 'Opens Maglev on GitHub']) {
   check(`ticket copy: ${t}`, ticket.includes(t));
 }
@@ -43,7 +43,7 @@ check('ticket burst respects reduce motion', /useReduceMotion/.test(ticket) && /
 check('ticket has no shadow or hex', !/shadow|elevation/.test(ticket) && !/#[0-9a-fA-F]{3,8}\b/.test(ticket));
 check('About renders the ticket', /<StarTicket \/>/.test(about));
 check('About has no License row', !/License/.test(about));
-check('About row says "Built by Kaos" with source subtitle', /title="Built by Kaos"/.test(about) && /subtitle="Source code on GitHub"/.test(about) && /icon="github"/.test(about) && !/Made with love/.test(about));
+check('About identifies the Maglev+ integrated community build', about.includes('title="Maglev+ 통합 다운로드 앱"') && about.includes('subtitle="Maglev 기반 · 공개 추출기와 다운로드 엔진을 통합한 커뮤니티 빌드"') && /icon="github"/.test(about) && !/Made with love/.test(about));
 
 // 3. Settings "More below"
 const settings = read('app/(tabs)/settings.tsx');
