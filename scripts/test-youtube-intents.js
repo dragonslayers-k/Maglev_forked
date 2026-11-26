@@ -64,6 +64,7 @@ async function main() {
   assert.match(nativeModule, /formatId: String, playerClient: String/, 'native bridge must carry the selected extractor client');
   assert.ok(youtubeAdapter.includes('ytdlp.init(app)') && youtubeAdapter.includes('field.set(ytdlp, File(app.applicationInfo.nativeLibraryDir))'), 'initialize bundled yt-dlp and reset the wrapper ffmpeg path without downloading updates');
   assert.ok(youtubeAdapter.includes('groupBy { it["formatId"].toString() }'), 'duplicate format IDs from different player clients must collapse to one row');
+  assert.ok(!youtubeAdapter.includes('.take(8)') && !youtubeAdapter.includes('.take(5)'), 'format inventory must not silently hide available video qualities or audio bitrates');
   assert.ok(youtubeAdapter.includes('formatId.startsWith("bestaudio")'), 'yt-dlp fallback still recognizes its bestaudio selector');
   assert.ok(youtubeAdapter.includes('availableFormats.filter'), 'audio fallback selects an actual audio-only format from the extractor metadata');
   assert.ok(youtubeAdapter.includes('maxAudioKbps') && youtubeAdapter.includes('audioFormats.filter { it.abr <= maxAudioKbps }.maxByOrNull'), 'audio bitrate presets must enforce a strict ceiling and never silently exceed the selected source bitrate');
