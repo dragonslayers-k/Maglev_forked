@@ -48,7 +48,7 @@ export const glossary = {
 export const ACRONYMS = ['VPN', 'URL', 'RSS', 'SD', 'DHT', 'IP', 'ID', 'USB', 'UI', 'OK', 'API', 'VLC', 'HTTP', 'HTTPS', 'UPnP', 'DRM', 'HLS', 'DASH', 'MIME', 'MP4', 'M3U8'] as const;
 
 /** Capitalised words that may appear mid-sentence. */
-export const PROPER_WORDS = ['Maglev+', "Maglev+'s", 'Android', 'Transfers', 'Wi-Fi', 'Atom', 'Settings', 'Search', 'Feeds', 'Undo', 'Retry', 'Inter'] as const;
+export const PROPER_WORDS = ['Maglev', "Maglev's", 'Android', 'Transfers', 'Wi-Fi', 'Atom', 'Settings', 'Search', 'Feeds', 'Undo', 'Retry', 'Inter'] as const;
 
 const toName = (s: string | number) => String(s);
 
@@ -748,7 +748,7 @@ export const updateCopy = {
     ready: (version: string) => `Maglev+ ${version} is ready`,
   },
   notices: {
-    invalid: "This update didn't pass Maglev+'s checks, so it wasn't installed.",
+    invalid: "This update didn't pass Maglev+ checks, so it wasn't installed.",
     needsPermission: 'To install updates, allow Maglev+ to install apps.',
     restartWarning: 'Maglev+ restarts to finish. Downloads pick up where they left off.',
     downloadFailed: "Couldn't download the update. Try again.",
@@ -791,7 +791,7 @@ export const listsCopy = {
   /** Sentences shown under a row. */
   hints: {
     autoUpdateSubtitle: 'Ad block list, search sources and trackers, once a day.',
-    rejected: "The list didn't pass Maglev+'s checks, so it wasn't used.",
+    rejected: "The list didn't pass Maglev+ checks, so it wasn't used.",
     blocked: 'Your network settings block this download right now.',
   },
   providers: {
