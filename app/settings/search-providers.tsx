@@ -184,9 +184,9 @@ export default function SearchProvidersSettings() {
   const openPos = open ? prefs.enabled.indexOf(open.id) : -1;
 
   return (
-    <SettingsPage title="Search sources">
+    <SettingsPage title="검색 사이트">
       <Stack.Screen options={{ headerShown: false }} />
-      <Caption>Maglev asks every source you turn on at the same time. Open a source to set which one wins when two return the same torrent.</Caption>
+      <Caption>토렌트 검색에 사용할 사이트 목록입니다. 켜진 사이트에 동시에 검색하며, 같은 결과가 중복되면 사이트별 우선순위를 적용합니다. 분류 필터로 사이트를 좁히고, 사이트별 설정에서 주소·사용 범위·응답 여부를 확인할 수 있습니다.</Caption>
 
       {checkList.length > 0 ? (
         <View style={styles.section}>

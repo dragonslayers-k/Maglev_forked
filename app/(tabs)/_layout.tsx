@@ -163,7 +163,7 @@ export default function TabLayout() {
 
   // One Tabs.Screen per tab, rendered in the saved order (the bar follows child order). A tab that
   // is off, or the Assistant while Settings > Assistant is off, has href null and no button.
-  const shown = visibleTabs(prefs, { assistantEnabled: assistant.enabled });
+  const shown = visibleTabs(prefs, { assistantEnabled: false });
   const screens: Record<TabId, React.ReactElement> = {
     index: tab('index', '전송', 'tab-transfers', !shown.includes('index')),
     search: tab('search', '검색', 'tab-search', !shown.includes('search')),

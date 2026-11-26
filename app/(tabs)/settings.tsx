@@ -12,7 +12,6 @@ import { PixelIconName } from '../../components/PixelIcon';
 import { useSearchPrefs } from '../../utils/prefs/search';
 import { scheduleSummary, useSchedule } from '../../utils/prefs/schedule';
 import { feedAutomationSummary, useFeedAutomation } from '../../utils/prefs/feedAutomation';
-import { useAssistantPrefs } from '../../utils/prefs/assistantApp';
 import { useBrowserPrefs } from '../../utils/prefs/browser';
 import { Card, formatLimit, friendlyPath } from '../../components/settings/SettingsParts';
 import { spacing } from '../../constants/theme';
@@ -152,7 +151,6 @@ export default function SettingsIndex() {
   const [searchPrefs] = useSearchPrefs();
   const [schedule] = useSchedule();
   const [feedAuto] = useFeedAutomation();
-  const assistant = useAssistantPrefs();
   const watches = useWatches();
   const [browserPrefs] = useBrowserPrefs();
   const [linkPrefs] = useLinkDownloadPrefs();
@@ -191,7 +189,6 @@ export default function SettingsIndex() {
 
   const generalRows: RowSpec[] = [
     { icon: 'interface', title: '화면 모양', value: interfaceValue, route: 'interface' },
-    { icon: 'assistant', title: '도우미', value: assistant.enabled ? '실험 기능 · 켜짐' : '실험 기능 · 꺼짐', route: 'assistant' },
     { icon: 'bell', title: '알림', value: alerts, route: 'notifications' },
     { icon: 'upload', title: '백업 및 복원', value: '설정 및 토렌트', route: 'backup' },
   ];
@@ -211,7 +208,7 @@ export default function SettingsIndex() {
   ];
   const appRows: RowSpec[] = [
     { icon: 'about', title: '앱 정보', value: APP_VERSION, route: 'about' },
-    { icon: 'download', title: '목록 업데이트', value: '광고 차단·검색 사이트', route: 'updates' },
+    { icon: 'download', title: '목록 데이터 업데이트', value: '광고 차단·검색 사이트 목록', route: 'updates' },
   ];
 
   // "More below": a fade over the bottom edge until the end is near, and a pill that stays until the end has been reached once (or it is tapped).

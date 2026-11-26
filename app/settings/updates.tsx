@@ -58,9 +58,9 @@ export default function ListUpdatesSettings() {
   const line = (...parts: (string | null)[]) => parts.filter(Boolean).join('\n');
 
   return (
-    <SettingsPage title="목록 업데이트">
+    <SettingsPage title="목록 데이터 업데이트">
       <Stack.Screen options={{ headerShown: false }} />
-      <SectionHeader title="목록" />
+      <SectionHeader title="목록 데이터" />
       <Caption>광고 차단 목록과 검색 사이트·트래커 목록은 앱 APK 업데이트와 별도로 갱신됩니다.</Caption>
       <Card>
         <ListRow

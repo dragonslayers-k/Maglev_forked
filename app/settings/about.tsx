@@ -80,7 +80,7 @@ export default function AboutSettings() {
   };
 
   return (
-    <SettingsPage title="About">
+    <SettingsPage title="Maglev+ 정보">
       <Stack.Screen options={{ headerShown: false }} />
       <View style={s.brand}>
         <MaglevMark height={64} cruising tappable />
@@ -96,11 +96,11 @@ export default function AboutSettings() {
           onPress={() => setLogWarning(true)}
         />
         <ListRow
-          title="Built by Kaos"
-          subtitle="Source code on GitHub"
+          title="Maglev+ 통합 다운로드 앱"
+          subtitle="Maglev 기반 · 공개 추출기와 다운로드 엔진을 통합한 커뮤니티 빌드"
           icon="github"
           onPress={() => void Linking.openURL(REPO_URL)}
-          accessibilityHint="Opens the Maglev source code on GitHub"
+          accessibilityHint="Maglev+ 소스 저장소를 GitHub에서 엽니다"
         />
         <ListRow
           title={aboutExtrasCopy.licence.title}

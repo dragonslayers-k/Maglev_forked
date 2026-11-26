@@ -7,7 +7,7 @@ import { ThemeColors, radius, spacing, type } from '../../constants/theme';
 import { PressableScale } from '../ui';
 import { useReduceMotion } from '../motion';
 
-export const REPO_URL = 'https://github.com/Kaos599/Maglev';
+export const REPO_URL = 'https://github.com/dragonslayers-k/Maglev_forked';
 
 const starTicketCopy = {
   top: 'FREE · NO ADS · OPEN SOURCE',
