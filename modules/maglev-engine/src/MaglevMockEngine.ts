@@ -859,6 +859,9 @@ export class MaglevMockEngine implements MaglevEngineApi {
   public getYouTubeInfo(_url: string): Promise<EngineResult<YouTubeInfo>> {
     return Promise.resolve({ ok: false, code: 'UNSUPPORTED', message: 'YouTube extraction is available on Android only.' });
   }
+  public enterBrowserPictureInPicture(): Promise<EngineResult> {
+    return Promise.resolve({ ok: false, code: 'UNSUPPORTED', message: 'Picture-in-picture is available on Android only.' });
+  }
   public addYouTubeDownload(_url: string, _formatId: string): Promise<EngineResult<{ id: string }>> {
     return Promise.resolve({ ok: false, code: 'UNSUPPORTED', message: 'YouTube downloads are available on Android only.' });
   }

@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Clipboard from 'expo-clipboard';
 import {
   clearCookies,
+  maglevEngine,
   nameFromUrl,
   type BrowserDownloadRequestEvent,
   type BrowserLongPressEvent,
@@ -732,6 +733,16 @@ export default function BrowserScreen({ inTab = false }: { inTab?: boolean }) {
     setMenuOpen(false);
   };
 
+  const enterPictureInPicture = useCallback(async () => {
+    setMenuOpen(false);
+    const result = await maglevEngine.enterBrowserPictureInPicture();
+    if (result.ok) {
+      showNotice({ message: '화면 속 화면 모드로 전환했습니다.' }, 2500);
+    } else {
+      showNotice({ message: 'PiP를 시작하지 못했습니다. Android 8.0 이상에서 동영상 재생 중 다시 시도하세요.' }, 4000);
+    }
+  }, [showNotice]);
+
   return (
     <SafeAreaView style={styles.root} edges={inTab ? ['top', 'left', 'right'] : ['top', 'left', 'right', 'bottom']}>
       {findOpen ? (
@@ -1068,7 +1079,12 @@ export default function BrowserScreen({ inTab = false }: { inTab?: boolean }) {
             if (url) router.push({ pathname: '/youtube-download', params: { url } });
           }}
         />
-        <BookmarkToggle url={page?.url ?? tab?.url ?? ''} title={page?.title ?? tab?.title ?? ''} onDone={() => setMenuOpen(false)} />
+
+        <ListRow
+          title="화면 속 화면(PiP)"
+          subtitle="동영상을 작은 창으로 계속 재생"
+          onPress={() => void enterPictureInPicture()}
+        />        <BookmarkToggle url={page?.url ?? tab?.url ?? ''} title={page?.title ?? tab?.title ?? ''} onDone={() => setMenuOpen(false)} />
         {/^https?:\/\//i.test(page?.url ?? '') ? (
           <ListRow
             icon="trash"

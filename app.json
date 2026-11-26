@@ -202,7 +202,8 @@
       "./plugins/withBackupRules.js",
       "./plugins/withCleartextLan.js",
       "./plugins/withReleaseSigning.js",
-      "./plugins/withSelfUpdate.js"
+      "./plugins/withSelfUpdate.js",
+      "./plugins/withPictureInPicture"
     ],
     "experiments": {
       "typedRoutes": true

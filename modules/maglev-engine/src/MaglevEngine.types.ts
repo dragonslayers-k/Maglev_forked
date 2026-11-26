@@ -921,6 +921,8 @@ export interface MaglevEngineApi {
   getYouTubeInfo(url: string): Promise<EngineResult<YouTubeInfo>>;
   /** Adds a selected YouTube format. Optional audio bitrate is a ceiling for separate adaptive audio tracks. */
   addYouTubeDownload(url: string, formatId: string, playerClient: string, formatKind: 'video' | 'audio', audioBitrateKbps?: number | null, outputContainer?: string): Promise<EngineResult<{ id: string }>>;
+  /** Requests Android's system picture-in-picture mode for the currently playing browser video. */
+  enterBrowserPictureInPicture(): Promise<EngineResult>;
   /** App-local WireGuard profile status. This is not the Android system VPN state. */
   getAppWireGuardStatus(): Promise<EngineResult<{ enabled: boolean; hasProfile: boolean; running: boolean }>>;
   /** Imports and validates a WireGuard .conf document; private key is stored encrypted at rest. */
