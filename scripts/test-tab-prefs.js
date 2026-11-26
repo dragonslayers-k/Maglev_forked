@@ -63,7 +63,7 @@ const iface = read('app/settings/interface.tsx');
 const section = read('components/tabs/TabsSection.tsx');
 check('layout reads the tab prefs', /useTabPrefs\(\)/.test(layout) && /visibleTabs\(/.test(layout));
 check('layout renders Tabs.Screen from the saved order', /prefs\.order\.map|order\.map/.test(layout));
-check('layout still asks the assistant setting', /useAssistantPrefs\(\)/.test(layout) && /assistant\.enabled/.test(layout));
+check('layout no longer imports Assistant tab preferences', !/useAssistantPrefs\(\)/.test(layout) && !/unseenReply/.test(layout));
 check('layout declares the browser tab with its animated globe', /tab\('browse', '(?:Browser|브라우저)', 'tab-browse'/.test(layout));
 check('layout falls back to Transfers when the open tab is hidden', /go\('index'\)/.test(layout));
 check('layout draws non-glyph icons with PixelIcon', /PixelIcon/.test(layout) && /TAB_GLYPHS/.test(layout));
