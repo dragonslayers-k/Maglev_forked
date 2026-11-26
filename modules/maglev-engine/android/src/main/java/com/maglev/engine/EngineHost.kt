@@ -2262,7 +2262,7 @@ object EngineHost {
                         val source = File(folder, sourceName)
                         val output = File(folder, outputName)
                         val error = if (!source.exists() && output.isFile && output.length() > 0L) null
-                            else MediaContainerConverter.convert(source, output, kind, targetExt)
+                            else MediaContainerConverter.convert(source, output, kind, targetExt, (spec["audioBitrateKbps"] as? Number)?.toInt())
                         if (cancelledPostProcessing.remove(id)) {
                             output.delete()
                             formatPrefs(c).edit().remove(postProcessKey(id)).remove(outputNameKey(id)).remove(outputFolderKey(id)).apply()

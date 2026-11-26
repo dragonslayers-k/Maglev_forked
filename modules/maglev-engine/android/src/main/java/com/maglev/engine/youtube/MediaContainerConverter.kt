@@ -21,7 +21,7 @@ internal object MediaContainerConverter {
         else -> selected.lowercase()
     }
 
-    fun convert(source: File, output: File, kind: String, targetExt: String): String? {
+    fun convert(source: File, output: File, kind: String, targetExt: String, audioBitrateKbps: Int? = null): String? {
         val ext = targetExt.lowercase()
         if (!source.isFile || source.length() <= 0L) return "원본 다운로드 파일이 없습니다."
         if (output.absolutePath == source.absolutePath) return "원본 파일과 출력 파일 경로가 같습니다."
@@ -32,7 +32,7 @@ internal object MediaContainerConverter {
         val temp = File(parent, output.name + ".maglev-convert.tmp")
         if (temp.exists() && !temp.delete()) return "이전 변환 임시 파일을 정리할 수 없습니다."
 
-        val commands = if (kind == "audio") audioCommands(source, temp, ext) else videoCommands(source, temp, ext)
+        val commands = if (kind == "audio") audioCommands(source, temp, ext, audioBitrateKbps) else videoCommands(source, temp, ext, audioBitrateKbps)
         var lastError = "FFmpeg 변환에 실패했습니다."
         for (command in commands) {
             val session = try {
@@ -59,22 +59,22 @@ internal object MediaContainerConverter {
         return lastError
     }
 
-    private fun audioCommands(input: File, output: File, ext: String): List<String> {
+    private fun audioCommands(input: File, output: File, ext: String, audioBitrateKbps: Int?): List<String> {
         val (codec, format, extra) = when (ext) {
-            "mp3" -> Triple("libmp3lame", "mp3", "-q:a 2")
-            "m4a" -> Triple("aac", "ipod", "-b:a 192k")
-            "aac" -> Triple("aac", "adts", "-b:a 192k")
+            "mp3" -> Triple("libmp3lame", "mp3", audioBitrateKbps?.takeIf { it > 0 }?.coerceIn(32, 320)?.let { "-b:a ${it}k" } ?: "-q:a 2")
+            "m4a" -> Triple("aac", "ipod", audioBitrateKbps?.takeIf { it > 0 }?.coerceIn(32, 512)?.let { "-b:a ${it}k" } ?: "-b:a 192k")
+            "aac" -> Triple("aac", "adts", audioBitrateKbps?.takeIf { it > 0 }?.coerceIn(32, 512)?.let { "-b:a ${it}k" } ?: "-b:a 192k")
             "alac" -> Triple("alac", "ipod", "")
             "flac" -> Triple("flac", "flac", "")
-            "opus" -> Triple("libopus", "opus", "-b:a 160k")
+            "opus" -> Triple("libopus", "opus", audioBitrateKbps?.takeIf { it > 0 }?.coerceIn(32, 512)?.let { "-b:a ${it}k" } ?: "-b:a 160k")
             "wav" -> Triple("pcm_s16le", "wav", "")
-            "vorbis" -> Triple("libvorbis", "ogg", "-q:a 5")
+            "vorbis" -> Triple("libvorbis", "ogg", audioBitrateKbps?.takeIf { it > 0 }?.coerceIn(32, 512)?.let { "-b:a ${it}k" } ?: "-q:a 5")
             else -> return emptyList()
         }
         return listOf(command(input, output, "-map 0:a:0 -vn -c:a $codec $extra -f $format"))
     }
 
-    private fun videoCommands(input: File, output: File, ext: String): List<String> {
+    private fun videoCommands(input: File, output: File, ext: String, audioBitrateKbps: Int?): List<String> {
         if (ext == "gif") {
             return listOf(command(input, output, "-map 0:v:0 -vf 'fps=15,scale=480:-1:flags=lanczos' -an -loop 0 -f gif"))
         }
@@ -88,11 +88,12 @@ internal object MediaContainerConverter {
             else -> return emptyList()
         }
         val remux = command(input, output, "-map 0:v:0 -map 0:a:0? -c copy -f $muxer")
+        val audioRate = audioBitrateKbps?.takeIf { it > 0 }?.coerceIn(32, 512) ?: if (ext == "webm") 128 else 160
         val encode = when (ext) {
-            "mp4", "mov", "mkv" -> command(input, output, "-map 0:v:0 -map 0:a:0? -c:v libx264 -preset ultrafast -crf 23 -c:a aac -b:a 160k -f $muxer")
-            "webm" -> command(input, output, "-map 0:v:0 -map 0:a:0? -c:v libvpx-vp9 -crf 30 -b:v 0 -c:a libopus -b:a 128k -f webm")
-            "avi" -> command(input, output, "-map 0:v:0 -map 0:a:0? -c:v mpeg4 -q:v 4 -c:a libmp3lame -q:a 3 -f avi")
-            "flv" -> command(input, output, "-map 0:v:0 -map 0:a:0? -c:v flv -c:a libmp3lame -q:a 4 -f flv")
+            "mp4", "mov", "mkv" -> command(input, output, "-map 0:v:0 -map 0:a:0? -c:v libx264 -preset ultrafast -crf 23 -c:a aac -b:a ${audioRate}k -f $muxer")
+            "webm" -> command(input, output, "-map 0:v:0 -map 0:a:0? -c:v libvpx-vp9 -crf 30 -b:v 0 -c:a libopus -b:a ${audioRate}k -f webm")
+            "avi" -> command(input, output, "-map 0:v:0 -map 0:a:0? -c:v mpeg4 -q:v 4 -c:a libmp3lame -b:a ${audioRate}k -f avi")
+            "flv" -> command(input, output, "-map 0:v:0 -map 0:a:0? -c:v flv -c:a libmp3lame -b:a ${audioRate}k -f flv")
             else -> remux
         }
         return listOf(remux, encode)

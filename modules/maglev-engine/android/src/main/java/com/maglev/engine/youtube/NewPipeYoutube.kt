@@ -170,7 +170,7 @@ object NewPipeYoutube {
                 // Native Range transfer uses four bounded parts after a 206/validator probe.
                 "segments" to 4,
             )
-            addPostProcess(options, "audio", sourceExt, targetExt, outputName, needsPostProcess)
+            addPostProcess(options, "audio", sourceExt, targetExt, outputName, needsPostProcess, audioBitrateKbps)
             return EngineHost.addDownload(stream.content, options)
         }
 
@@ -216,7 +216,7 @@ object NewPipeYoutube {
             val needsPostProcess = outputContainer != "original" && outputExt != sourceExt
             val outputName = if (needsPostProcess) uniqueOutputName(context, baseName, outputExt, sourceName) else sourceName
             val options = linkedMapOf<String, Any?>("name" to sourceName, "headers" to headers, "pageUrl" to url, "stream" to selection)
-            addPostProcess(options, "video", sourceExt, targetExt, outputName, needsPostProcess)
+            addPostProcess(options, "video", sourceExt, targetExt, outputName, needsPostProcess, audioBitrateKbps)
             return EngineHost.addDownload(dash, options)
         }
 
@@ -232,12 +232,16 @@ object NewPipeYoutube {
         val needsPostProcess = outputContainer != "original" && outputExt != sourceExt
         val outputName = if (needsPostProcess) uniqueOutputName(context, baseName, outputExt, sourceName) else sourceName
         val options = linkedMapOf<String, Any?>("name" to sourceName, "headers" to mapOf("User-Agent" to USER_AGENT, "Referer" to url), "pageUrl" to url)
-        addPostProcess(options, "video", sourceExt, targetExt, outputName, needsPostProcess)
+        addPostProcess(options, "video", sourceExt, targetExt, outputName, needsPostProcess, audioBitrateKbps)
         return EngineHost.addDownload(progressive.content, options)
     }
 
-    private fun addPostProcess(options: MutableMap<String, Any?>, kind: String, sourceExt: String, targetExt: String, outputName: String, enabled: Boolean) {
-        if (enabled) options["postprocess"] = linkedMapOf("kind" to kind, "sourceExt" to sourceExt, "targetExt" to targetExt, "outputName" to outputName)
+    private fun addPostProcess(options: MutableMap<String, Any?>, kind: String, sourceExt: String, targetExt: String, outputName: String, enabled: Boolean, audioBitrateKbps: Double? = null) {
+        if (enabled) options["postprocess"] = linkedMapOf(
+            "kind" to kind, "sourceExt" to sourceExt, "targetExt" to targetExt,
+            "outputName" to outputName,
+            "audioBitrateKbps" to audioBitrateKbps?.takeIf { it.isFinite() && it > 0 }?.toInt(),
+        )
     }
 
     private fun uniqueOutputName(context: Context, baseName: String, extension: String, sourceName: String): String {

@@ -321,6 +321,7 @@ object YoutubeDownload {
                 "sourceExt" to sourceExt,
                 "targetExt" to targetExt,
                 "outputName" to outputName,
+                "audioBitrateKbps" to audioBitrateKbps?.takeIf { it.isFinite() && it > 0 }?.toInt(),
             )
 
             if (streamUrl != null) {
