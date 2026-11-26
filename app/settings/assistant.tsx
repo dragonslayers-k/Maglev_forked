@@ -25,7 +25,7 @@ export default function AssistantSettings() {
             <Toggle
               value={p.enabled}
               onValueChange={(v) => assistantPrefs.update({ enabled: v })}
-              accessibilityLabel="Assistant"
+              accessibilityLabel="도우미"
             />
           }
         />

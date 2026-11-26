@@ -34,7 +34,7 @@ export function ProviderSection({ onExpireCards }: { onExpireCards?: () => void 
   const custom = preset.local;
 
   const sentLine = (id: string) =>
-    id === 'custom' ? 'Sent to the address you entered.' : `Your questions and the downloads you ask about are sent to ${providerName(id)}.`;
+    id === 'custom' ? '입력한 서버 주소로 질문과 관련 다운로드 정보가 전송됩니다.' : `질문과 관련 다운로드 정보가 ${providerName(id)}로 전송됩니다.`;
 
   if (state.kind === 'awaitingCode' || state.kind === 'exchanging') {
     return (
@@ -51,15 +51,15 @@ export function ProviderSection({ onExpireCards }: { onExpireCards?: () => void 
     return (
       <Card>
         <View style={s.body}>
-          <Text style={s.title}>{saved.local ? 'Your server' : saved.label}</Text>
+          <Text style={s.title}>{saved.local ? '내 서버' : saved.label}</Text>
           <Text style={s.mono} numberOfLines={1}>
             {modelDisplayName({ presetId: p.saved.preset, model: p.saved.model, modelName: p.saved.modelName })}
           </Text>
           <Caption>{sentLine(p.saved.preset)}</Caption>
           {p.error ? <Text style={s.error}>{p.error}</Text> : null}
           <View style={s.actions}>
-            <Button label="Remove key" variant="danger" onPress={p.removeKey} testID="assistant-remove-key" />
-            <Button label="Change" variant="secondary" onPress={p.startEdit} testID="assistant-change" />
+            <Button label="키 삭제" variant="danger" onPress={p.removeKey} testID="assistant-remove-key" />
+            <Button label="변경" variant="secondary" onPress={p.startEdit} testID="assistant-change" />
           </View>
         </View>
       </Card>
@@ -70,9 +70,9 @@ export function ProviderSection({ onExpireCards }: { onExpireCards?: () => void 
     return (
       <Card>
         <View style={s.body}>
-          <Text style={s.title}>Add a key to use the Assistant</Text>
+          <Text style={s.title}>도우미를 사용하려면 API 키를 추가하세요</Text>
           <OpenRouterSignInButton onPress={p.signIn} />
-          <Button label="Use another provider or paste a key" variant="ghost" onPress={p.startEdit} fullWidth testID="assistant-paste-key" />
+          <Button label="다른 제공자 선택 또는 API 키 입력" variant="ghost" onPress={p.startEdit} fullWidth testID="assistant-paste-key" />
         </View>
       </Card>
     );
@@ -86,7 +86,7 @@ export function ProviderSection({ onExpireCards }: { onExpireCards?: () => void 
         {state.kind === 'invalid' ? <Banner tone="danger" title={state.reason} /> : null}
         <OpenRouterSignInButton onPress={p.signIn} primary={state.kind === 'invalid' || form.preset === 'openrouter'} />
         {state.kind === 'invalid' && state.key === undefined ? (
-          <Button label="Fix settings" variant="ghost" onPress={p.startEdit} fullWidth testID="assistant-fix" />
+          <Button label="설정 수정" variant="ghost" onPress={p.startEdit} fullWidth testID="assistant-fix" />
         ) : (
           <>
             <ProviderPicker presets={p.presets} value={form.preset} onChange={testing ? () => {} : p.pickPreset} />
@@ -98,7 +98,7 @@ export function ProviderSection({ onExpireCards }: { onExpireCards?: () => void 
                 editable={!testing}
                 keyboardType="url"
                 placeholder="http://192.168.1.20:11434/v1"
-                caption="The address of the computer running the server. http works on your home network."
+                caption="서버를 실행 중인 컴퓨터의 주소입니다. 집 안 네트워크에서는 http도 사용할 수 있습니다."
                 testID="assistant-address"
               />
             ) : null}

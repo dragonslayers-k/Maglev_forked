@@ -8,8 +8,8 @@ export function ExperimentalTag() {
   const { colors } = useTheme();
   const s = useMemo(() => makeStyles(colors), [colors]);
   return (
-    <View style={s.tag} accessible accessibilityLabel="Experimental">
-      <Text style={s.text}>Experimental</Text>
+    <View style={s.tag} accessible accessibilityLabel="실험 기능">
+      <Text style={s.text}>실험 기능</Text>
     </View>
   );
 }

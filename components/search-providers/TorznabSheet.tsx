@@ -74,18 +74,18 @@ export function TorznabSheet({
   );
 
   return (
-    <Sheet visible={visible} onClose={onClose} title="Connect an indexer" subtitle="Jackett or Prowlarr, on your network or hosted.">
-      {field('Name', name, setName, { returnKeyType: 'next' }, 'My Jackett')}
-      {field('Address', url, setUrl, { keyboardType: 'url', returnKeyType: 'next', error: url.length > 0 && !validUrl(cleanUrl) ? 'The address must start with http:// or https://' : undefined }, 'http://192.168.1.20:9117/api/v2.0/indexers/all/results/torznab')}
-      {field('API key', apiKey, setApiKey, { secureTextEntry: true, returnKeyType: 'done', onSubmitEditing: submit }, 'Paste from your server')}
+    <Sheet visible={visible} onClose={onClose} title="검색 서버 연결" subtitle="같은 네트워크 또는 외부 서버의 Jackett·Prowlarr를 연결합니다.">
+      {field('이름', name, setName, { returnKeyType: 'next' }, 'Jackett 서버')}
+      {field('주소', url, setUrl, { keyboardType: 'url', returnKeyType: 'next', error: url.length > 0 && !validUrl(cleanUrl) ? '주소는 http:// 또는 https://로 시작해야 합니다.' : undefined }, 'http://192.168.1.20:9117/api/v2.0/indexers/all/results/torznab')}
+      {field('API 키', apiKey, setApiKey, { secureTextEntry: true, returnKeyType: 'done', onSubmitEditing: submit }, '서버에서 복사한 API 키를 입력하세요')}
       {error ? (
         <Text style={styles.error} accessibilityLiveRegion="polite">
           {error}
         </Text>
       ) : null}
       <View style={styles.actions}>
-        <Button label="Cancel" variant="ghost" onPress={onClose} />
-        <Button label="Add" onPress={submit} disabled={!ready} loading={busy} />
+        <Button label="취소" variant="ghost" onPress={onClose} />
+        <Button label="추가" onPress={submit} disabled={!ready} loading={busy} />
       </View>
     </Sheet>
   );

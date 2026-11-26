@@ -226,7 +226,7 @@ export default function SearchProvidersSettings() {
             <ListRow
               icon="trash"
               title="사이트 확인 기록 지우기"
-              subtitle={`Forget the checks you passed on ${prefs.clearances.length} ${prefs.clearances.length === 1 ? 'site' : 'sites'}. You'll be asked again.`}
+              subtitle={`지운 사이트 확인 기록 ${prefs.clearances.length}개를 다시 확인해야 합니다.`}
               onPress={() => {
                 const hosts = clearSiteChecks();
                 void clearCookies(hosts.map((h) => `https://${h.host}/`));
@@ -247,34 +247,34 @@ export default function SearchProvidersSettings() {
           />
           <ChipGroup label="사이트별 결과 수" options={LIMITS} value={prefs.limit} onChange={(limit) => update({ limit })} />
           <ListRow
-            title="Hide dead torrents"
-            subtitle="Results no one is sharing"
-            accessory={<Toggle value={prefs.hideDead} onValueChange={(hideDead) => update({ hideDead })} accessibilityLabel="Hide dead torrents" />}
+            title="시더 없는 토렌트 숨기기"
+            subtitle="공유 중인 사용자가 없는 결과를 숨깁니다."
+            accessory={<Toggle value={prefs.hideDead} onValueChange={(hideDead) => update({ hideDead })} accessibilityLabel="시더 없는 토렌트 숨기기" />}
           />
           <ListRow
-            title="Trusted uploaders only"
-            subtitle="Hide Pirate Bay uploads from ordinary members"
-            accessory={<Toggle value={prefs.trustedUploadersOnly} onValueChange={(trustedUploadersOnly) => update({ trustedUploadersOnly })} accessibilityLabel="Trusted uploaders only" />}
+            title="신뢰된 업로더만 표시"
+            subtitle="Pirate Bay의 일반 회원 업로드를 숨깁니다."
+            accessory={<Toggle value={prefs.trustedUploadersOnly} onValueChange={(trustedUploadersOnly) => update({ trustedUploadersOnly })} accessibilityLabel="신뢰된 업로더만 표시" />}
           />
         </Card>
       </View>
 
       <View style={styles.section}>
-        <SectionHeader title="Results" />
+        <SectionHeader title="결과" />
         <Card>
           <ChipGroup
-            label="Result name lines"
+            label="결과 이름 줄 수"
             options={RESULT_NAME_LINES}
             value={prefs.resultNameLines}
             onChange={(resultNameLines) => update({ resultNameLines })}
           />
         </Card>
-        <Caption>How many lines a long result name can use in Search.</Caption>
+        <Caption>검색 결과의 긴 제목을 몇 줄까지 표시할지 설정합니다.</Caption>
       </View>
 
       <View style={styles.section}>
-        <SectionHeader title="Show sources for" />
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow} accessibilityRole="radiogroup" accessibilityLabel="Show sources for">
+        <SectionHeader title="검색 사이트 범위" />
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow} accessibilityRole="radiogroup" accessibilityLabel="검색 사이트 범위">
           {CATEGORY_ORDER.filter((c) => c !== 'adult' || prefs.adult).map((c) => (
             <Chip key={c} label={CATEGORY_LABEL[c]} role="radio" selected={category === c} onPress={() => setCategory(c)} />
           ))}
@@ -282,9 +282,9 @@ export default function SearchProvidersSettings() {
       </View>
 
       <View style={styles.section}>
-        <SectionHeader title={`On · ${onList.length + checkList.length}`} />
+        <SectionHeader title={`사용 중 · ${onList.length + checkList.length}`} />
         <Card>
-          {onList.length === 0 ? <Text style={styles.empty}>Nothing is on. Turn on a source below.</Text> : shownOn.length === 0 ? <Text style={styles.empty}>No source that's on covers {CATEGORY_LABEL[category]}.</Text> : null}
+          {onList.length === 0 ? <Text style={styles.empty}>활성화된 검색 사이트가 없습니다. 아래에서 사이트를 켜세요.</Text> : shownOn.length === 0 ? <Text style={styles.empty}>현재 분류를 지원하는 활성 검색 사이트가 없습니다.</Text> : null}
           {shownOn.map((p, i) => {
             const n = note(p);
             return (
