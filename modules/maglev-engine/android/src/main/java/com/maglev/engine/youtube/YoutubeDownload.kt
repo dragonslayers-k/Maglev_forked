@@ -9,6 +9,7 @@ import com.maglev.engine.browser.YouTubeUrl
 import com.maglev.engine.service.BackgroundStart
 import com.maglev.engine.service.MaglevTorrentService
 import com.maglev.engine.share.QuickShareAdd
+import com.maglev.engine.storage.StorageManager
 import com.maglev.engine.util.Json
 import com.yausername.youtubedl_android.YoutubeDL
 import com.yausername.youtubedl_android.YoutubeDLRequest
@@ -207,7 +208,7 @@ object YoutubeDownload {
         }
     }
 
-    fun add(context: Context, rawUrl: String, formatId: String, playerClient: String, audioBitrateKbps: Double? = null): Map<String, Any?> {
+    fun add(context: Context, rawUrl: String, formatId: String, playerClient: String, formatKind: String, audioBitrateKbps: Double? = null, outputContainer: String = "original"): Map<String, Any?> {
         val link = YouTubeUrl.parse(rawUrl)
         val sourceUrl = link?.canonicalUrl ?: httpMediaUrl(rawUrl)
             ?: return Json.failure("INVALID_SOURCE", "HTTP(S) 웹페이지 주소를 입력하세요.")
@@ -215,12 +216,17 @@ object YoutubeDownload {
         if (!formatIdPattern.matches(formatId) || !validClient) {
             return Json.failure("INVALID_ARGUMENT", "선택한 형식이 올바르지 않습니다.")
         }
+        val outputKind = if (formatKind == "audio" || formatId.startsWith("bestaudio")) "audio" else "video"
+        val allowedContainers = if (outputKind == "audio") MediaContainerConverter.AUDIO_CONTAINERS else MediaContainerConverter.VIDEO_CONTAINERS
+        if (formatKind !in setOf("audio", "video") || (outputContainer != "original" && outputContainer !in allowedContainers)) {
+            return Json.failure("INVALID_ARGUMENT", "선택한 출력 컨테이너가 올바르지 않습니다.")
+        }
         if (link != null && playerClient == "newpipe") {
             return try {
                 val app = context.applicationContext
                 if (!QuickShareAdd.startEngine(app)) return Json.failure("ENGINE_UNAVAILABLE", "다운로드 엔진을 시작하지 못했습니다.")
                 BackgroundStart.start(app, MaglevTorrentService.ACTION_START)
-                NewPipeYoutube.add(app, sourceUrl, formatId, audioBitrateKbps)
+                NewPipeYoutube.add(app, sourceUrl, formatId, audioBitrateKbps, outputContainer)
                     ?: Json.failure("INVALID_ARGUMENT", "선택한 NewPipe 형식을 처리하지 못했습니다.")
             } catch (e: Exception) {
                 Json.failure("YOUTUBE_DOWNLOAD_FAILED", "YouTube 다운로드를 시작하지 못했습니다. " + safeDiagnostic(e))
@@ -230,7 +236,7 @@ object YoutubeDownload {
             val app = context.applicationContext
             prepareYtDlp(app)
             val selected = YoutubeDL.getInstance().getInfo(requestFor(sourceUrl, playerClient))
-            val audioOnly = formatId.startsWith("bestaudio")
+            val audioOnly = outputKind == "audio"
             val maxAudioKbps = formatId.removePrefix("bestaudio").removePrefix("_").toDoubleOrNull()
             val availableFormats = selected.formats.orEmpty()
             val audioFormats = availableFormats.filter { format ->
@@ -238,9 +244,10 @@ object YoutubeDownload {
                     (format.vcodec.isNullOrBlank() || format.vcodec == "none")
             }
             val requested = if (audioOnly) {
-                // A bitrate preset is a ceiling, not a target that may silently exceed itself.
-                // If no stream is at or below the ceiling, fail visibly instead of mislabeling.
-                if (maxAudioKbps != null) {
+                if (!formatId.startsWith("bestaudio")) {
+                    audioFormats.firstOrNull { it.formatId == formatId }
+                } else if (maxAudioKbps != null) {
+                    // A bitrate preset is a ceiling, never a target that may silently exceed itself.
                     audioFormats.filter { it.abr <= maxAudioKbps }.maxByOrNull { it.abr }
                 } else {
                     audioFormats.maxByOrNull { it.abr }
@@ -291,16 +298,28 @@ object YoutubeDownload {
                 return Json.failure("ENGINE_UNAVAILABLE", "다운로드 엔진을 시작하지 못했습니다.")
             }
             BackgroundStart.start(app, MaglevTorrentService.ACTION_START)
-            val ext = (requested?.ext ?: if (audioOnly) "m4a" else selected.ext ?: "mp4")
+            val sourceExt = (requested?.ext ?: if (audioOnly) "m4a" else selected.ext ?: "mp4")
                 .lowercase().filter { it.isLetterOrDigit() }.ifEmpty { if (audioOnly) "m4a" else "mp4" }
-            val name = safeName(selected.title ?: if (link != null) "YouTube video" else "Web video") + "." + ext
+            val baseName = safeName(selected.title ?: if (link != null) "YouTube video" else "Web video")
+            val targetExt = if (outputContainer == "original") sourceExt else outputContainer
+            val outputExt = MediaContainerConverter.outputExtension(outputKind, targetExt)
+            val sourceName = baseName + "." + sourceExt
+            val outputName = if (outputContainer == "original" || (outputExt == sourceExt && targetExt !in setOf("alac", "vorbis"))) sourceName
+                else uniqueOutputName(app, baseName, outputExt, sourceName)
+            val needsPostProcess = outputContainer != "original" && (outputExt != sourceExt || targetExt in setOf("alac", "vorbis"))
             val options = linkedMapOf<String, Any?>(
-                "name" to name,
+                "name" to sourceName,
                 "headers" to headers,
                 "pageUrl" to sourceUrl,
                 // Parallel Range transfer for direct audio/progressive files; DASH/HLS
                 // remains on the stream-specific mux path and does not use this option.
                 "segments" to if (streamUrl == null) 4 else 1,
+            )
+            if (needsPostProcess) options["postprocess"] = linkedMapOf(
+                "kind" to outputKind,
+                "sourceExt" to sourceExt,
+                "targetExt" to targetExt,
+                "outputName" to outputName,
             )
 
             if (streamUrl != null) {
@@ -409,6 +428,17 @@ object YoutubeDownload {
             "hasAudio" to hasAudio,
             "format" to f.formatNote,
         )
+    }
+
+    private fun uniqueOutputName(context: Context, baseName: String, extension: String, sourceName: String): String {
+        val folder = StorageManager.activeTarget(context).path
+        var candidate = "$baseName.$extension"
+        var index = 1
+        while (candidate == sourceName || File(folder, candidate).exists()) {
+            candidate = "$baseName ($index).$extension"
+            index++
+        }
+        return candidate
     }
 
     private fun safeName(raw: String): String = raw
