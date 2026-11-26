@@ -202,14 +202,13 @@ export default function YouTubeDownloadScreen() {
             <Text style={styles.muted}>원본 확장자로 화질 목록을 필터링하고, 아래 출력 컨테이너에서 실제 저장 형식을 선택합니다. 원본 유지가 기본값입니다.</Text>
             <Card>
               <ListRow icon="filter" title="원본 확장자 필터" subtitle={selectedVideoExt === 'all' ? `전체 · ${videos.length}개` : `${selectedVideoExt.toUpperCase()} · ${videos.filter((format) => format.ext.toLowerCase() === selectedVideoExt).length}개`} value="선택" disabled={busy} onPress={() => setVideoExtensionSheet(true)} />
-            </Card>/ScrollView>
+            </Card>
             <Card>
               <ListRow icon="download" title="출력 컨테이너" subtitle={videoContainer === "original" ? "원본 컨테이너 유지" : videoContainer.toUpperCase()} value="변경" disabled={busy} onPress={() => setVideoContainerSheet(true)} />
             </Card>
             <Card>
               <ListRow icon={selectedVideoFormat ? "check" : "download"} title={selectedVideoFormat ? formatTitle(selectedVideoFormat) : "화질 선택"} subtitle={selectedVideoFormat ? [formatSubtitle(selectedVideoFormat), formatSize(selectedVideoFormat)].join(' · ') : "사용 가능한 형식 없음"} value={selectedVideoFormat ? "변경" : "보기"} disabled={busy || visibleVideos.length === 0} onPress={() => setVideoFormatsSheet(true)} />
             </Card>
-    </Card>
             <Button fullWidth size="lg" disabled={busy || !visibleVideos.some((format) => formatKey(format) === selectedVideo)} loading={busy}
               label={busy ? "다운로드 추가 중…" : "선택한 동영상 다운로드"}
               onPress={() => { const chosen = visibleVideos.find((format) => formatKey(format) === selectedVideo); if (chosen) void start(chosen, selectedAudioBitrateKbps, videoContainer); }} />
@@ -225,14 +224,13 @@ export default function YouTubeDownloadScreen() {
             <Text style={styles.muted}>원본 확장자로 오디오 형식을 필터링하고, 아래에서 실제 출력 컨테이너를 선택합니다.</Text>
             <Card>
               <ListRow icon="filter" title="원본 확장자 필터" subtitle={selectedAudioExt === 'all' ? `전체 · ${audios.length}개` : `${selectedAudioExt.toUpperCase()} · ${audios.filter((format) => format.ext.toLowerCase() === selectedAudioExt).length}개`} value="선택" disabled={busy} onPress={() => setAudioExtensionSheet(true)} />
-            </Card>/ScrollView>
+            </Card>
             <Card>
               <ListRow icon="download" title="출력 컨테이너" subtitle={audioContainer === "original" ? "원본 컨테이너 유지" : audioContainer === "alac" ? "ALAC · M4A" : audioContainer === "vorbis" ? "VORBIS · OGG" : audioContainer.toUpperCase()} value="변경" disabled={busy} onPress={() => setAudioContainerSheet(true)} />
             </Card>
             <Card>
               <ListRow icon={selectedAudioFormat ? "check" : "download"} title={selectedAudioFormat ? formatTitle(selectedAudioFormat, audioChoices.indexOf(selectedAudioFormat) === 0) : "음질 선택"} subtitle={selectedAudioFormat ? [formatSubtitle(selectedAudioFormat), formatSize(selectedAudioFormat)].join(' · ') : "사용 가능한 형식 없음"} value={selectedAudioFormat ? "변경" : "보기"} disabled={busy || audioChoices.length === 0} onPress={() => setAudioFormatsSheet(true)} />
             </Card>
-    </Card>
             <Button fullWidth size="lg" disabled={busy || !((visibleAudios.length > 0 ? visibleAudios : selectedAudioExt === 'all' ? audioFallbacks : []).some((format) => formatKey(format) === selectedAudio))} loading={busy}
               label={busy ? "다운로드 추가 중…" : "선택한 오디오 다운로드"}
               onPress={() => { const chosen = audioChoices.find((format) => formatKey(format) === selectedAudio); if (chosen) void start(chosen, selectedAudioBitrateKbps, audioContainer); }} />
