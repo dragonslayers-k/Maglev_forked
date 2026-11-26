@@ -155,6 +155,10 @@ object NewPipeYoutube {
                 "name" to (safeName(info.name) + "." + ext),
                 "headers" to mapOf("User-Agent" to USER_AGENT, "Referer" to url),
                 "pageUrl" to url,
+                // YouTube audio URLs are often throttled on a single connection. The native
+                // engine only splits after a 206 Range probe and validator check; otherwise
+                // it safely falls back to one connection. Four parts are a bounded compromise.
+                "segments" to 4,
             ))
         }
 

@@ -112,7 +112,9 @@ export default function YouTubeDownloadScreen() {
   }, [url, busy, router]);
 
   const formats = info?.formats ?? [];
-  const uniqueFormats = Array.from(new Map(formats.map((format) => [format.formatId, format])).values());
+  // Keep provider identity in the key: yt-dlp and NewPipe can reuse IDs for different
+  // streams. Collapsing by formatId alone can silently discard the selected provider.
+  const uniqueFormats = Array.from(new Map(formats.map((format) => [formatKey(format), format])).values());
   const videos = uniqueFormats.filter((format) => format.kind === 'video')
     .sort((a, b) => b.height - a.height || b.tbr - a.tbr);
   const audios = uniqueFormats.filter((format) => format.kind === 'audio')
@@ -142,7 +144,7 @@ export default function YouTubeDownloadScreen() {
             <Text style={styles.heading}>동영상</Text>
             {videos.map((format) => (
               <Button key={formatKey(format)} fullWidth size="md" disabled={busy}
-                label={formatLabel(format)} onPress={() => void start(format)} />
+                label={index === 0 ? '추천 · ' + formatLabel(format) : formatLabel(format)} onPress={() => void start(format)} />
             ))}
             {videos.length === 0 ? <Text style={styles.muted}>다운로드 가능한 동영상 형식이 없습니다.</Text> : null}
             {isYouTube ? (
@@ -153,7 +155,7 @@ export default function YouTubeDownloadScreen() {
           </View>
           <View style={styles.section}>
             <Text style={styles.heading}>오디오</Text>
-            {(audios.length > 0 ? audios : audioFallbacks).map((format) => (
+            {(audios.length > 0 ? audios : audioFallbacks).map((format, index) => (
               <Button key={formatKey(format)} fullWidth size="md" variant="secondary" disabled={busy}
                 label={formatLabel(format)} onPress={() => void start(format)} />
             ))}
