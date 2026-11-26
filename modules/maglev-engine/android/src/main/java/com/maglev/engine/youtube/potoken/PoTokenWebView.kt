@@ -259,7 +259,7 @@ class PoTokenWebView private constructor(
             throw Exception("Invalid response code: $httpCode")
         } else {
             val body = withContext(Dispatchers.IO) {
-                response.body.string()
+                response.body?.string().orEmpty()
             }
             body
         }
