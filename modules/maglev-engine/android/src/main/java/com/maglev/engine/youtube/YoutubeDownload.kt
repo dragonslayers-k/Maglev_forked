@@ -207,7 +207,7 @@ object YoutubeDownload {
         }
     }
 
-    fun add(context: Context, rawUrl: String, formatId: String, playerClient: String): Map<String, Any?> {
+    fun add(context: Context, rawUrl: String, formatId: String, playerClient: String, audioBitrateKbps: Double? = null): Map<String, Any?> {
         val link = YouTubeUrl.parse(rawUrl)
         val sourceUrl = link?.canonicalUrl ?: httpMediaUrl(rawUrl)
             ?: return Json.failure("INVALID_SOURCE", "HTTP(S) 웹페이지 주소를 입력하세요.")
@@ -220,7 +220,7 @@ object YoutubeDownload {
                 val app = context.applicationContext
                 if (!QuickShareAdd.startEngine(app)) return Json.failure("ENGINE_UNAVAILABLE", "다운로드 엔진을 시작하지 못했습니다.")
                 BackgroundStart.start(app, MaglevTorrentService.ACTION_START)
-                NewPipeYoutube.add(app, sourceUrl, formatId)
+                NewPipeYoutube.add(app, sourceUrl, formatId, audioBitrateKbps)
                     ?: Json.failure("INVALID_ARGUMENT", "선택한 NewPipe 형식을 처리하지 못했습니다.")
             } catch (e: Exception) {
                 Json.failure("YOUTUBE_DOWNLOAD_FAILED", "YouTube 다운로드를 시작하지 못했습니다. " + safeDiagnostic(e))
@@ -322,11 +322,19 @@ object YoutubeDownload {
                 val variantId = variant["id"] as? String
                     ?: return Json.failure("YOUTUBE_STREAM_UNSUPPORTED", "스트림 품질 ID가 없습니다.")
                 val audioTracks = (probe["audioTracks"] as? List<*>)?.mapNotNull { it as? Map<*, *> }.orEmpty()
-                val audioId = audioTracks.firstOrNull()?.get("id") as? String
+                val targetAudioBps = audioBitrateKbps?.takeIf { it.isFinite() && it > 0 }?.times(1000.0)
+                val audioCandidates = if (targetAudioBps != null) {
+                    audioTracks.filter { ((it["bandwidth"] as? Number)?.toDouble() ?: 0.0) <= targetAudioBps }
+                } else audioTracks
+                val chosenAudio = audioCandidates.maxByOrNull { (it["bandwidth"] as? Number)?.toDouble() ?: 0.0 }
+                val audioId = chosenAudio?.get("id") as? String
                 val selection = linkedMapOf<String, Any?>("kind" to kind, "variantId" to variantId)
                 if ((variant["audio"] as? String) == "separate") {
                     if (audioId.isNullOrBlank()) {
-                        return Json.failure("YOUTUBE_STREAM_UNSUPPORTED", "분리 오디오 트랙을 확인하지 못했습니다.")
+                        return Json.failure(
+                            if (targetAudioBps != null) "YOUTUBE_AUDIO_BITRATE_UNAVAILABLE" else "YOUTUBE_STREAM_UNSUPPORTED",
+                            if (targetAudioBps != null) "선택한 음질 이하의 DASH 오디오 트랙이 없습니다." else "분리 오디오 트랙을 확인하지 못했습니다.",
+                        )
                     }
                     selection["audioId"] = audioId
                 }
