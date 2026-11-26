@@ -9,7 +9,7 @@ const rust = read('native/maglev-core/src/config.rs');
 const go = read('native/wireguard/engine.go');
 assert(!native.includes('VpnService'), 'native app-local WG bridge must not use Android VpnService');
 assert(store.includes('AndroidKeyStore') && store.includes('AES/GCM/NoPadding') && store.includes('getNoBackupFilesDir'), 'profile must be AES-GCM encrypted in no-backup app storage');
-assert(controller.includes('CLOSED_PROXY') && controller.includes('directly') || controller.includes('direct connection'), 'controller must install fail-closed proxy before starting tunnel');
+assert(controller.includes('CLOSED_PROXY') && controller.includes('direct HTTP'), 'controller must install fail-closed proxy before starting tunnel');
 assert(host.includes('WireGuardController.prepareDownload') && host.includes('setAppWireGuardProxy'), 'HTTP download entry must apply app-local proxy');
 assert(host.includes('APP_WIREGUARD_TORRENT_UNSUPPORTED'), 'torrent transfers must be blocked while HTTP-only WG mode is enabled');
 assert(rust.includes('authenticated app-local HTTP proxy') && rust.includes('127.0.0.1'), 'native engine must only accept authenticated loopback HTTP proxy');

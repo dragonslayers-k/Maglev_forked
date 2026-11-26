@@ -31,6 +31,11 @@ object WireGuardController {
         if (enabled) {
             if (!hasProfile(context)) return@synchronized Json.failure(
                 "APP_WIREGUARD_PROFILE_MISSING", "먼저 WireGuard .conf 프로필을 가져오세요.")
+            if (EngineHost.isEngineInitialized()) {
+                val paused = EngineHost.pauseTorrentsForAppWireGuard()
+                if (paused["ok"] != true) return@synchronized Json.failure(
+                    "APP_WIREGUARD_TORRENT_PAUSE_FAILED", "기존 토렌트 전송을 안전하게 멈추지 못해 WireGuard를 켜지 않았습니다.")
+            }
             context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putBoolean(ENABLED, true).apply()
             return@synchronized mapOf(
                 "ok" to true, "enabled" to true,
