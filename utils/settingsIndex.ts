@@ -34,14 +34,7 @@ const e = (
 
 export const SETTINGS_INDEX: SettingEntry[] = [
   // About
-  e(
-    "updates-version",
-    "App version",
-    "updates",
-    "업데이트",
-    ["version", "build", "release", "about"],
-    "앱",
-  ),
+,
   e(
     "about-report-bug",
     "Report a bug",
@@ -91,41 +84,9 @@ export const SETTINGS_INDEX: SettingEntry[] = [
   ),
 
   // Updates (new page)
-  e(
-    "updates-check",
-    "Check for updates",
-    "updates",
-    "업데이트",
-    ["update", "version", "new version", "upgrade", "latest"],
-    "앱",
-  ),
-  e(
-    "updates-mode",
-    "When an update is found",
-    "updates",
-    "업데이트",
-    [
-      "tell me",
-      "download on wi-fi, then ask",
-      "install automatically",
-      "auto",
-      "install",
-      "download",
-      "wifi",
-      "notify",
-      "ask",
-      "automatic",
-    ],
-    "앱",
-  ),
-  e(
-    "updates-auto-check",
-    "Check automatically",
-    "updates",
-    "업데이트",
-    ["daily", "schedule", "automatic", "background", "github"],
-    "앱",
-  ),
+,
+,
+,
   e(
     "updates-lists-auto",
     "Update lists automatically",
@@ -159,14 +120,7 @@ export const SETTINGS_INDEX: SettingEntry[] = [
     ["search", "providers", "trackers", "sources", "list", "torrent"],
     "Lists",
   ),
-  e(
-    "updates-highlights",
-    "Show new features after updates",
-    "updates",
-    "업데이트",
-    ["highlights", "what's new", "new features", "whats new", "release notes", "popup", "card", "after update"],
-    "앱",
-  ),
+,
 
   // Subtitles
   e(
