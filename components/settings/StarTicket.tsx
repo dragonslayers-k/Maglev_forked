@@ -24,8 +24,8 @@ const BURST_REACH = 34;
 /** Eight directions, in whole-pixel steps. */
 const DIRS: readonly [number, number][] = [[0, -1], [1, -1], [1, 0], [1, 1], [0, 1], [-1, 1], [-1, 0], [-1, -1]];
 
-/** 10x10 pixel star, drawn with Views: the brand fonts have no star glyph. */
-const STAR_ROWS = ['....##....', '....##....', '...####...', '##########', '.########.', '..######..', '..######..', '.###..###.', '.##....##.', '##......##'];
+/** Pixel information mark, drawn with Views so it works in every bundled font. */
+const STAR_ROWS = ['....##....', '....##....', '..........', '...####...', '...####...', '....##....', '....##....', '....##....', '....##....', '....##....'];
 const STAR_PX = 2.4;
 
 function PixelStar({ color }: { color: string }) {
