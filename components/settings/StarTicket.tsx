@@ -28,7 +28,7 @@ const DIRS: readonly [number, number][] = [[0, -1], [1, -1], [1, 0], [1, 1], [0,
 const STAR_ROWS = ['....##....', '....##....', '..........', '...####...', '...####...', '....##....', '....##....', '....##....', '....##....', '....##....'];
 const STAR_PX = 2.4;
 
-function PixelStar({ color }: { color: string }) {
+function PixelInfo({ color }: { color: string }) {
   return (
     <View style={{ width: STAR_PX * 10, height: STAR_PX * 10 }} accessible={false}>
       {STAR_ROWS.flatMap((row, y) =>
@@ -97,7 +97,7 @@ export function StarTicket() {
           ))}
         </View>
         <View style={s.stub}>
-          <PixelStar color={colors.onAccent} />
+          <PixelInfo color={colors.onAccent} />
           <Text style={s.stubLabel}>{starTicketCopy.stub}</Text>
         </View>
         <View style={[s.notch, s.notchLeft]} />
