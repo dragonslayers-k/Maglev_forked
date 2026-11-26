@@ -277,7 +277,7 @@ async function main() {
   const settings = read('app/(tabs)/settings.tsx');
   const appAt = settings.indexOf('const appRows');
   const about = settings.indexOf("title: '앱 정보'", appAt);
-  const updates = settings.indexOf("title: '업데이트'", appAt);
+  const updates = settings.indexOf("title: '목록 업데이트'", appAt);
   const map = settings.indexOf('appRows.map');
   const statsRow = settings.indexOf('<StatsRow />', map);
   check('앱 정보 행 다음 업데이트 행', appAt > 0 && about > appAt && updates > about);
