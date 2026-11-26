@@ -80,8 +80,16 @@ object NewPipeYoutube {
         val out = mutableListOf<Map<String, Any?>>()
         for ((height, candidates) in videos.groupBy { it.height }.toSortedMap(compareByDescending { it })) {
             val selected = candidates.maxByOrNull { it.bitrate } ?: continue
-            val combinedKbps = selected.bitrate / 1000.0 + bestAudioKbps
-            val bytes = duration?.let { (combinedKbps * 1000.0 / 8.0 * it).toLong().takeIf { size -> size > 0 } }
+            val videoKbps = selected.bitrate / 1000.0
+            val audioLength = audio.firstOrNull()?.itagItem?.contentLength ?: 0L
+            val selectedLength = selected.itagItem!!.contentLength
+            val exactBytes = when {
+                !selected.isVideoOnly && selectedLength > 0 -> selectedLength
+                selected.isVideoOnly && selectedLength > 0 && audioLength > 0 -> selectedLength + audioLength
+                else -> null
+            }
+            val combinedKbps = videoKbps + if (selected.isVideoOnly) bestAudioKbps else 0.0
+            val bytes = exactBytes ?: duration?.let { (combinedKbps * 1000.0 / 8.0 * it).toLong().takeIf { size -> size > 0 } }
             out += linkedMapOf(
                 "formatId" to ("npv" + height),
                 "playerClient" to "newpipe",
@@ -93,7 +101,7 @@ object NewPipeYoutube {
                 "tbr" to combinedKbps,
                 "abr" to 0,
                 "size" to bytes,
-                "sizeEstimated" to true,
+                "sizeEstimated" to (exactBytes == null),
                 "format" to ("DASH · " + selected.codec),
             )
         }
