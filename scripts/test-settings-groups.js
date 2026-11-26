@@ -40,7 +40,7 @@ for (const [g, [list, rows]] of Object.entries(expected)) {
   if (list) check(`${g} renders ${list}`, jsx[g].includes(`${list}.map`));
   for (const r of rows) {
     const where = list ? listOf(list) : listOf('downloadsRow') + listOf('speedRow') + listOf('scheduleRow');
-    const ok = r === 'Storage' ? /<StorageRow/.test(jsx[g]) : where.includes(`title: '${r}'`);
+    const ok = r === '저장 공간' ? /<StorageRow/.test(jsx[g]) : where.includes(`title: '${r}'`);
     check(`${r} is in ${g}`, ok);
   }
 }
