@@ -50,7 +50,7 @@ async function main() {
     check('전송은 추가 및 완료, 속도 및 공유, 저장 공간, 예약, 관심 항목 순서로 표시', p.every((x, i) => x >= 0 && (i === 0 || x > p[i - 1])));
   }
   check('Adding and finishing row opens settings/downloads', /title: '추가 및 완료'[^}]*route: 'downloads'/.test(listOf('downloadsRow')));
-  const icons = [...list.matchAll(/icon: '([a-z-]+)', title: 'Adding and finishing'/g)].map((m) => m[1]);
+  const icons = [...list.matchAll(/icon: '([a-z-]+)', title: '추가 및 완료'/g)].map((m) => m[1]);
   const gen = read('components/icons.generated.ts');
   check('Downloads row icon exists in the icon set', icons.length === 1 && gen.includes(`"${icons[0]}":`), icons.join());
   check('Speed row is titled Speed and sharing', /title: '속도 및 공유'.*route: 'speed'/.test(listOf('speedRow')));
