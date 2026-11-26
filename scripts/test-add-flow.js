@@ -41,7 +41,7 @@ check('Korean empty state copy mentions links and torrent files', /다운로드 
 // 0.15: Search and Browser are now always-shown tiles (required props), not optional quiet buttons.
 check('empty state offers Search and Browser tiles', /onSearch:/.test(empty) && /onBrowse:/.test(empty) && /title="Search"/.test(empty) && /title="Browser"/.test(empty));
 check('empty state tiles are wired to Search and Browser', /onPress=\{onSearch\}/.test(empty) && /onPress=\{onBrowse\}/.test(empty));
-check('clipboard prompt supports ordinary links and torrents', /clipboardUsesCard/.test(clipboard) && /https?:\\/\\//.test(clipboard) && /clipboardRoute/.test(clipboard) && /Download the copied link/.test(clipboard) && !/Magnet link in clipboard/.test(clipboard));
+check('clipboard prompt supports ordinary links and torrents', /clipboardUsesCard/.test(clipboard) && /https?:\/\//.test(clipboard) && /clipboardRoute/.test(clipboard) && /Download the copied link/.test(clipboard) && !/Magnet link in clipboard/.test(clipboard));
 check('clipboard chip can show the link host', /link\?:\s*string/.test(chip) && /new URL|host/i.test(chip));
 check('FAB label mentions link and torrent', /Add a link or torrent/.test(fab));
 
