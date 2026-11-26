@@ -1954,6 +1954,7 @@ object EngineHost {
 
     /** Per download: its last seen state, to find the edge to `finished`. Guarded by itself. */
     private val postProcessing = ConcurrentHashMap.newKeySet<String>()
+    private val cancelledPostProcessing = ConcurrentHashMap.newKeySet<String>()
     private const val FORMAT_POSTPROCESS_PREFIX = "youtube_postprocess_"
     private const val FORMAT_OUTPUT_NAME_PREFIX = "youtube_output_name_"
     private const val FORMAT_OUTPUT_FOLDER_PREFIX = "youtube_output_folder_"
@@ -2085,6 +2086,7 @@ object EngineHost {
     fun removeDownload(id: String, deleteFiles: Boolean): Map<String, Any?> {
         // The document this download's copy created, read before the marker goes. Delete file removes only it.
         val copyUri = if (deleteFiles) ctx?.let { StorageManager.copiedUri(it, DL_PREFIX + id) } else null
+        if (deleteFiles && postProcessing.contains(id)) cancelledPostProcessing.add(id)
         val res = call { NativeCore.nativeRemoveDownload(id, deleteFiles) }
         if (isOk(res)) {
             val key = DL_PREFIX + id
@@ -2146,15 +2148,20 @@ object EngineHost {
      */
     private fun downloadsAsTransfers(downloads: List<Map<String, Any?>>): List<Map<String, Any?>> =
         downloads.mapNotNull { d ->
+            val id = d["id"] as? String ?: return@mapNotNull null
+            val c = ctx
+            val processing = c != null && hasPendingPostProcess(c, id)
             val state = when (d["state"]) {
                 "downloading", "resolving", "verifying" -> "DOWNLOADING"
                 "queued" -> "QUEUED"
                 "paused" -> "PAUSED"
+                "finished" -> if (processing) "DOWNLOADING" else return@mapNotNull null
                 else -> return@mapNotNull null
             }
+            val name = if (c != null) formatOutputName(c, id, d["name"] as? String) else d["name"]
             linkedMapOf<String, Any?>(
                 "id" to null,
-                "name" to d["name"],
+                "name" to name,
                 "state" to state,
                 "paused_by" to d["paused_by"],
                 "progress_bytes" to Json.long(d["downloaded"]),
@@ -2191,6 +2198,11 @@ object EngineHost {
                         val output = File(folder, outputName)
                         val error = if (!source.exists() && output.isFile && output.length() > 0L) null
                             else MediaContainerConverter.convert(source, output, kind, targetExt)
+                        if (cancelledPostProcessing.remove(id)) {
+                            output.delete()
+                            formatPrefs(c).edit().remove(postProcessKey(id)).remove(outputNameKey(id)).remove(outputFolderKey(id)).apply()
+                            return@launch
+                        }
                         if (error == null) {
                             formatPrefs(c).edit()
                                 .putString(outputNameKey(id), outputName)
