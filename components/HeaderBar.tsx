@@ -89,9 +89,14 @@ export function HeaderBar({ actions, selection, cruising = false }: HeaderBarPro
   return (
     <View style={styles.bar}>
       <View style={styles.brand}>
-        <MaglevMark height={22} cruising={dash} tappable arrive />
+        <View style={styles.markBadgeWrap} accessibilityLabel="Maglev Plus">
+          <MaglevMark height={22} cruising={dash} tappable arrive />
+          <View style={styles.plusBadge} pointerEvents="none">
+            <Text style={styles.plusBadgeText}>+</Text>
+          </View>
+        </View>
         <Text style={styles.brandTitle} accessibilityRole="header">
-          MAGLEV
+          MAGLEV+
         </Text>
       </View>
       <View style={styles.actions}>{actions}</View>
@@ -112,6 +117,9 @@ const makeStyles = (c: ThemeColors) =>
     },
     // zIndex: the mark flies over the action buttons when tapped.
     brand: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingLeft: spacing.sm, zIndex: 1 },
+    markBadgeWrap: { position: 'relative', width: 22 * (107 / 44), height: 22, alignItems: 'center', justifyContent: 'center' },
+    plusBadge: { position: 'absolute', right: -2, top: -5, width: 12, height: 12, borderRadius: 6, backgroundColor: '#FFB000', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: c.bg },
+    plusBadgeText: { color: '#05070A', fontSize: 11, lineHeight: 12, fontWeight: '900', includeFontPadding: false },
     brandTitle: { ...type.brand, fontSize: type.size.base, color: c.text },
     actions: { flexDirection: 'row', alignItems: 'center' },
     selectedText: { ...type.bodyStrong, fontSize: type.size.xl, color: c.text, flex: 1, marginLeft: spacing.xs },
