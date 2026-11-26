@@ -66,7 +66,7 @@ async function main() {
   assert.ok(youtubeAdapter.includes('formatId.startsWith("bestaudio")'), 'yt-dlp fallback still recognizes its bestaudio selector');
   assert.ok(youtubeAdapter.includes('availableFormats.filter'), 'audio fallback selects an actual audio-only format from the extractor metadata');
   assert.ok(youtubeAdapter.includes('maxAudioKbps') && youtubeAdapter.includes('capped.ifEmpty { audioFormats }'), 'audio bitrate choices must select an available source bitrate without claiming to re-encode');
-  assert.ok(screen.includes('bestaudio_320') && screen.includes('bestaudio_256') && screen.includes('bestaudio_192') && screen.includes('bestaudio_128'), 'audio fallback must expose selectable source bitrate caps');
+
   assert.ok(youtubeAdapter.includes('NewPipeYoutube.get(app, sourceUrl)'), 'YouTube metadata uses the fast NewPipe extractor first');
   assert.ok(youtubeAdapter.includes('getQueryParameter("maglev_ytdlp") == "1"') && youtubeAdapter.includes('link != null && !forceYtDlp'), 'on-demand format refresh must bypass NewPipe and force yt-dlp');
   assert.ok(youtubeAdapter.includes('fastFormats.any { it["kind"] == "audio" }'), 'only return NewPipe primary formats when real audio choices exist');
@@ -89,6 +89,7 @@ async function main() {
   assert.ok(nativeModuleSource.includes('root.message ?: root.javaClass.simpleName'), 'native IO failures must not collapse to generic Engine call failed');
   assert.ok(nativeModuleSource.includes('Regex("""https?://[^\\s]+""", RegexOption.IGNORE_CASE)'), 'native diagnostics must redact complete URLs including query tokens');
   const screen = fs.readFileSync(path.join(root, 'app/youtube-download.tsx'), 'utf8');
+  assert.ok(screen.includes('bestaudio_320') && screen.includes('bestaudio_256') && screen.includes('bestaudio_192') && screen.includes('bestaudio_128'), 'audio fallback must expose selectable source bitrate caps');
   assert.ok(screen.includes('maglev_ytdlp=1') && screen.includes('추가 화질·오디오 형식 조회'), 'slow yt-dlp formats are fetched only on user request, after fast NewPipe results');
   assert.ok(youtubeAdapter.includes('if (hasVideo && !forceYtDlp) break'), 'explicit refresh aggregates multiple valid yt-dlp player clients');
   assert.ok(screen.includes('maglevEngine.getYouTubeInfo'), 'YouTube screen must use the existing native extractor');
