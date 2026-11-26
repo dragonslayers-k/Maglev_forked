@@ -90,6 +90,7 @@ async function main() {
   assert.ok(screen.includes('maglevEngine.addYouTubeDownload'), 'selected formats must enter the shared native transfer queue');
   assert.ok(screen.includes('format.playerClient'), 'the selected extractor client must be preserved');
   assert.ok(screen.includes("formatId: 'bestaudio'"), 'a bestaudio fallback remains available only when no real audio formats were extracted');
+  assert.ok(screen.includes("formatId: 'bestaudio', playerClient: 'android_vr'"), 'the placeholder bestaudio must route to yt-dlp, not NewPipe format-ID parsing');
   assert.ok(screen.includes('audios.length > 0 ? audios : [audioFallback]'), 'real audio bitrate/format choices replace the placeholder selector');
   assert.ok(screen.includes('오디오만 · 최고 음질'), 'audio-only fallback label is Korean');
   assert.ok(!screen.includes('ytdlpEngine.download'), 'screen must not create a second standalone download queue');
