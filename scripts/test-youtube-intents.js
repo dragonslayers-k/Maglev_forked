@@ -66,6 +66,7 @@ async function main() {
   assert.ok(youtubeAdapter.includes('formatId == "bestaudio"'), 'yt-dlp fallback still recognizes its bestaudio selector');
   assert.ok(youtubeAdapter.includes('availableFormats.filter'), 'audio fallback selects an actual audio-only format from the extractor metadata');
   assert.ok(youtubeAdapter.includes('NewPipeYoutube.get(app, sourceUrl)'), 'YouTube metadata uses the fast NewPipe extractor first');
+  assert.ok(youtubeAdapter.includes('fastFormats.any { it["kind"] == "audio" }'), 'only return NewPipe primary formats when real audio choices exist');
   assert.ok(youtubeAdapter.includes('NewPipeYoutube.add(app, sourceUrl, formatId)'), 'NewPipe format selection is handled by the native adapter');
   assert.ok(youtubeAdapter.includes('getDeclaredField("ffmpegPath")') && youtubeAdapter.includes('field.set(ytdlp, File(app.applicationInfo.nativeLibraryDir))'), 'reset the wrapper stale FFmpeg path after its unconditional append');
   assert.ok(youtubeAdapter.includes('YOUTUBE_AUDIO_FORMAT_UNRESOLVED'), 'audio-only must fail explicitly when yt-dlp did not resolve an audio-only requested format');
