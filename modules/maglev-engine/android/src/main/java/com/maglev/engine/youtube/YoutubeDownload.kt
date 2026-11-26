@@ -101,7 +101,7 @@ object YoutubeDownload {
         return try {
             val app = context.applicationContext
             if (link != null) {
-                val fastInfo = runCatching { NewPipeYoutube.get(sourceUrl) }.getOrNull()
+                val fastInfo = runCatching { NewPipeYoutube.get(app, sourceUrl) }.getOrNull()
                 if (fastInfo != null) {
                     val fastFormats = NewPipeYoutube.formats(fastInfo)
                     if (fastFormats.any { it["kind"] == "video" }) {
