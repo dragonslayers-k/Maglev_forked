@@ -108,6 +108,8 @@ export const notices = {
     linkCopied: '링크를 복사했습니다.',
     linkCopyFailed: '링크를 복사하지 못했습니다.',
     addedToTransfers: '다운로드 목록에 추가했습니다.',
+    pipStarted: '화면 속 화면 모드로 전환했습니다.',
+    pipFailed: 'PiP를 시작하지 못했습니다. Android 8.0 이상에서 동영상 재생 중 다시 시도하세요.',
     /** The summary after a batch. `duplicate` is files already in Transfers. */
     batchDone: (added: string | number, duplicate: string | number, failed: string | number) => {
       const a = Number(added);

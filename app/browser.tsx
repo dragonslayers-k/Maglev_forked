@@ -737,9 +737,9 @@ export default function BrowserScreen({ inTab = false }: { inTab?: boolean }) {
     setMenuOpen(false);
     const result = await maglevEngine.enterBrowserPictureInPicture();
     if (result.ok) {
-      showNotice({ message: '화면 속 화면 모드로 전환했습니다.' }, 2500);
+      showNotice({ message: notices.browser.pipStarted }, 2500);
     } else {
-      showNotice({ message: 'PiP를 시작하지 못했습니다. Android 8.0 이상에서 동영상 재생 중 다시 시도하세요.' }, 4000);
+      showNotice({ message: notices.browser.pipFailed }, 4000);
     }
   }, [showNotice]);
 
