@@ -124,7 +124,7 @@ function check(name, cond, extra) {
 
   console.log('\n[settings: search sources]');
   const sp = read('app/settings/search-providers.tsx');
-  check('sources: needs-a-check section on top', /Needs a quick check/.test(sp) && /Tap \? to open the site once/.test(sp) && sp.indexOf('Needs a quick check') < sp.indexOf('What sources to show'));
+  check('sources: Korean needs-a-check section on top', /확인이 필요한 사이트/.test(sp) && /\?를 눌러 사이트를 한 번 열어 확인하세요/.test(sp) && sp.indexOf('확인이 필요한 사이트') < sp.indexOf('표시할 검색 사이트'));
   check('sources: opens the solver and clears the flag on solve', /CloudflareSolverSheet/.test(sp) && /needsCheck/.test(sp));
   const pr = read('components/search-providers/ProviderRow.tsx');
   check('provider row: a ? button', /onCheck/.test(pr) && /\?/.test(pr));
