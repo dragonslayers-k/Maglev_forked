@@ -31,6 +31,8 @@ export default function YouTubeDownloadScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [loadingMoreFormats, setLoadingMoreFormats] = useState(false);
+  const isYouTube = Boolean(parseYouTubeLink(String(url || '')));
   const screenTitle = parseYouTubeLink(String(url || '')) ? 'YouTube 다운로드' : '웹사이트 동영상 다운로드';
 
   useEffect(() => {
@@ -61,6 +63,31 @@ export default function YouTubeDownloadScreen() {
     if (router.canGoBack()) router.back();
     else router.replace('/');
   }, [router]);
+
+  const loadMoreFormats = useCallback(async () => {
+    const rawUrl = String(url || '');
+    if (!rawUrl || loadingMoreFormats || busy) return;
+    setLoadingMoreFormats(true);
+    setError(null);
+    try {
+      const [base, fragment] = rawUrl.split('#', 2);
+      const queryUrl = base + (base.includes('?') ? '&' : '?') + 'maglev_ytdlp=1' + (fragment ? '#' + fragment : '');
+      const result = await maglevEngine.getYouTubeInfo(queryUrl);
+      if (!result.ok) {
+        setError(result.message || '추가 형식을 가져오지 못했습니다.');
+        return;
+      }
+      setInfo((current) => {
+        if (!current) return result;
+        const merged = Array.from(new Map([...current.formats, ...result.formats].map((format) => [formatKey(format), format])).values());
+        return { ...current, formats: merged };
+      });
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : '추가 형식을 조회하지 못했습니다.');
+    } finally {
+      setLoadingMoreFormats(false);
+    }
+  }, [url, loadingMoreFormats, busy]);
 
   const start = useCallback(async (format: YouTubeFormat) => {
     if (!url || busy) return;
@@ -115,6 +142,11 @@ export default function YouTubeDownloadScreen() {
                 label={formatLabel(format)} onPress={() => void start(format)} />
             ))}
             {videos.length === 0 ? <Text style={styles.muted}>다운로드 가능한 동영상 형식이 없습니다.</Text> : null}
+            {isYouTube ? (
+              <Button fullWidth size="md" variant="secondary" disabled={busy || loadingMoreFormats}
+                loading={loadingMoreFormats} label={loadingMoreFormats ? '추가 형식 조회 중…' : '추가 화질·오디오 형식 조회'}
+                onPress={() => void loadMoreFormats()} />
+            ) : null}
           </View>
           <View style={styles.section}>
             <Text style={styles.heading}>오디오</Text>
