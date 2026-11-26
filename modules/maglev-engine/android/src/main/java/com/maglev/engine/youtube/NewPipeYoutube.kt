@@ -81,7 +81,7 @@ object NewPipeYoutube {
         val duration = info.duration.toDouble().takeIf { it > 0 && it.isFinite() }
         val audio = info.audioStreams
             .filter { it.content.isNotBlank() && it.bitrate > 0 && it.itagItem != null }
-            .filterNot { it.itagItem!!.itag == 599 || it.itagItem!!.itag == 600 }
+            .filterNot { it.itagItem!!.id == 599 || it.itagItem!!.id == 600 }
             .sortedByDescending { it.bitrate }
         val bestAudioKbps = audio.firstOrNull()?.bitrate?.div(1000.0) ?: 128.0
         val videos = (info.videoStreams + if (info.dashMpdUrl.isNotBlank()) info.videoOnlyStreams else emptyList())
@@ -90,7 +90,7 @@ object NewPipeYoutube {
         for ((height, candidates) in videos.groupBy { it.height }.toSortedMap(compareByDescending { it })) {
             val selected = candidates.maxByOrNull { it.bitrate } ?: continue
             val videoKbps = selected.bitrate / 1000.0
-            val audioLength = audio.firstOrNull()?.itagItem?.contentLength ?: 0L
+            val audioLength = audio.firstOrNull()?.idItem?.contentLength ?: 0L
             val selectedLength = selected.itagItem!!.contentLength
             val exactBytes = when {
                 !selected.isVideoOnly && selectedLength > 0 -> selectedLength
@@ -115,7 +115,7 @@ object NewPipeYoutube {
             )
         }
         for (stream in audio) {
-            val itag = stream.itagItem!!.itag
+            val itag = stream.itagItem!!.id
             val kbps = stream.bitrate / 1000.0
             val bytes = stream.itagItem!!.contentLength.takeIf { it > 0 }
                 ?: duration?.let { (stream.bitrate.toDouble() / 8.0 * it).toLong().takeIf { size -> size > 0 } }
@@ -148,7 +148,7 @@ object NewPipeYoutube {
         if (formatId.startsWith("npa")) {
             val itag = formatId.removePrefix("npa").toIntOrNull()
                 ?: return failure("INVALID_ARGUMENT", "오디오 형식 ID가 올바르지 않습니다.")
-            val stream = info.audioStreams.firstOrNull { it.itagItem?.itag == itag && it.content.isNotBlank() }
+            val stream = info.audioStreams.firstOrNull { it.itagItem?.id == itag && it.content.isNotBlank() }
                 ?: return failure("YOUTUBE_AUDIO_URL_MISSING", "선택한 오디오 형식의 주소를 갱신하지 못했습니다.")
             val ext = if (stream.format?.name.orEmpty().contains("WEBM", true)) "webm" else "m4a"
             return EngineHost.addDownload(stream.content, mapOf(
