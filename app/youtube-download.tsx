@@ -43,6 +43,8 @@ export default function YouTubeDownloadScreen() {
   const [loadingMoreFormats, setLoadingMoreFormats] = useState(false);
   const [selectedVideo, setSelectedVideo] = useState<string | null>(null);
   const [selectedAudio, setSelectedAudio] = useState<string | null>(null);
+  const [selectedVideoExt, setSelectedVideoExt] = useState('all');
+  const [selectedAudioExt, setSelectedAudioExt] = useState('all');
   const isYouTube = Boolean(parseYouTubeLink(String(url || '')));
   const screenTitle = parseYouTubeLink(String(url || '')) ? 'YouTube 다운로드' : '웹사이트 동영상 다운로드';
 
@@ -150,6 +152,10 @@ export default function YouTubeDownloadScreen() {
     (f) => f.ext + '|' + codecName(f).toLowerCase() + '|' + Math.round(f.abr) + '|' + (f.format || '').split('·')[0].trim(),
     (f) => f.abr,
   ).sort((a, b) => b.abr - a.abr);
+  const videoExtensions = Array.from(new Set(videos.map((format) => format.ext.toLowerCase()).filter(Boolean))).sort();
+  const audioExtensions = Array.from(new Set(audios.map((format) => format.ext.toLowerCase()).filter(Boolean))).sort();
+  const visibleVideos = selectedVideoExt === 'all' ? videos : videos.filter((format) => format.ext.toLowerCase() === selectedVideoExt);
+  const visibleAudios = selectedAudioExt === 'all' ? audios : audios.filter((format) => format.ext.toLowerCase() === selectedAudioExt);
   // Always offer yt-dlp's bestaudio selector even when the selected player client
   // does not expose audio-only formats in its metadata response.
   const audioFallbacks: YouTubeFormat[] = [
@@ -180,17 +186,25 @@ export default function YouTubeDownloadScreen() {
           </Text>
           <View style={styles.section}>
             <SectionHeader title="동영상 형식 · 화질" />
+            <Text style={styles.muted}>확장자 선택 · 실제 제공되는 원본 컨테이너만 표시합니다. 다른 컨테이너로 재인코딩하는 기능은 별도입니다.</Text>
             <Card>
-              {videos.map((format) => (
+              <ListRow icon={selectedVideoExt === 'all' ? "check" : "filter"} title="모든 확장자" subtitle="지원되는 원본 형식 전체" value={selectedVideoExt === 'all' ? "선택됨" : undefined} disabled={busy} onPress={() => setSelectedVideoExt('all')} />
+              {videoExtensions.map((ext) => (
+                <ListRow key={'video-ext-' + ext} icon={selectedVideoExt === ext ? "check" : "file-video"} title={ext.toUpperCase()} subtitle={videos.filter((format) => format.ext.toLowerCase() === ext).length + '개 화질 형식'} value={selectedVideoExt === ext ? "선택됨" : undefined} disabled={busy}
+                  onPress={() => { setSelectedVideoExt(ext); const first = videos.filter((format) => format.ext.toLowerCase() === ext).sort((a, b) => b.height - a.height || b.tbr - a.tbr)[0]; if (first) setSelectedVideo(formatKey(first)); }} />
+              ))}
+            </Card>
+            <Card>
+              {visibleVideos.map((format) => (
                 <ListRow key={formatKey(format)} icon={selectedVideo === formatKey(format) ? "check" : "download"} title={formatTitle(format)}
                   subtitle={[formatSubtitle(format), formatSize(format)].join(' · ')} value={selectedVideo === formatKey(format) ? "선택됨" : undefined} disabled={busy}
                   onPress={() => setSelectedVideo(formatKey(format))} />
               ))}
               {videos.length === 0 ? <Text style={styles.muted}>다운로드 가능한 동영상 형식이 없습니다.</Text> : null}
             </Card>
-            <Button fullWidth size="lg" disabled={busy || !videos.some((format) => formatKey(format) === selectedVideo)} loading={busy}
+            <Button fullWidth size="lg" disabled={busy || !visibleVideos.some((format) => formatKey(format) === selectedVideo)} loading={busy}
               label={busy ? "다운로드 추가 중…" : "선택한 동영상 다운로드"}
-              onPress={() => { const chosen = videos.find((format) => formatKey(format) === selectedVideo); if (chosen) void start(chosen, selectedAudioBitrateKbps); }} />
+              onPress={() => { const chosen = visibleVideos.find((format) => formatKey(format) === selectedVideo); if (chosen) void start(chosen, selectedAudioBitrateKbps); }} />
             {isYouTube ? (
               <Button fullWidth size="md" variant="secondary" disabled={busy || loadingMoreFormats}
                 loading={loadingMoreFormats} label={loadingMoreFormats ? '추가 형식 조회 중…' : '추가 화질·오디오 형식 조회'}
@@ -200,16 +214,24 @@ export default function YouTubeDownloadScreen() {
           <View style={styles.section}>
             <SectionHeader title="오디오 형식 · 음질" />
             <Text style={styles.muted}>목록에서 원본 코덱·컨테이너와 음질을 선택합니다. 선택한 음질은 분리 오디오 트랙이 있는 적응형 동영상에 적용됩니다. 영상에 오디오가 포함된 형식은 원본 오디오를 유지합니다. MP3 변환은 FFmpeg 인코더가 통합되기 전까지 지원하지 않습니다.</Text>
+            <Text style={styles.muted}>확장자 선택 · 원본 오디오 코덱과 컨테이너를 그대로 다운로드합니다.</Text>
             <Card>
-              {(audios.length > 0 ? audios : audioFallbacks).map((format, index) => (
+              <ListRow icon={selectedAudioExt === 'all' ? "check" : "filter"} title="모든 확장자" subtitle="지원되는 원본 오디오 형식 전체" value={selectedAudioExt === 'all' ? "선택됨" : undefined} disabled={busy} onPress={() => setSelectedAudioExt('all')} />
+              {audioExtensions.map((ext) => (
+                <ListRow key={'audio-ext-' + ext} icon={selectedAudioExt === ext ? "check" : "file-audio"} title={ext.toUpperCase()} subtitle={audios.filter((format) => format.ext.toLowerCase() === ext).length + '개 음질 형식'} value={selectedAudioExt === ext ? "선택됨" : undefined} disabled={busy}
+                  onPress={() => { setSelectedAudioExt(ext); const first = audios.filter((format) => format.ext.toLowerCase() === ext).sort((a, b) => b.abr - a.abr)[0]; if (first) setSelectedAudio(formatKey(first)); }} />
+              ))}
+            </Card>
+            <Card>
+              {(visibleAudios.length > 0 ? visibleAudios : selectedAudioExt === 'all' ? audioFallbacks : []).map((format, index) => (
                 <ListRow key={formatKey(format)} icon={selectedAudio === formatKey(format) ? "check" : "download"} title={formatTitle(format, index === 0)}
                   subtitle={[formatSubtitle(format), formatSize(format)].join(' · ')} value={selectedAudio === formatKey(format) ? "선택됨" : undefined} disabled={busy}
                   onPress={() => setSelectedAudio(formatKey(format))} />
               ))}
             </Card>
-            <Button fullWidth size="lg" disabled={busy || !((audios.length > 0 ? audios : audioFallbacks).some((format) => formatKey(format) === selectedAudio))} loading={busy}
+            <Button fullWidth size="lg" disabled={busy || !((visibleAudios.length > 0 ? visibleAudios : selectedAudioExt === 'all' ? audioFallbacks : []).some((format) => formatKey(format) === selectedAudio))} loading={busy}
               label={busy ? "다운로드 추가 중…" : "선택한 오디오 다운로드"}
-              onPress={() => { const chosen = (audios.length > 0 ? audios : audioFallbacks).find((format) => formatKey(format) === selectedAudio); if (chosen) void start(chosen); }} />
+              onPress={() => { const chosen = (visibleAudios.length > 0 ? visibleAudios : selectedAudioExt === 'all' ? audioFallbacks : []).find((format) => formatKey(format) === selectedAudio); if (chosen) void start(chosen); }} />
           </View>
         </>
       ) : null}
