@@ -94,7 +94,7 @@ assert(applyKeepRules('').includes('com.maglev.engine'));
 }
 // --- JitPack repository settings plugin: current Expo templates and idempotency ---
 {
-  const { addJitpackRepository, MARKER } = require('../plugins/withJitpackRepository');
+  const { addJitpackRepository, MARKER, EXPO_MARKER } = require('../plugins/withJitpackRepository');
   const modernTemplate = [
     'pluginManagement {',
     '    repositories { google(); mavenCentral() }',
@@ -106,13 +106,16 @@ assert(applyKeepRules('').includes('com.maglev.engine'));
   assert(modern.includes('dependencyResolutionManagement'), 'creates missing settings repository management');
   assert(modern.includes('RepositoriesMode.PREFER_SETTINGS'), 'uses settings repository management');
   assert(modern.includes('https://www.jitpack.io'), 'adds JitPack to new settings block');
+  assert(modern.includes('https://maven.expo.dev') && modern.includes(EXPO_MARKER), 'adds Expo Maven repository for Expo native modules');
   assert.strictEqual(addJitpackRepository(modern), modern, 'new settings block patch is idempotent');
   const existingDmr = ['dependencyResolutionManagement {', '    repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)', '}'].join(String.fromCharCode(10));
   const withRepos = addJitpackRepository(existingDmr);
   assert(withRepos.includes('google()') && withRepos.includes('mavenCentral()'), 'adds defaults when repositories block is absent');
+  assert(withRepos.includes('https://maven.expo.dev'), 'adds Expo Maven repository when repositories block is absent');
   assert.strictEqual(addJitpackRepository(withRepos), withRepos, 'existing DMR patch is idempotent');
   const existingRepos = ['dependencyResolutionManagement {', '    repositories { google(); mavenCentral() }', '}'].join(String.fromCharCode(10));
   const withJitpack = addJitpackRepository(existingRepos);
   assert(withJitpack.includes(MARKER) && withJitpack.includes('jitpack.io'), 'adds JitPack to existing repository block');
+  assert(withJitpack.includes(EXPO_MARKER) && withJitpack.includes('https://maven.expo.dev'), 'adds Expo Maven to existing repository block');
 }
 console.log('test-plugins: all assertions passed');
