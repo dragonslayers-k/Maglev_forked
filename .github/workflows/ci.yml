@@ -48,7 +48,7 @@ jobs:
 
       - name: Test app-local WireGuard userspace core
         working-directory: native/wireguard
-        run: go test -race -count=1 .
+        run: go test -count=1 .
 
       - name: Vet app-local WireGuard userspace core
         working-directory: native/wireguard

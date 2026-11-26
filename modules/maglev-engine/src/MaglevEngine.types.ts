@@ -921,6 +921,12 @@ export interface MaglevEngineApi {
   getYouTubeInfo(url: string): Promise<EngineResult<YouTubeInfo>>;
   /** Adds a selected YouTube format. Optional audio bitrate is a ceiling for separate adaptive audio tracks. */
   addYouTubeDownload(url: string, formatId: string, playerClient: string, formatKind: 'video' | 'audio', audioBitrateKbps?: number | null, outputContainer?: string): Promise<EngineResult<{ id: string }>>;
+  /** App-local WireGuard profile status. This is not the Android system VPN state. */
+  getAppWireGuardStatus(): Promise<EngineResult<{ enabled: boolean; hasProfile: boolean; running: boolean }>>;
+  /** Imports and validates a WireGuard .conf document; private key is stored encrypted at rest. */
+  importAppWireGuardProfile(uri: string): Promise<EngineResult<{ hasProfile: boolean }>>;
+  /** Enables app-local HTTP(S) download routing; no VpnService or APN/system route changes. */
+  setAppWireGuardEnabled(enabled: boolean): Promise<EngineResult<{ enabled: boolean }>>;
   pauseDownload(id: string): Promise<EngineResult>;
   resumeDownload(id: string): Promise<EngineResult>;
   /** NATIVE_CONTRACT 25.1: the same for a link download. */

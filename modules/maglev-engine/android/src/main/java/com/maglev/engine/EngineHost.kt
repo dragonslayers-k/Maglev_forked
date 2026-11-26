@@ -1158,8 +1158,29 @@ object EngineHost {
         return linkedMapOf("ok" to true, "count" to n)
     }
 
+    /** Stops existing peer traffic before app-local HTTP tunnel mode is enabled. */
+    fun pauseTorrentsForAppWireGuard(): Map<String, Any?> {
+        if (!initialized) return mapOf("ok" to true, "paused" to 0)
+        val list = call { NativeCore.nativeListTorrents() }
+        if (!isOk(list)) return list
+        var paused = 0
+        for (torrent in Json.list(list["torrents"])) {
+            val state = torrent["state"] as? String ?: continue
+            if (state !in setOf("DOWNLOADING", "SEEDING", "QUEUED", "INITIALIZING", "RESOLVING")) continue
+            val id = torrent["id"] as? String ?: continue
+            val result = call { NativeCore.nativePause(id) }
+            if (!isOk(result)) return result
+            paused++
+        }
+        pollNow()
+        return mapOf("ok" to true, "paused" to paused)
+    }
+
     /** Resumes user-paused torrents. Governance-paused ones stay paused until their gate opens, and so do torrents held by a file health tag. */
     fun resumeAll(): Map<String, Any?> {
+        if (ctx?.let { WireGuardController.isEnabled(it) } == true) return Json.failure(
+            "APP_WIREGUARD_TORRENT_UNSUPPORTED",
+            "앱 내부 WireGuard가 켜져 있습니다. 토렌트는 터널을 통과하지 않으므로 먼저 WireGuard를 끄세요.")
         val list = call { NativeCore.nativeListTorrents() }
         if (!isOk(list)) return list
         var n = 0
@@ -1206,6 +1227,9 @@ object EngineHost {
 
     fun addTorrent(source: String, options: Map<String, Any?>): Map<String, Any?> {
         val c = requireCtx()
+        if (c != null && WireGuardController.isEnabled(c)) return Json.failure(
+            "APP_WIREGUARD_TORRENT_UNSUPPORTED",
+            "앱 내부 WireGuard 모드는 HTTP 다운로드 전용입니다. 토렌트는 직접 연결되므로 WireGuard를 끄세요.")
         val (src, failure) = localizeSource(source)
         if (failure != null) return failure
         val opts = LinkedHashMap(Json.snakeify(options) as Map<String, Any?>)
@@ -2063,7 +2087,12 @@ object EngineHost {
     fun resumeDownload(id: String) = call { NativeCore.nativeResumeDownload(id) }.also { pollNow() }
 
     /** Contract section 25.1: resume one torrent and exempt it from the rule pauses. */
-    fun resumeAnyway(id: String): Map<String, Any?> = resumeExempt { NativeCore.nativeResumeAnyway(id) }
+    fun resumeAnyway(id: String): Map<String, Any?> {
+        if (ctx?.let { WireGuardController.isEnabled(it) } == true) return Json.failure(
+            "APP_WIREGUARD_TORRENT_UNSUPPORTED",
+            "앱 내부 WireGuard가 켜져 있습니다. 토렌트는 터널을 통과하지 않으므로 먼저 WireGuard를 끄세요.")
+        return resumeExempt { NativeCore.nativeResumeAnyway(id) }
+    }
 
     /** Contract section 25.1: the same for a link download. */
     fun resumeDownloadAnyway(id: String): Map<String, Any?> = resumeExempt { NativeCore.nativeResumeDownloadAnyway(id) }

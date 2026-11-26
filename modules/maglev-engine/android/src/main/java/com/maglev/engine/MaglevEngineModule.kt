@@ -221,6 +221,29 @@ class MaglevEngineModule : Module() {
         AsyncFunction("addDownload") { url: String, options: Map<String, Any?>?, promise: Promise ->
             io(promise) { EngineHost.addDownload(url, options ?: emptyMap()) }
         }
+
+        // App-local WireGuard: encrypted profile, HTTP download proxy only; never Android VpnService.
+        AsyncFunction("getAppWireGuardStatus") { promise: Promise ->
+            val c = context
+            if (c == null) promise.resolve(Json.failure("ENGINE_UNAVAILABLE", "Module is not attached"))
+            else io(promise) {
+                mapOf("ok" to true, "enabled" to WireGuardController.isEnabled(c),
+                    "has_profile" to WireGuardController.hasProfile(c), "running" to WireGuardController.isRunning())
+            }
+        }
+        AsyncFunction("importAppWireGuardProfile") { uri: String, promise: Promise ->
+            val c = context
+            if (c == null) promise.resolve(Json.failure("ENGINE_UNAVAILABLE", "Module is not attached"))
+            else io(promise) {
+                WireGuardController.importProfile(c, Uri.parse(uri))
+                mapOf("ok" to true, "has_profile" to true)
+            }
+        }
+        AsyncFunction("setAppWireGuardEnabled") { enabled: Boolean, promise: Promise ->
+            val c = context
+            if (c == null) promise.resolve(Json.failure("ENGINE_UNAVAILABLE", "Module is not attached"))
+            else io(promise) { WireGuardController.setEnabled(c, enabled) }
+        }
         // YouTube (yt-dlp): extract metadata and add a selected progressive format to the existing transfer engine.
         AsyncFunction("getYouTubeInfo") { url: String, promise: Promise ->
             val c = context
@@ -284,7 +307,11 @@ class MaglevEngineModule : Module() {
             engine(promise) { EngineHost.call { NativeCore.nativePause(id) }.also { EngineHost.pollNow() } }
         }
         AsyncFunction("resume") { id: String, promise: Promise ->
-            engine(promise) { EngineHost.call { NativeCore.nativeResume(id) }.also { EngineHost.pollNow() } }
+            engine(promise) {
+                if (context?.let { WireGuardController.isEnabled(it) } == true) Json.failure(
+                    "APP_WIREGUARD_TORRENT_UNSUPPORTED", "앱 내부 WireGuard가 켜져 있어 토렌트 재개를 차단했습니다.")
+                else EngineHost.call { NativeCore.nativeResume(id) }.also { EngineHost.pollNow() }
+            }
         }
         AsyncFunction("resumeAnyway") { id: String, promise: Promise ->
             engine(promise) { EngineHost.resumeAnyway(id) }

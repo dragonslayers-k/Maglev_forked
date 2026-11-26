@@ -640,6 +640,15 @@ export class MaglevEngineBridge implements MaglevEngineApi {
   public addYouTubeDownload(url: string, formatId: string, playerClient: string, formatKind: 'video' | 'audio', audioBitrateKbps?: number | null, outputContainer = 'original'): Promise<EngineResult<{ id: string }>> {
     return this.route('addYouTubeDownload', url, formatId, playerClient, formatKind, audioBitrateKbps ?? null, outputContainer);
   }
+  public getAppWireGuardStatus(): Promise<EngineResult<{ enabled: boolean; hasProfile: boolean; running: boolean }>> {
+    return this.route('getAppWireGuardStatus');
+  }
+  public importAppWireGuardProfile(uri: string): Promise<EngineResult<{ hasProfile: boolean }>> {
+    return this.route('importAppWireGuardProfile', uri);
+  }
+  public setAppWireGuardEnabled(enabled: boolean): Promise<EngineResult<{ enabled: boolean }>> {
+    return this.route('setAppWireGuardEnabled', enabled);
+  }
   public pauseDownload(id: string): Promise<EngineResult> {
     return this.route('pauseDownload', id);
   }
