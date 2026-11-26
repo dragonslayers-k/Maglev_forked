@@ -1,5 +1,6 @@
 // Expo config plugin: add JitPack for TeamNewPipe's extractor artifact.
 const MARKER = 'maglev-jitpack-repository';
+const EXPO_MARKER = 'maglev-expo-maven-repository';
 
 function findMatchingBrace(source, openAt) {
   let depth = 0;
@@ -34,7 +35,7 @@ function findMatchingBrace(source, openAt) {
 }
 
 function addJitpackRepository(source) {
-  if (source.includes(MARKER)) return source;
+  if (source.includes(MARKER) && source.includes(EXPO_MARKER)) return source;
   const dmr = /dependencyResolutionManagement\s*\{/m.exec(source);
   if (!dmr) {
     // Some Expo/RN settings.gradle templates omit this block entirely.
@@ -46,6 +47,8 @@ function addJitpackRepository(source) {
       '    repositories {',
       '        google()',
       '        mavenCentral()',
+      '        // ' + EXPO_MARKER,
+      '        maven { url = uri("https://maven.expo.dev") }',
       '        // ' + MARKER,
       '        maven { url = uri("https://www.jitpack.io") }',
       '    }',
@@ -60,7 +63,7 @@ function addJitpackRepository(source) {
 
   const body = source.slice(dmrOpen + 1, dmrClose);
   const repositories = /\brepositories\s*\{/m.exec(body);
-  const repositoryLine = '\n        // ' + MARKER + '\n        maven { url = uri("https://www.jitpack.io") }\n';
+  const repositoryLine = '\n        // ' + EXPO_MARKER + '\n        maven { url = uri("https://maven.expo.dev") }\n        // ' + MARKER + '\n        maven { url = uri("https://www.jitpack.io") }\n';
   if (repositories) {
     const repoOpen = dmrOpen + 1 + body.indexOf('{', repositories.index);
     const repoClose = findMatchingBrace(source, repoOpen);
@@ -72,7 +75,7 @@ function addJitpackRepository(source) {
 
   // Recent Expo templates can omit the settings-level repositories block. Add a complete
   // settings repository block rather than failing prebuild or relying on project repos.
-  const newBlock = '\n    repositories {\n        google()\n        mavenCentral()\n        // ' + MARKER + '\n        maven { url = uri("https://www.jitpack.io") }\n    }\n';
+  const newBlock = '\n    repositories {\n        google()\n        mavenCentral()\n        // ' + EXPO_MARKER + '\n        maven { url = uri("https://maven.expo.dev") }\n        // ' + MARKER + '\n        maven { url = uri("https://www.jitpack.io") }\n    }\n';
   return source.slice(0, dmrClose) + newBlock + source.slice(dmrClose);
 }
 
@@ -86,3 +89,4 @@ function withJitpackRepository(config) {
 module.exports = withJitpackRepository;
 module.exports.addJitpackRepository = addJitpackRepository;
 module.exports.MARKER = MARKER;
+module.exports.EXPO_MARKER = EXPO_MARKER;
