@@ -238,7 +238,7 @@ export const empty = {
     unavailable: { title: '현재 검색을 사용할 수 없습니다', body: '인터넷 연결을 확인하고 다시 시도하세요.' },
     noSource: { title: '이 분류를 검색하는 사이트가 없습니다', body: '해당 분류를 검색하는 사이트를 켜세요.' },
     idle: (sources: number | string) => ({
-      title: `Search ${toName(sources)} ${Number(sources) === 1 ? 'source' : 'sources'} at once`,
+      title: `${toName(sources)}개 검색 사이트를 한 번에 검색하세요`,
       body: '검색창을 눌러 최근 검색어를 확인하세요.',
     }),
     noAnswer: { title: '응답한 검색 사이트가 없습니다', body: '인터넷 연결을 확인하거나 다른 검색 사이트를 사용하세요.' },
