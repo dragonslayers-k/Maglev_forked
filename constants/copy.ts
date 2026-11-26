@@ -888,8 +888,8 @@ export const highlightCopy = {
 // region network advanced
 /** app/settings/network.tsx, app/settings/network-advanced.tsx, components/settings/NetworkRestartBanner.tsx, utils/networkStatus.ts */
 export const networkAdvancedCopy = {
-  rowTitle: 'Advanced',
-  rowSubtitle: 'Port, peer finding, proxy and block list.',
+  rowTitle: '고급 네트워크',
+  rowSubtitle: '수신 포트, 피어 검색, 프록시 및 IP 차단 목록 설정',
   pageTitle: 'Advanced network',
   restartTitle: 'Restart the downloader to apply these changes',
   restartAction: 'Restart',
