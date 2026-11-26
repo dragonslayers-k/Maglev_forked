@@ -153,9 +153,9 @@ jobs:
 
   apk:
     name: Build APK
-    needs: rust-android
-    # Explicit: rust-android's own `needs` (reuse) is skipped off main, which would otherwise skip this job too.
-    if: ${{ !cancelled() && needs.rust-android.result == 'success' }}
+    # Never publish an APK from a commit whose JS, Rust, or contract checks failed.
+    needs: [rust-android, rust-test, js, contracts]
+    if: ${{ !cancelled() && needs.rust-android.result == 'success' && needs.rust-test.result == 'success' && needs.js.result == 'success' && needs.contracts.result == 'success' }}
     runs-on: ubuntu-latest
     env:
       ANDROID_HOME: /usr/local/lib/android/sdk
