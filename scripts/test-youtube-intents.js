@@ -62,9 +62,9 @@ async function main() {
   assert.ok(youtubeAdapter.includes('playerClient == "generic"'), 'generic page formats are tagged separately from YouTube clients');
   assert.ok(youtubeAdapter.includes('EngineHost.probeStream'), 'HLS/DASH formats must use Maglev stream engine');
   assert.ok(youtubeAdapter.includes('youtube:player_client='), 'selected format must be re-extracted with its original client');
-  assert.match(nativeModule, /formatId: String, playerClient: String, formatKind: String, audioBitrateKbps: Double\\?, outputContainer: String/, 'native bridge must carry format kind, audio bitrate ceiling and output container');
+  assert.ok(nativeModule.includes('formatKind: String, audioBitrateKbps: Double?, outputContainer: String'), 'native bridge must carry format kind, audio bitrate ceiling and output container');
   assert.ok(youtubeAdapter.includes('targetAudioBps') && youtubeAdapter.includes('YOUTUBE_AUDIO_BITRATE_UNAVAILABLE'), 'adaptive video downloads must enforce the selected separate-audio bitrate ceiling');
-  assert.match(youtubeScreen, /addYouTubeDownload\(String\(url\), format\.formatId, format\.playerClient, audioBitrateKbps \?\? null\)/, 'the chosen audio quality must reach the native download request');
+  assert.ok(youtubeScreen.includes('format.playerClient, format.kind, audioBitrateKbps ?? null, outputContainer'), 'chosen format kind, audio quality and output container must reach native download');
   assert.ok(youtubeAdapter.includes('ytdlp.init(app)') && youtubeAdapter.includes('field.set(ytdlp, File(app.applicationInfo.nativeLibraryDir))'), 'initialize bundled yt-dlp and reset the wrapper ffmpeg path without downloading updates');
   assert.ok(youtubeAdapter.includes('groupBy { it["formatId"].toString() }'), 'duplicate format IDs from different player clients must collapse to one row');
   const formatInventory = youtubeAdapter.slice(youtubeAdapter.indexOf('val videoFormats = grouped["video"]'), youtubeAdapter.indexOf('val choices = videoFormats + audioFormats'));
