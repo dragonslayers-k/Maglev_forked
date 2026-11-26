@@ -101,7 +101,7 @@ export default function AboutSettings() {
         />
         <ListRow
           title="Maglev+ 통합 다운로드 앱"
-          subtitle="Maglev 기반 · 공개 추출기와 다운로드 엔진을 통합한 커뮤니티 빌드"
+          subtitle="Maglev+ 기반 · 공개 추출기와 다운로드 엔진을 통합한 커뮤니티 빌드"
           icon="github"
           onPress={() => void Linking.openURL(REPO_URL)}
           accessibilityHint="Maglev+ 소스 저장소를 GitHub에서 엽니다"
