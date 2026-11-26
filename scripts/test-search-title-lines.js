@@ -54,8 +54,8 @@ function check(name, cond, extra) {
   console.log('\n[settings screen]');
   const sp = read('app/settings/search-providers.tsx');
   const itf = read('app/settings/interface.tsx');
-  check('Search sources offers "Result name lines" in a Results section', /SectionHeader title="Results"/.test(sp) && /Result name lines/.test(sp) && /resultNameLines/.test(sp));
-  check('options 1, 2, 3 and Full name', /value: 1, label: '1'/.test(sp) && /value: 2, label: '2'/.test(sp) && /value: 3, label: '3'/.test(sp) && /value: 0, label: 'Full name'/.test(sp));
+  check('Search sources offers Korean result-name-lines setting in Korean Results section', /SectionHeader title="결과"/.test(sp) && /결과 이름 줄 수/.test(sp) && /resultNameLines/.test(sp));
+  check('options 1, 2, 3 and 전체 이름', /value: 1, label: '1'/.test(sp) && /value: 2, label: '2'/.test(sp) && /value: 3, label: '3'/.test(sp) && /value: 0, label: '전체 이름'/.test(sp));
   check('Appearance no longer has it', !/name lines|resultNameLines/.test(itf));
 
   console.log('\n[full name]');

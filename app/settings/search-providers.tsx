@@ -33,7 +33,7 @@ const RESULT_NAME_LINES = [
   { value: 1, label: '1' },
   { value: 2, label: '2' },
   { value: 3, label: '3' },
-  { value: 0, label: 'Full name' },
+  { value: 0, label: '전체 이름' },
 ] as const;
 
 /** Torznab entries default to every category except adult; the user narrows it per source. */
