@@ -30,13 +30,18 @@ class MaglevWatchModule : Module() {
             } else if (activity == null) {
                 promise.resolve(mapOf("ok" to false, "code" to "NOT_READY", "message" to "The app screen is not available."))
             } else {
-                try {
-                    val params = PictureInPictureParams.Builder()
-                        .setAspectRatio(Rational(16, 9))
-                        .build()
-                    promise.resolve(mapOf("ok" to activity.enterPictureInPictureMode(params)))
-                } catch (_: Throwable) {
-                    promise.resolve(mapOf("ok" to false, "code" to "INTERNAL", "message" to "Android could not start picture-in-picture."))
+                val params = PictureInPictureParams.Builder()
+                    .setAspectRatio(Rational(16, 9))
+                    .build()
+                // PiP is a Window/Activity operation. Run it on the UI thread and report the
+                // actual platform return value instead of resolving before the transition.
+                activity.runOnUiThread {
+                    try {
+                        val entered = activity.enterPictureInPictureMode(params)
+                        promise.resolve(mapOf("ok" to entered))
+                    } catch (_: Throwable) {
+                        promise.resolve(mapOf("ok" to false, "code" to "INTERNAL", "message" to "Android could not start picture-in-picture."))
+                    }
                 }
             }
         }
