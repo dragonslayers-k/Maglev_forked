@@ -236,7 +236,7 @@ export default function YouTubeDownloadScreen() {
             <Card>
               <ListRow icon={audioContainer === "original" ? "check" : "download"} title="원본 컨테이너 유지" subtitle="원본 오디오를 그대로 저장" value={audioContainer === "original" ? "선택됨" : undefined} disabled={busy} onPress={() => setAudioContainer("original")} />
               {AUDIO_OUTPUT_CONTAINERS.map((ext) => (
-                <ListRow key={"audio-output-" + ext} icon={audioContainer === ext ? "check" : "refresh-cw"} title={ext === "alac" ? "ALAC · M4A" : ext === "vorbis" ? "VORBIS · OGG" : ext.toUpperCase()} subtitle="선택한 오디오 컨테이너·코덱으로 변환" value={audioContainer === ext ? "선택됨" : undefined} disabled={busy} onPress={() => setAudioContainer(ext)} />
+                <ListRow key={"audio-output-" + ext} icon={audioContainer === ext ? "check" : "recheck"} title={ext === "alac" ? "ALAC · M4A" : ext === "vorbis" ? "VORBIS · OGG" : ext.toUpperCase()} subtitle="선택한 오디오 컨테이너·코덱으로 변환" value={audioContainer === ext ? "선택됨" : undefined} disabled={busy} onPress={() => setAudioContainer(ext)} />
               ))}
             </Card>
             <Card>
