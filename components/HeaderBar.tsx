@@ -120,7 +120,7 @@ const makeStyles = (c: ThemeColors) =>
     brand: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingLeft: spacing.sm, zIndex: 1 },
     markBadgeWrap: { position: 'relative', width: 22 * (107 / 44), height: 22, alignItems: 'center', justifyContent: 'center' },
     plusBadge: { position: 'absolute', right: -3, top: -5, width: 16, height: 16, borderRadius: 8, backgroundColor: APP_ICON_BADGE_CIRCLE, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: c.bg, zIndex: 2 },
-    plusBadgeText: { ...type.bodyStrong, color: APP_ICON_BADGE_PLUS, fontSize: 13, lineHeight: 14, includeFontPadding: false },
+    plusBadgeText: { ...type.bodyStrong, color: APP_ICON_BADGE_PLUS, fontSize: type.size.sm, lineHeight: type.size.sm, includeFontPadding: false },
     brandTitle: { ...type.brand, fontSize: type.size.base, color: c.text },
     actions: { flexDirection: 'row', alignItems: 'center' },
     selectedText: { ...type.bodyStrong, fontSize: type.size.xl, color: c.text, flex: 1, marginLeft: spacing.xs },
