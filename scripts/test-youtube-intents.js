@@ -109,6 +109,9 @@ async function main() {
   assert.ok(screen.includes("formatId: 'bestaudio', playerClient: 'android_vr'"), 'the placeholder bestaudio must route to yt-dlp, not NewPipe format-ID parsing');
   assert.ok(screen.includes('const audioChoices = visibleAudios.length > 0 ? visibleAudios : selectedAudioExt === \'all\' ? audioFallbacks : [];') && screen.includes('selectedAudioFormat = audioChoices.find'), 'real audio bitrate/format choices remain primary and fallback presets are used only when needed');
   assert.ok(screen.includes('오디오만 · 최고 음질'), 'audio-only fallback label is Korean');
+  assert.ok(screen.includes('setVideoFormatsSheet(true)') && screen.includes('visibleVideos.map((format) => (') && !screen.includes('videoFormatsExpanded'), 'video formats are compacted into a selection sheet');
+  assert.ok(screen.includes('setAudioFormatsSheet(true)') && screen.includes('audioChoices.map((format, index) => (') && !screen.includes('audioFormatsExpanded'), 'audio formats are compacted into a selection sheet');
+  assert.ok(screen.includes('setVideoExtensionSheet(true)') && screen.includes('setAudioExtensionSheet(true)'), 'source extension filters are selected in sheets instead of long inline lists');
   assert.ok(!screen.includes('ytdlpEngine.download'), 'screen must not create a second standalone download queue');
   const packageJson = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
   assert.equal(packageJson.dependencies?.['ytdlp-engine'], undefined, 'do not install a second yt-dlp Expo module/queue');

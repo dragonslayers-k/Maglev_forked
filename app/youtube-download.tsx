@@ -52,8 +52,10 @@ export default function YouTubeDownloadScreen() {
   const [audioContainer, setAudioContainer] = useState('original');
   const [videoContainerSheet, setVideoContainerSheet] = useState(false);
   const [audioContainerSheet, setAudioContainerSheet] = useState(false);
-  const [videoFormatsExpanded, setVideoFormatsExpanded] = useState(false);
-  const [audioFormatsExpanded, setAudioFormatsExpanded] = useState(false);
+  const [videoExtensionSheet, setVideoExtensionSheet] = useState(false);
+  const [audioExtensionSheet, setAudioExtensionSheet] = useState(false);
+  const [videoFormatsSheet, setVideoFormatsSheet] = useState(false);
+  const [audioFormatsSheet, setAudioFormatsSheet] = useState(false);
   const isYouTube = Boolean(parseYouTubeLink(String(url || '')));
   const screenTitle = parseYouTubeLink(String(url || '')) ? 'YouTube 다운로드' : '웹사이트 동영상 다운로드';
 
@@ -198,30 +200,16 @@ export default function YouTubeDownloadScreen() {
           <View style={styles.section}>
             <SectionHeader title="동영상 형식 · 화질" />
             <Text style={styles.muted}>원본 확장자로 화질 목록을 필터링하고, 아래 출력 컨테이너에서 실제 저장 형식을 선택합니다. 원본 유지가 기본값입니다.</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
-              <Chip label="전체" count={videos.length} selected={selectedVideoExt === 'all'} disabled={busy} onPress={() => { setSelectedVideoExt('all'); setVideoFormatsExpanded(false); }} />
-              {videoExtensions.map((ext) => (
-                <Chip key={'video-ext-' + ext} label={ext.toUpperCase()} count={videos.filter((format) => format.ext.toLowerCase() === ext).length} selected={selectedVideoExt === ext} disabled={busy}
-                  onPress={() => { setSelectedVideoExt(ext); setVideoFormatsExpanded(false); const first = videos.filter((format) => format.ext.toLowerCase() === ext).sort((a, b) => b.height - a.height || b.tbr - a.tbr)[0]; if (first) setSelectedVideo(formatKey(first)); }} />
-              ))}
-            </ScrollView>
+            <Card>
+              <ListRow icon="filter" title="원본 확장자 필터" subtitle={selectedVideoExt === 'all' ? `전체 · ${videos.length}개` : `${selectedVideoExt.toUpperCase()} · ${videos.filter((format) => format.ext.toLowerCase() === selectedVideoExt).length}개`} value="선택" disabled={busy} onPress={() => setVideoExtensionSheet(true)} />
+            </Card>/ScrollView>
             <Card>
               <ListRow icon="download" title="출력 컨테이너" subtitle={videoContainer === "original" ? "원본 컨테이너 유지" : videoContainer.toUpperCase()} value="변경" disabled={busy} onPress={() => setVideoContainerSheet(true)} />
             </Card>
             <Card>
-              {selectedVideoFormat ? (
-                <ListRow icon="check" title={formatTitle(selectedVideoFormat)} subtitle={[formatSubtitle(selectedVideoFormat), formatSize(selectedVideoFormat)].join(' · ')} value="선택됨" disabled={busy} onPress={() => setVideoFormatsExpanded((open) => !open)} />
-              ) : <Text style={styles.muted}>선택 가능한 화질이 없습니다.</Text>}
-              {visibleVideos.length > 1 ? (
-                <ListRow icon="filter" title={videoFormatsExpanded ? "화질 목록 접기" : `다른 화질 보기 · ${visibleVideos.length}개`} value={videoFormatsExpanded ? "접기" : "보기"} disabled={busy} onPress={() => setVideoFormatsExpanded((open) => !open)} />
-              ) : null}
-              {videoFormatsExpanded ? visibleVideos.map((format) => (
-                <ListRow key={formatKey(format)} icon={selectedVideo === formatKey(format) ? "check" : "download"} title={formatTitle(format)}
-                  subtitle={[formatSubtitle(format), formatSize(format)].join(' · ')} value={selectedVideo === formatKey(format) ? "선택됨" : undefined} disabled={busy}
-                  onPress={() => { setSelectedVideo(formatKey(format)); setVideoFormatsExpanded(false); }} />
-              )) : null}
-              {videos.length === 0 ? <Text style={styles.muted}>다운로드 가능한 동영상 형식이 없습니다.</Text> : null}
+              <ListRow icon={selectedVideoFormat ? "check" : "download"} title={selectedVideoFormat ? formatTitle(selectedVideoFormat) : "화질 선택"} subtitle={selectedVideoFormat ? [formatSubtitle(selectedVideoFormat), formatSize(selectedVideoFormat)].join(' · ') : "사용 가능한 형식 없음"} value={selectedVideoFormat ? "변경" : "보기"} disabled={busy || visibleVideos.length === 0} onPress={() => setVideoFormatsSheet(true)} />
             </Card>
+    </Card>
             <Button fullWidth size="lg" disabled={busy || !visibleVideos.some((format) => formatKey(format) === selectedVideo)} loading={busy}
               label={busy ? "다운로드 추가 중…" : "선택한 동영상 다운로드"}
               onPress={() => { const chosen = visibleVideos.find((format) => formatKey(format) === selectedVideo); if (chosen) void start(chosen, selectedAudioBitrateKbps, videoContainer); }} />
@@ -235,29 +223,16 @@ export default function YouTubeDownloadScreen() {
             <SectionHeader title="오디오 형식 · 음질" />
             <Text style={styles.muted}>목록에서 원본 코덱·음질을 선택합니다. 영상 다운로드 시 선택한 오디오 음질은 분리 오디오 트랙에 적용됩니다. 오디오 전용 다운로드는 선택한 형식과 음질을 그대로 사용합니다.</Text>
             <Text style={styles.muted}>원본 확장자로 오디오 형식을 필터링하고, 아래에서 실제 출력 컨테이너를 선택합니다.</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
-              <Chip label="전체" count={audios.length} selected={selectedAudioExt === 'all'} disabled={busy} onPress={() => { setSelectedAudioExt('all'); setAudioFormatsExpanded(false); }} />
-              {audioExtensions.map((ext) => (
-                <Chip key={'audio-ext-' + ext} label={ext.toUpperCase()} count={audios.filter((format) => format.ext.toLowerCase() === ext).length} selected={selectedAudioExt === ext} disabled={busy}
-                  onPress={() => { setSelectedAudioExt(ext); setAudioFormatsExpanded(false); const first = audios.filter((format) => format.ext.toLowerCase() === ext).sort((a, b) => b.abr - a.abr)[0]; if (first) setSelectedAudio(formatKey(first)); }} />
-              ))}
-            </ScrollView>
+            <Card>
+              <ListRow icon="filter" title="원본 확장자 필터" subtitle={selectedAudioExt === 'all' ? `전체 · ${audios.length}개` : `${selectedAudioExt.toUpperCase()} · ${audios.filter((format) => format.ext.toLowerCase() === selectedAudioExt).length}개`} value="선택" disabled={busy} onPress={() => setAudioExtensionSheet(true)} />
+            </Card>/ScrollView>
             <Card>
               <ListRow icon="download" title="출력 컨테이너" subtitle={audioContainer === "original" ? "원본 컨테이너 유지" : audioContainer === "alac" ? "ALAC · M4A" : audioContainer === "vorbis" ? "VORBIS · OGG" : audioContainer.toUpperCase()} value="변경" disabled={busy} onPress={() => setAudioContainerSheet(true)} />
             </Card>
             <Card>
-              {selectedAudioFormat ? (
-                <ListRow icon="check" title={formatTitle(selectedAudioFormat, audioChoices.indexOf(selectedAudioFormat) === 0)} subtitle={[formatSubtitle(selectedAudioFormat), formatSize(selectedAudioFormat)].join(' · ')} value="선택됨" disabled={busy} onPress={() => setAudioFormatsExpanded((open) => !open)} />
-              ) : <Text style={styles.muted}>선택 가능한 오디오 형식이 없습니다.</Text>}
-              {audioChoices.length > 1 ? (
-                <ListRow icon="filter" title={audioFormatsExpanded ? "오디오 목록 접기" : `다른 음질 보기 · ${audioChoices.length}개`} value={audioFormatsExpanded ? "접기" : "보기"} disabled={busy} onPress={() => setAudioFormatsExpanded((open) => !open)} />
-              ) : null}
-              {audioFormatsExpanded ? audioChoices.map((format, index) => (
-                <ListRow key={formatKey(format)} icon={selectedAudio === formatKey(format) ? "check" : "download"} title={formatTitle(format, index === 0)}
-                  subtitle={[formatSubtitle(format), formatSize(format)].join(' · ')} value={selectedAudio === formatKey(format) ? "선택됨" : undefined} disabled={busy}
-                  onPress={() => { setSelectedAudio(formatKey(format)); setAudioFormatsExpanded(false); }} />
-              )) : null}
+              <ListRow icon={selectedAudioFormat ? "check" : "download"} title={selectedAudioFormat ? formatTitle(selectedAudioFormat, audioChoices.indexOf(selectedAudioFormat) === 0) : "음질 선택"} subtitle={selectedAudioFormat ? [formatSubtitle(selectedAudioFormat), formatSize(selectedAudioFormat)].join(' · ') : "사용 가능한 형식 없음"} value={selectedAudioFormat ? "변경" : "보기"} disabled={busy || audioChoices.length === 0} onPress={() => setAudioFormatsSheet(true)} />
             </Card>
+    </Card>
             <Button fullWidth size="lg" disabled={busy || !((visibleAudios.length > 0 ? visibleAudios : selectedAudioExt === 'all' ? audioFallbacks : []).some((format) => formatKey(format) === selectedAudio))} loading={busy}
               label={busy ? "다운로드 추가 중…" : "선택한 오디오 다운로드"}
               onPress={() => { const chosen = audioChoices.find((format) => formatKey(format) === selectedAudio); if (chosen) void start(chosen, selectedAudioBitrateKbps, audioContainer); }} />
@@ -269,6 +244,28 @@ export default function YouTubeDownloadScreen() {
         로그인·세션·지역 제한·추출기 변경·PO Token/JavaScript 런타임 요구에 따라 일부 페이지나 형식은 분석되지 않을 수 있습니다.
         분리된 영상·오디오 트랙은 병합 호환성이 확인된 형식만 표시합니다. 추가된 작업은 기존 전송 목록에서 관리합니다.
       </Text>
+      <Sheet visible={videoExtensionSheet} onClose={() => setVideoExtensionSheet(false)} title="원본 동영상 확장자" subtitle="원본 형식 필터입니다. 저장 컨테이너는 별도 설정에서 선택합니다.">
+        <ListRow icon={selectedVideoExt === "all" ? "check" : "filter"} title="전체 확장자" value={selectedVideoExt === "all" ? "선택됨" : undefined} onPress={() => { setSelectedVideoExt("all"); setVideoExtensionSheet(false); }} />
+        {videoExtensions.map((ext) => (
+          <ListRow key={"video-filter-" + ext} icon={selectedVideoExt === ext ? "check" : "filter"} title={ext.toUpperCase()} subtitle={videos.filter((format) => format.ext.toLowerCase() === ext).length + "개 형식"} value={selectedVideoExt === ext ? "선택됨" : undefined} onPress={() => { setSelectedVideoExt(ext); const first = videos.filter((format) => format.ext.toLowerCase() === ext).sort((a, b) => b.height - a.height || b.tbr - a.tbr)[0]; if (first) setSelectedVideo(formatKey(first)); setVideoExtensionSheet(false); }} />
+        ))}
+      </Sheet>
+      <Sheet visible={audioExtensionSheet} onClose={() => setAudioExtensionSheet(false)} title="원본 오디오 확장자" subtitle="원본 형식 필터입니다. 저장 컨테이너는 별도 설정에서 선택합니다.">
+        <ListRow icon={selectedAudioExt === "all" ? "check" : "filter"} title="전체 확장자" value={selectedAudioExt === "all" ? "선택됨" : undefined} onPress={() => { setSelectedAudioExt("all"); setAudioExtensionSheet(false); }} />
+        {audioExtensions.map((ext) => (
+          <ListRow key={"audio-filter-" + ext} icon={selectedAudioExt === ext ? "check" : "filter"} title={ext.toUpperCase()} subtitle={audios.filter((format) => format.ext.toLowerCase() === ext).length + "개 형식"} value={selectedAudioExt === ext ? "선택됨" : undefined} onPress={() => { setSelectedAudioExt(ext); const first = audios.filter((format) => format.ext.toLowerCase() === ext).sort((a, b) => b.abr - a.abr)[0]; if (first) setSelectedAudio(formatKey(first)); setAudioExtensionSheet(false); }} />
+        ))}
+      </Sheet>
+      <Sheet visible={videoFormatsSheet} onClose={() => setVideoFormatsSheet(false)} title="동영상 화질·형식 선택" subtitle={visibleVideos.length + "개 형식 · 목록에서 하나만 선택"}>
+        {visibleVideos.map((format) => (
+          <ListRow key={"video-format-" + formatKey(format)} icon={selectedVideo === formatKey(format) ? "check" : "download"} title={formatTitle(format)} subtitle={[formatSubtitle(format), formatSize(format)].join(" · ")} value={selectedVideo === formatKey(format) ? "선택됨" : undefined} onPress={() => { setSelectedVideo(formatKey(format)); setVideoFormatsSheet(false); }} />
+        ))}
+      </Sheet>
+      <Sheet visible={audioFormatsSheet} onClose={() => setAudioFormatsSheet(false)} title="오디오 음질·형식 선택" subtitle={audioChoices.length + "개 형식 · 목록에서 하나만 선택"}>
+        {audioChoices.map((format, index) => (
+          <ListRow key={"audio-format-" + formatKey(format)} icon={selectedAudio === formatKey(format) ? "check" : "download"} title={formatTitle(format, index === 0)} subtitle={[formatSubtitle(format), formatSize(format)].join(" · ")} value={selectedAudio === formatKey(format) ? "선택됨" : undefined} onPress={() => { setSelectedAudio(formatKey(format)); setAudioFormatsSheet(false); }} />
+        ))}
+      </Sheet>
       <Sheet visible={videoContainerSheet} onClose={() => setVideoContainerSheet(false)} title="동영상 출력 컨테이너" subtitle="선택한 형식으로 변환 저장합니다. 원본 유지는 변환하지 않습니다.">
         <ListRow icon={videoContainer === "original" ? "check" : "download"} title="원본 컨테이너 유지" subtitle="원본 형식을 그대로 저장" value={videoContainer === "original" ? "선택됨" : undefined} onPress={() => { setVideoContainer("original"); setVideoContainerSheet(false); }} />
         {VIDEO_OUTPUT_CONTAINERS.map((ext) => (

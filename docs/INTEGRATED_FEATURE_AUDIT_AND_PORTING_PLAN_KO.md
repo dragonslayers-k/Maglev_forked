@@ -124,3 +124,18 @@ P0 YouTube output postprocess state/file integrity → P0 WireGuard stage diagno
 
 ## Handoff
 2026-11-26: user rejected candidate due selected extension not applying, WireGuard failure, Barrel feature gap, inaccurate/empty About reference section, and missing browser recording. Screen recording reviewed; final output extension is not exposed and a transfer reports Site refused. Source audit found NewPipe's 180 s metadata cache was reused at add time, risking expired signed googlevideo URLs; add now refreshes the stream URL. #532 CI passed but does not resolve user-reported runtime failures. Update this document only with actual test evidence.
+
+
+## 2026-11-27 user acceptance and next implementation checkpoint
+
+CI #539 completed successfully for commit 9fb950d7b78517789731348e3c78f4c0c985154a: JS/typecheck/tests, contracts, Rust, Android arm64 native build, APK build, signing/version checks, and Kotlin unit tests passed; the run produced the apks artifact. This is a build candidate only, not Galaxy runtime acceptance.
+
+The installed candidate remains rejected. The current requested UX correction moves all source extension filters and quality/bitrate lists into selection sheets, leaving only selected values on the main YouTube screen. Output container stays separate from source extension. This is a presentation change; actual output file extension, container, codec, file signature and playback must still pass acceptance.
+
+The latest WireGuard code copies the pinned MIT-licensed upstream netstack source into native/wireguard/netstack and adds a done signal, callback lock and idempotent close. CI Go tests pass with this copy. A remaining audit point is to release a packet buffer view if shutdown wins after WriteNotify has called ToView; this must be fixed and regression-tested before declaring lifecycle complete.
+
+Release fallback workflow must compile the app-local WireGuard JNI library itself, not assume a previously staged binary. It now sets up Go and builds the arm64 userspace proxy from the same source with 16 KB ELF alignment.
+
+Barrel 1.1.2 static analysis confirms the service/worker/DB structure, HaulMediaBridge, HaulMseBridge, HaulBlobBridge, HaulGrabberBridge, MSE/SourceBuffer hooks, HLS/DASH segment/resume traces and a WebMediaKeepAliveService class-name trace. These are static APK traces, not runtime proof. Smart Connect semantics and PiP are not proven by the analysis document; implement and test them as separate MAGLEV+ requirements, not falsely attribute them to Barrel.
+
+Remaining user-required gates: actual smart connection decision path; direct/HLS/DASH video recognition; download while playing; MSE/SourceBuffer capture and mux for non-DRM streams; HLS Live segment handling; background playback service/media session/audio focus; native PiP entry/exit; actual YouTube target-format output; app-local WireGuard handshake and tunneled HTTPS with no system route changes. Keep PR Draft and do not release until device acceptance.
