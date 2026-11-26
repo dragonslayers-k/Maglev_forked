@@ -95,7 +95,7 @@ export const SETTINGS_INDEX: SettingEntry[] = [
     "updates-ad-list",
     "Ad block list",
     "updates",
-    "업데이트",
+    "목록 업데이트",
     [
       "ads",
       "adblock",
@@ -112,7 +112,7 @@ export const SETTINGS_INDEX: SettingEntry[] = [
     "updates-sources",
     "Search sources and trackers",
     "updates",
-    "업데이트",
+    "목록 업데이트",
     ["search", "providers", "trackers", "sources", "list", "torrent"],
     "Lists",
   ),
