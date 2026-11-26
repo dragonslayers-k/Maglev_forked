@@ -1,11 +1,9 @@
 /**
  * Which tabs show and in what order. Pure helpers (no imports) so node tests can run them.
  * Ids are the route names under app/(tabs). Transfers and Settings are always shown.
- * The Assistant tab also needs Settings > Assistant to be on: that setting decides whether the
- * assistant exists, this list only decides where its tab sits and whether it shows.
  */
 
-export type TabId = 'index' | 'search' | 'feeds' | 'settings' | 'assistant' | 'browse';
+export type TabId = 'index' | 'search' | 'feeds' | 'settings' | 'browse';
 
 /** Today's bar, then the optional Browser. */
 const TAB_IDS: readonly TabId[] = ['index', 'search', 'feeds', 'settings', 'browse'];
@@ -49,7 +47,7 @@ export function setTabShown(prefs: TabPrefs, id: TabId, shown: boolean): TabPref
 
 /**
  * Swap a tab with its neighbour. `listed` limits the neighbours to rows the screen shows, so a
- * tab that is not listed (Assistant while it is off) is stepped over.
+ * tab that is not listed is stepped over.
  */
 export function moveTab(prefs: TabPrefs, id: TabId, dir: 'up' | 'down', listed?: readonly TabId[]): TabPrefs {
   const rows = prefs.order.filter((x) => !listed || listed.includes(x));
@@ -75,7 +73,7 @@ export function moveItem<T>(list: readonly T[], from: number, to: number): T[] {
 
 /**
  * Drag and drop: move the listed row at `from` to listed row index `to`. `listed` is the rows the screen
- * shows, in order. Tabs that are not listed (Assistant while it is off) keep their slots in the saved order.
+ * shows, in order. Tabs that are not listed keep their slots in the saved order.
  */
 export function reorderTabs(prefs: TabPrefs, listed: readonly TabId[], from: number, to: number): TabPrefs {
   const rows = prefs.order.filter((x) => listed.includes(x));
@@ -87,8 +85,8 @@ export function reorderTabs(prefs: TabPrefs, listed: readonly TabId[], from: num
 }
 
 /** The tabs on the bar, in order. */
-export function visibleTabs(prefs: TabPrefs, _opts?: { assistantEnabled?: boolean }): TabId[] {
-  const shown = prefs.order.filter((id) => id !== 'assistant' && !prefs.hidden.includes(id));
+export function visibleTabs(prefs: TabPrefs): TabId[] {
+  const shown = prefs.order.filter((id) => !prefs.hidden.includes(id));
   // Never an empty bar.
   return LOCKED_TABS.reduce<TabId[]>((acc, id) => (acc.includes(id) ? acc : [...acc, id]), shown);
 }
