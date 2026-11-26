@@ -83,7 +83,7 @@ object YoutubeDownload {
      * registered extractor. Generic extraction is only invoked by an explicit user action.
      */
     private fun requestFor(url: String, playerClient: String): YoutubeDLRequest {
-        val request = YoutubeDLRequest(url).addOption("--no-playlist")
+        val request = YoutubeDLRequest(url).addOption("--no-playlist").addOption("--no-warnings")
         if (playerClient != "generic") {
             request.addOption("--extractor-args", "youtube:player_client=" + playerClient)
         }
