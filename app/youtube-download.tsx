@@ -160,6 +160,12 @@ export default function YouTubeDownloadScreen() {
     })),
   ];
   const selectedAudioFormat = (audios.length > 0 ? audios : audioFallbacks).find((format) => formatKey(format) === selectedAudio);
+  // Preset rows (bestaudio_320, etc.) carry the bitrate ceiling in their ID,
+  // not in `abr`. Resolve it here so video downloads actually receive the
+  // selected audio-quality ceiling through the native bridge.
+  const selectedAudioBitrateKbps = selectedAudioFormat?.abr && selectedAudioFormat.abr > 0
+    ? selectedAudioFormat.abr
+    : Number(/^bestaudio_(\\d+)$/.exec(selectedAudioFormat?.formatId ?? '')?.[1]) || undefined;
 
   return (
     <Screen title={screenTitle} onBack={back} scroll contentStyle={styles.content}>
@@ -184,7 +190,7 @@ export default function YouTubeDownloadScreen() {
             </Card>
             <Button fullWidth size="lg" disabled={busy || !videos.some((format) => formatKey(format) === selectedVideo)} loading={busy}
               label={busy ? "다운로드 추가 중…" : "선택한 동영상 다운로드"}
-              onPress={() => { const chosen = videos.find((format) => formatKey(format) === selectedVideo); if (chosen) void start(chosen, selectedAudioFormat && selectedAudioFormat.abr > 0 ? selectedAudioFormat.abr : undefined); }} />
+              onPress={() => { const chosen = videos.find((format) => formatKey(format) === selectedVideo); if (chosen) void start(chosen, selectedAudioBitrateKbps); }} />
             {isYouTube ? (
               <Button fullWidth size="md" variant="secondary" disabled={busy || loadingMoreFormats}
                 loading={loadingMoreFormats} label={loadingMoreFormats ? '추가 형식 조회 중…' : '추가 화질·오디오 형식 조회'}
