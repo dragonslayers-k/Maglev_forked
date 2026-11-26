@@ -698,9 +698,57 @@ const KO_UI: Record<string, string> = {
   "Nothing downloaded": "다운로드 기록 없음", "finished": "완료", "downloaded": "다운로드",
   "Took": "소요 시간", "Downloading for": "다운로드 경과", "days": "일", "day": "일",
 
+
+  "Enter a host name or IP address.": "호스트 이름 또는 IP 주소를 입력하세요.",
+  "Enter a port from 1 to 65535.": "1~65535 사이의 포트를 입력하세요.",
+  "Leave empty for none.": "사용하지 않으려면 비워 두세요.",
+  "FREE · NO ADS · OPEN SOURCE": "무료 · 광고 없음 · 오픈 소스",
+  "Like Maglev? Give it a star": "Maglev+ 프로젝트를 응원해주세요",
+  "It takes a second on GitHub and helps others find the app.": "GitHub에서 별표를 남기면 다른 사용자에게 프로젝트를 알리는 데 도움이 됩니다.",
+  "Like Maglev? Give it a star on GitHub": "GitHub에서 Maglev+ 프로젝트 응원하기",
+  "Opens Maglev on GitHub": "Maglev+ 저장소를 GitHub에서 엽니다",
+  "STAR": "별표",
+  "November": "11월", "January": "1월", "February": "2월", "March": "3월", "April": "4월", "May": "5월", "June": "6월", "July": "7월", "August": "8월", "September": "9월", "October": "10월", "December": "12월",
+  "This week so far": "이번 주 현재까지", "Last week so far": "지난주 현재까지", "the week before": "지난주",
+  "downloaded this week so far": "이번 주 다운로드 중", "downloaded this week": "이번 주 다운로드", "downloaded this month": "이번 달 다운로드", "downloaded this year": "올해 다운로드",
+  "Today is the busiest day so far.": "오늘 현재 다운로드가 가장 많습니다.",
+  "Same as last week so far": "지난주 같은 기간과 동일", "Same as the week before": "지난주와 동일",
+
 };
 
 export function koUiText(value: string | null | undefined): string {
   if (value == null) return '';
-  return KO_UI[value] ?? value;
+  const exact = KO_UI[value];
+  if (exact) return exact;
+  const month = /^(January|February|March|April|May|June|July|August|September|October|November|December)(?: (\\d{4}))?$/.exec(value);
+  if (month) {
+    const names: Record<string, string> = { January: '1월', February: '2월', March: '3월', April: '4월', May: '5월', June: '6월', July: '7월', August: '8월', September: '9월', October: '10월', November: '11월', December: '12월' };
+    return (month[2] ? month[2] + '년 ' : '') + names[month[1]];
+  }
+  const date = /^(?:([A-Za-z]{3}), )?([A-Za-z]{3}) (\\d{1,2})(?:[–-](\\d{1,2}))?$/.exec(value);
+  if (date) {
+    const months: Record<string, string> = { Jan: '1월', Feb: '2월', Mar: '3월', Apr: '4월', May: '5월', Jun: '6월', Jul: '7월', Aug: '8월', Sep: '9월', Oct: '10월', Nov: '11월', Dec: '12월' };
+    const days: Record<string, string> = { Sun: '일', Mon: '월', Tue: '화', Wed: '수', Thu: '목', Fri: '금', Sat: '토' };
+    return (date[1] ? '(' + days[date[1]] + ') ' : '') + months[date[2]] + ' ' + date[3] + '일' + (date[4] ? '–' + date[4] + '일' : '');
+  }
+  return value
+    .replace(/\\bThis week\\b/g, '이번 주')
+    .replace(/\\bLast week\\b/g, '지난주')
+    .replace(/\\bthis week so far\\b/g, '이번 주 현재까지')
+    .replace(/\\bthis week\\b/g, '이번 주')
+    .replace(/\\bthis month\\b/g, '이번 달')
+    .replace(/\\bthis year\\b/g, '올해')
+    .replace(/\\bToday\\b/g, '오늘')
+    .replace(/\\bYesterday\\b/g, '어제')
+    .replace(/\\b(\\d+) finished\\b/g, '$1건 완료')
+    .replace(/\\b(\\d+) failed\\b/g, '$1건 실패')
+    .replace(/\\b(\\d+) cancelled\\b/g, '$1건 취소')
+    .replace(/\\bdownloads finished\\b/g, '건 다운로드 완료')
+    .replace(/\\bdownload finished\\b/g, '건 다운로드 완료')
+    .replace(/\\bso far\\b/g, '현재까지')
+    .replace(/\\bbusiest day\\b/g, '최다 다운로드 날짜')
+    .replace(/\\bNothing downloaded in (.+)$/g, '$1 다운로드 기록이 없습니다')
+    .replace(/\\bNot here yet\\b/g, '아직 해당 기간이 아닙니다')
+    .replace(/\\bNothing downloaded\\b/g, '다운로드 기록 없음')
+    .replace(/\\bToday is the busiest day so far\\./g, '오늘 현재 다운로드가 가장 많습니다.');
 }

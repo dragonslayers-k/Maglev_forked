@@ -8,6 +8,7 @@ import { Stack, useRouter } from 'expo-router';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 import { useTheme } from '../context/ThemeContext';
+import { koUiText } from '../constants/korean';
 import { ThemeColors, motion, radius, spacing, type } from '../constants/theme';
 import { Button, IconButton, Screen, SegmentedControl, Sheet } from '../components/ui';
 import { useMotion } from '../components/ui/useMotion';
@@ -186,7 +187,7 @@ export default function StatsScreen() {
   }, [sheet, go, m.disabled]);
 
   const title = rangeTitle(range, today);
-  const unit = shown.kind === 'year' ? 'week' : 'day';
+  const unit = shown.kind === 'year' ? '주' : '일';
   const b = sel >= 0 ? buckets[sel] : null;
   let r1: string;
   let r2 = '';
@@ -202,10 +203,10 @@ export default function StatsScreen() {
   } else if (dayOne) {
     r1 = '다운로드를 시작하면 첫 건물이 여기에 나타납니다';
   } else if (stats.empty) {
-    r1 = `Nothing downloaded in ${rangeTitle(shown, today)}`;
+    r1 = `${koUiText(rangeTitle(shown, today))} 다운로드 기록이 없습니다`;
     r2 = '다운로드가 완료되면 해당 건물이 올라갑니다';
   } else if (b) {
-    r1 = `${b.label}${b.current ? ' · so far' : ''}${sel === busiest ? ` · busiest ${b.noun}` : ''}`;
+    r1 = `${koUiText(b.label)}${b.current ? ' · 현재까지' : ''}${sel === busiest ? ` · ${b.noun === 'week' ? '이번 주' : '최다 다운로드 날짜'}` : ''}`;
     r2 = bucketReadout(b);
     hint = '기차를 움직여 날짜별 기록을 확인하세요';
   } else r1 = '';
@@ -278,7 +279,7 @@ export default function StatsScreen() {
               live={live.running && stats.includesToday}
               inert={inert}
               onPick={setSel}
-              accessibilityLabel={`Pixel city for ${rangeTitle(shown, today)}. Each building is one ${unit}.`}
+              accessibilityLabel={`${koUiText(rangeTitle(shown, today))} 픽셀 도시. 건물 하나는 ${unit}을 나타냅니다.`}
               valueText={[r1, r2].filter(Boolean).join(', ')}
             />
           </Animated.View>
