@@ -49,6 +49,29 @@ export const SETTINGS_INDEX: SettingEntry[] = [
   ],
   ),
   e(
+    "about-integrated-app",
+    "Maglev+ 통합 다운로드 앱",
+    "about",
+    "앱 정보",
+    ["Maglev+", "community build", "fork", "integrated downloader", "project", "source"],
+  ),
+  e(
+    "about-ad-block",
+    "광고 차단",
+    "about",
+    "앱 정보",
+    ["adblock", "block ads", "blocklist", "browser", "filters"],
+    "통합 구성",
+  ),
+  e(
+    "about-update-method",
+    "업데이트 방식",
+    "about",
+    "앱 정보",
+    ["apk", "release", "lists", "update", "separate", "version"],
+    "통합 구성",
+  ),
+  e(
     "about-highlights",
     "Show new features after updates",
     "about",
@@ -64,7 +87,7 @@ export const SETTINGS_INDEX: SettingEntry[] = [
   ),
   e(
     "about-built-by",
-    "Built by Kaos",
+    "MAGLEV 기반 기능",
     "about",
     "앱 정보",
     [
@@ -74,6 +97,7 @@ export const SETTINGS_INDEX: SettingEntry[] = [
     "source code",
     "github",
   ],
+    "통합 구성",
   ),
   e(
     "about-crash-log",
@@ -337,7 +361,7 @@ export const SETTINGS_INDEX: SettingEntry[] = [
     "assistant-enable",
     "도우미",
     "assistant",
-    "도우미",
+    "도우미 설정",
     [
     "ai",
     "chat",
@@ -352,9 +376,9 @@ export const SETTINGS_INDEX: SettingEntry[] = [
   ),
   e(
     "assistant-tokens",
-    "Tokens used",
+    "사용 토큰",
     "assistant",
-    "도우미",
+    "도우미 설정",
     [
     "usage",
     "tokens",
@@ -366,9 +390,9 @@ export const SETTINGS_INDEX: SettingEntry[] = [
   ),
   e(
     "assistant-notice",
-    "Show the usage notice again",
+    "사용 안내 다시 보기",
     "assistant",
-    "도우미",
+    "도우미 설정",
     ["notice", "warning", "privacy", "usage", "sent"],
   ),
   e(
@@ -966,16 +990,16 @@ export const SETTINGS_INDEX: SettingEntry[] = [
   ),
   e(
     "network-advanced",
-    "Advanced",
+    "고급 네트워크",
     "network",
     "네트워크",
     ["advanced", "port", "proxy", "dht", "upnp", "blocklist", "torrent", "peers"],
   ),
   e(
     "network-port",
-    "Incoming port",
+    "수신 포트",
     "network-advanced",
-    "Advanced network",
+    "고급 네트워크",
     [
     "port",
     "listening",
@@ -983,13 +1007,13 @@ export const SETTINGS_INDEX: SettingEntry[] = [
     "peers",
     "connection",
   ],
-    "Connection",
+    "연결",
   ),
   e(
     "network-upnp",
     "UPnP",
     "network-advanced",
-    "Advanced network",
+    "고급 네트워크",
     [
     "router",
     "port",
@@ -999,13 +1023,13 @@ export const SETTINGS_INDEX: SettingEntry[] = [
     "upnp",
     "port forwarding",
   ],
-    "Connection",
+    "연결",
   ),
   e(
     "network-dht",
     "DHT",
     "network-advanced",
-    "Advanced network",
+    "고급 네트워크",
     [
     "peers",
     "trackers",
@@ -1013,13 +1037,13 @@ export const SETTINGS_INDEX: SettingEntry[] = [
     "find peers",
     "torrent",
   ],
-    "Connection",
+    "연결",
   ),
   e(
     "network-lsd",
-    "Local peer discovery",
+    "로컬 피어 검색",
     "network-advanced",
-    "Advanced network",
+    "고급 네트워크",
     [
     "lan",
     "wifi",
@@ -1028,13 +1052,13 @@ export const SETTINGS_INDEX: SettingEntry[] = [
     "peers",
     "discovery",
   ],
-    "Connection",
+    "연결",
   ),
   e(
     "network-proxy-enable",
-    "SOCKS5 proxy",
+    "SOCKS5 프록시",
     "network-advanced",
-    "Advanced network",
+    "고급 네트워크",
     [
     "proxy",
     "socks",
@@ -1042,13 +1066,13 @@ export const SETTINGS_INDEX: SettingEntry[] = [
     "tunnel",
     "vpn",
   ],
-    "Proxy",
+    "프록시",
   ),
   e(
     "network-proxy-host",
-    "Host",
+    "프록시 호스트",
     "network-advanced",
-    "Advanced network",
+    "고급 네트워크",
     [
     "proxy",
     "socks",
@@ -1057,25 +1081,25 @@ export const SETTINGS_INDEX: SettingEntry[] = [
     "server",
     "hostname",
   ],
-    "Proxy",
+    "프록시",
   ),
   e(
     "network-proxy-port",
-    "Port",
+    "프록시 포트",
     "network-advanced",
-    "Advanced network",
+    "고급 네트워크",
     [
     "proxy",
     "socks",
     "number",
   ],
-    "Proxy",
+    "프록시",
   ),
   e(
     "network-proxy-user",
-    "Username",
+    "프록시 사용자 이름",
     "network-advanced",
-    "Advanced network",
+    "고급 네트워크",
     [
     "proxy",
     "socks",
@@ -1083,13 +1107,13 @@ export const SETTINGS_INDEX: SettingEntry[] = [
     "user",
     "account",
   ],
-    "Proxy",
+    "프록시",
   ),
   e(
     "network-proxy-pass",
-    "Password",
+    "프록시 비밀번호",
     "network-advanced",
-    "Advanced network",
+    "고급 네트워크",
     [
     "proxy",
     "socks",
@@ -1097,13 +1121,13 @@ export const SETTINGS_INDEX: SettingEntry[] = [
     "secret",
     "pass",
   ],
-    "Proxy",
+    "프록시",
   ),
   e(
     "network-ip-blocklist",
-    "Block listed IPs",
+    "목록의 IP 차단",
     "network-advanced",
-    "Advanced network",
+    "고급 네트워크",
     [
     "ip filter",
     "blocklist",
@@ -1113,7 +1137,7 @@ export const SETTINGS_INDEX: SettingEntry[] = [
     "ip",
     "file",
   ],
-    "IP blocklist",
+    "IP 차단 목록",
   ),
 
   // Notifications
@@ -1318,7 +1342,7 @@ export const SETTINGS_INDEX: SettingEntry[] = [
   ),
   e(
     "search-wait-slow",
-    "느린 검색 사이트 대기 시간",
+    "느린 사이트 대기 시간",
     "search-providers",
     "검색 사이트",
     ["timeout", "slow", "seconds", "wait", "time", "delay", "speed"],
@@ -1326,7 +1350,7 @@ export const SETTINGS_INDEX: SettingEntry[] = [
   ),
   e(
     "search-results-per-source",
-    "검색 사이트별 결과 수",
+    "사이트별 결과 수",
     "search-providers",
     "검색 사이트",
     [
@@ -1413,7 +1437,7 @@ export const SETTINGS_INDEX: SettingEntry[] = [
       "cut",
       "truncated",
     ],
-    "Results",
+    "결과",
   ),
   e(
     "search-jackett",
@@ -1763,7 +1787,7 @@ export const SETTINGS_INDEX: SettingEntry[] = [
   ),
   e(
     "about-source-code",
-    "Source code on GitHub",
+    "YouTube 추출 엔진",
     "about",
     "앱 정보",
     [
@@ -1773,6 +1797,7 @@ export const SETTINGS_INDEX: SettingEntry[] = [
     "source",
     "open source",
   ],
+    "통합 구성",
   ),
   e(
     "whats-new-latest",
