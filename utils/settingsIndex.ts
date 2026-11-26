@@ -34,7 +34,6 @@ const e = (
 
 export const SETTINGS_INDEX: SettingEntry[] = [
   // About
-,
   e(
     "about-report-bug",
     "Report a bug",
@@ -83,15 +82,12 @@ export const SETTINGS_INDEX: SettingEntry[] = [
   ],
   ),
 
-  // Updates (new page)
-,
-,
-,
+  // List updates (app self-updater removed)
   e(
     "updates-lists-auto",
     "Update lists automatically",
     "updates",
-    "업데이트",
+    "목록 업데이트",
     ["lists", "daily", "automatic", "block list", "trackers", "sources"],
     "Lists",
   ),
@@ -120,7 +116,6 @@ export const SETTINGS_INDEX: SettingEntry[] = [
     ["search", "providers", "trackers", "sources", "list", "torrent"],
     "Lists",
   ),
-,
 
   // Subtitles
   e(
