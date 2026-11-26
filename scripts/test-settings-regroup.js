@@ -1,8 +1,5 @@
 #!/usr/bin/env node
-// Settings regroup (0.25): General / Finding things / Downloads / Network and power / App, a Downloads page,
-// Speed and sharing, Power with battery rows only, redirect pages gone, search index in step with the pages.
-// Needs Node 22.18+ (imports the TypeScript index directly via type stripping).
-process.removeAllListeners('warning');
+// Settings regroup (0.25): localized settings groups and row order.
 const fs = require('fs');
 const path = require('path');
 const root = path.join(__dirname, '..');
@@ -21,8 +18,6 @@ async function main() {
   console.log('Settings regroup');
   const list = read('app/(tabs)/settings.tsx');
   const at = (s) => list.indexOf(s);
-
-  // Main list: groups, order, rows.
   const groups = ['앱', '일반', '콘텐츠 찾기', '전송', '네트워크 및 전원'];
   const gpos = groups.map((g) => at(`<SectionHeader title="${g}"`));
   check('all five group titles exist', gpos.every((p) => p > 0));
@@ -56,19 +51,17 @@ async function main() {
   check('Speed row is titled Speed and sharing', /title: '속도 및 공유'.*route: 'speed'/.test(listOf('speedRow')));
   check('Watches row sits with Downloads, not Finding things', !listOf('findRows').includes('watchCopy'));
 
-  // Downloads page.
   check('app/settings/downloads.tsx exists', exists('app/settings/downloads.tsx'));
   const dl = exists('app/settings/downloads.tsx') ? read('app/settings/downloads.tsx') : '';
   const dpos = ['Adding downloads', 'Link downloads', 'When downloads finish'].map((t) => dl.indexOf(`<SectionHeader title="${t}"`));
   check('downloads.tsx has the three sections in order', dpos.every((p, i) => p > 0 && (i === 0 || p > dpos[i - 1])));
   check('downloads.tsx title is Adding and finishing', /<SettingsPage title="Adding and finishing"/.test(dl));
-  check('downloads.tsx has Add without asking and clipboard row', /quickShareCopy\.setting\.title/.test(dl) && /<ClipboardSetting/.test(dl));
+  check('downloads.tsx has Add without asking and clipboard row', /quickShareCopy\\.setting\\.title/.test(dl) && /<ClipboardSetting/.test(dl));
   check('downloads.tsx renders Parts then Retry', dl.indexOf('<PartsSection') > 0 && dl.indexOf('<RetrySection') > dl.indexOf('<PartsSection'));
   check('downloads.tsx has Close when done and Resume after restart', /Close when done/.test(dl) && /Resume after restart/.test(dl) && /autoExitOnComplete/.test(dl) && /resumeAfterRestart/.test(dl));
   check('Link downloads sits between Adding and When downloads finish', dl.indexOf('<PartsSection') > dpos[1] && dl.indexOf('<RetrySection') < dpos[2]);
   check('layout registers settings/downloads', read('app/_layout.tsx').includes('name="settings/downloads"'));
 
-  // Moved rows are gone from their old pages.
   const storage = read('app/settings/storage.tsx');
   check('storage.tsx no longer holds the adding rows', !/ClipboardSetting/.test(storage) && !/quickShareCopy/.test(storage) && !/Adding downloads/.test(storage));
   const speed = read('app/settings/speed.tsx');
@@ -78,18 +71,14 @@ async function main() {
   check('power.tsx has Charging only and Pause below', /Charging only/.test(power) && /Pause below/.test(power));
   check('power.tsx no longer holds the lifecycle rows', !/Close when done|Resume after restart|autoExitOnComplete|resumeAfterRestart/.test(power));
 
-  // Redirect pages gone.
   const layout = read('app/_layout.tsx');
   for (const f of ['bandwidth', 'queue']) {
     check(`settings/${f}.tsx is deleted`, !exists(`app/settings/${f}.tsx`));
     check(`layout no longer registers settings/${f}`, !layout.includes(`name="settings/${f}"`));
   }
-
-  // Assistant knows the page.
-  check('assistant can open the Downloads page', /downloads/.test(read('utils/assistant/tools.ts')) && /downloads: '\/settings\/downloads'/.test(read('utils/assistant/chatView.ts')) && /downloads: 'Adding and finishing'/.test(read('utils/assistant/toolRunner.ts')));
+  check('assistant can open the Downloads page', /downloads/.test(read('utils/assistant/tools.ts')) && /downloads: '\\/settings\\/downloads'/.test(read('utils/assistant/chatView.ts')) && /downloads: 'Adding and finishing'/.test(read('utils/assistant/toolRunner.ts')));
   check('assistant names Speed and sharing', /speed: 'Speed and sharing'/.test(read('utils/assistant/toolRunner.ts')));
 
-  // Search index.
   const { SETTINGS_INDEX } = await import(path.join(root, 'utils/settingsIndex.ts'));
   const byId = new Map(SETTINGS_INDEX.map((e) => [e.id, e]));
   check('every index entry points at an existing page', SETTINGS_INDEX.every((e) => exists(`app/settings/${e.page}.tsx`)), SETTINGS_INDEX.filter((e) => !exists(`app/settings/${e.page}.tsx`)).map((e) => e.id).join());
@@ -115,12 +104,11 @@ async function main() {
   check('no entry still says Speed & queue', !SETTINGS_INDEX.some((e) => e.pageTitle === 'Speed & queue'));
   check('speed entries say Speed and sharing', SETTINGS_INDEX.filter((e) => e.page === 'speed').every((e) => e.pageTitle === '속도 및 공유'));
 
-  // Fixtures and flows.
   for (const f of ['.maestro/settings-roundtrip.yaml', '.maestro/settings-screens.yaml']) {
     check(`${f} says Speed and sharing`, !/Speed & queue/.test(read(f)) && /Speed and sharing/.test(read(f)));
   }
 
-  console.log(failed ? `\nsettings regroup: ${failed} failed` : '\nsettings regroup: all passed');
+  console.log(failed ? `\\nsettings regroup: ${failed} failed` : '\\nsettings regroup: all passed');
   process.exit(failed ? 1 : 0);
 }
 main();
