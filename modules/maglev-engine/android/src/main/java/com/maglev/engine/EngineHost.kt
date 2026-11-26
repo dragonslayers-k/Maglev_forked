@@ -713,6 +713,7 @@ object EngineHost {
         val torrents = Json.list(res["torrents"])
         val downloads = Json.list(res["downloads"])
         detectCompletions(torrents)
+        processPendingPostProcessing(downloads)
         detectDownloadCompletions(downloads)
         // URL downloads count as transfers: they keep the service up and show in the notification (section 17).
         val transfers = allTransfers(torrents, downloads)
@@ -727,6 +728,12 @@ object EngineHost {
             lastEmitAt = nowMs
             @Suppress("UNCHECKED_CAST")
             val body = LinkedHashMap(Json.camelize(res) as Map<String, Any?>)
+            body["downloads"] = downloads.map { d ->
+                val copy = LinkedHashMap(d)
+                val id = d["id"] as? String
+                if (id != null) copy["name"] = formatOutputName(ctx ?: return@map d, id, d["name"] as? String)
+                Json.camelize(copy)
+            }
             body["serviceBlocked"] = serviceBlocked
             emit("onTelemetry", body)
         }
@@ -1945,6 +1952,22 @@ object EngineHost {
     // region URL downloads (§17)
 
     /** Per download: its last seen state, to find the edge to `finished`. Guarded by itself. */
+    private val postProcessing = ConcurrentHashMap.newKeySet<String>()
+    private const val FORMAT_POSTPROCESS_PREFIX = "youtube_postprocess_"
+    private const val FORMAT_OUTPUT_NAME_PREFIX = "youtube_output_name_"
+    private const val FORMAT_OUTPUT_FOLDER_PREFIX = "youtube_output_folder_"
+    private fun postProcessKey(id: String) = FORMAT_POSTPROCESS_PREFIX + id
+    private fun outputNameKey(id: String) = FORMAT_OUTPUT_NAME_PREFIX + id
+    private fun outputFolderKey(id: String) = FORMAT_OUTPUT_FOLDER_PREFIX + id
+    private fun formatPrefs(c: Context) = c.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+    private fun formatOutputName(c: Context, id: String, fallback: String?): String =
+        formatPrefs(c).getString(outputNameKey(id), null) ?: fallback ?: id
+    private fun pendingPostProcess(c: Context, id: String): Map<String, Any?>? {
+        val raw = formatPrefs(c).getString(postProcessKey(id), null) ?: return null
+        return Json.parseObject(raw).takeIf { it["ok"] != false }
+    }
+    private fun hasPendingPostProcess(c: Context, id: String): Boolean =
+        formatPrefs(c).contains(postProcessKey(id)) || postProcessing.contains(id)
     private val prevDownloadState = HashMap<String, String>()
 
     fun probeUrl(url: String, options: Map<String, Any?>, timeoutMs: Long): Map<String, Any?> =
@@ -1981,9 +2004,19 @@ object EngineHost {
 
     fun addDownload(url: String, options: Map<String, Any?>): Map<String, Any?> {
         val c = requireCtx()
-        val opts = LinkedHashMap(Json.snakeify(options) as Map<String, Any?>)
+        val postProcess = options["postprocess"] as? Map<*, *>
+        val cleanOptions = LinkedHashMap(options)
+        cleanOptions.remove("postprocess") // Kotlin-only metadata; never pass it to Rust's strict download options.
+        val opts = LinkedHashMap(Json.snakeify(cleanOptions) as Map<String, Any?>)
         if (opts["folder"] == null && c != null) opts["folder"] = StorageManager.activeTarget(c).path
         val res = call { NativeCore.nativeAddDownload(url, Json.toJson(opts)) }
+        if (isOk(res) && c != null && postProcess != null) {
+            val id = res["id"] as? String
+            if (!id.isNullOrBlank()) {
+                val spec = postProcess.entries.associate { it.key.toString() to it.value }
+                formatPrefs(c).edit().putString(postProcessKey(id), Json.toJson(spec)).apply()
+            }
+        }
         pollNow()
         return res
     }
@@ -2120,6 +2153,66 @@ object EngineHost {
         }
 
     /** Notification and media scan on the edge to `finished`. The first poll after a restart never notifies. */
+    private fun processPendingPostProcessing(downloads: List<Map<String, Any?>>) {
+        val c = ctx ?: return
+        for (d in downloads) {
+            if (d["state"] != "finished") continue
+            val id = d["id"] as? String ?: continue
+            val spec = pendingPostProcess(c, id) ?: continue
+            if (!postProcessing.add(id)) continue
+            ioScope.launch {
+                try {
+                    val folder = d["folder"] as? String
+                    val sourceName = d["name"] as? String
+                    val outputName = spec["outputName"] as? String
+                    val kind = spec["kind"] as? String
+                    val targetExt = spec["targetExt"] as? String
+                    if (folder.isNullOrBlank() || sourceName.isNullOrBlank() || outputName.isNullOrBlank() || kind.isNullOrBlank() || targetExt.isNullOrBlank()) {
+                        formatPrefs(c).edit().remove(postProcessKey(id)).apply()
+                        Notifications.notifyPostProcessFailed(c, id, sourceName ?: id, "변환 설정이 올바르지 않습니다.")
+                    } else {
+                        val source = File(folder, sourceName)
+                        val output = File(folder, outputName)
+                        val error = if (!source.exists() && output.isFile && output.length() > 0L) null
+                            else MediaContainerConverter.convert(source, output, kind, targetExt)
+                        if (error == null) {
+                            formatPrefs(c).edit()
+                                .putString(outputNameKey(id), outputName)
+                                .putString(outputFolderKey(id), folder)
+                                .remove(postProcessKey(id))
+                                .apply()
+                            if (source.absolutePath != output.absolutePath) source.delete()
+                            notifyDownloadCompleted(c, d + ("name" to outputName))
+                        } else {
+                            formatPrefs(c).edit().remove(postProcessKey(id)).apply()
+                            Notifications.notifyPostProcessFailed(c, id, sourceName, error)
+                        }
+                    }
+                } catch (t: Throwable) {
+                    Log.e(TAG, "YouTube output conversion failed", t)
+                    formatPrefs(c).edit().remove(postProcessKey(id)).apply()
+                    Notifications.notifyPostProcessFailed(c, id, d["name"] as? String ?: id, t.message ?: "FFmpeg 변환에 실패했습니다.")
+                } finally {
+                    postProcessing.remove(id)
+                    pollNow()
+                }
+            }
+        }
+    }
+
+    private fun notifyDownloadCompleted(c: Context, d: Map<String, Any?>) {
+        val id = d["id"] as? String ?: return
+        val nativeName = d["name"] as? String ?: id
+        val name = formatOutputName(c, id, nativeName)
+        val folder = d["folder"] as? String
+        val open = try {
+            val uri = (if (folder != null) viewUri(c, folder, name) else null)
+                ?: StorageManager.copiedUri(c, DL_PREFIX + id)?.let { Uri.parse(it) }
+            if (uri != null) Notifications.openFileAction(c, id, uri, SafStorageManager.mimeFor(name)) else null
+        } catch (t: Throwable) { Log.w(TAG, "open action failed", t); null }
+        Notifications.notifyCompleted(c, id, name, Json.long(d["size"]), open)
+        if (folder != null) ioScope.launch { try { scanPaths(c, folder, listOf(name)) } catch (t: Throwable) { Log.w(TAG, "media scan failed", t) } }
+    }
     private fun detectDownloadCompletions(downloads: List<Map<String, Any?>>) {
         val c = ctx
         val done = ArrayList<Map<String, Any?>>()
@@ -2128,24 +2221,14 @@ object EngineHost {
                 val id = d["id"] as? String ?: continue
                 val st = d["state"] as? String ?: continue
                 val prev = prevDownloadState[id]
-                if (prev != null && prev != "finished" && st == "finished") done.add(d)
+                if (prev != null && prev != "finished" && st == "finished" && (c == null || !hasPendingPostProcess(c, id))) done.add(d)
                 prevDownloadState[id] = st
             }
             prevDownloadState.keys.retainAll(downloads.mapNotNull { it["id"] as? String }.toSet())
         }
         if (c == null) return
         for (d in done) {
-            val id = d["id"] as? String ?: continue
-            val name = d["name"] as? String ?: id
-            val folder = d["folder"] as? String
-            // Open for the finished file: its staged path, else the copy Maglev made in the user's folder.
-            val open = try {
-                val uri = (if (folder != null) viewUri(c, folder, name) else null)
-                    ?: StorageManager.copiedUri(c, DL_PREFIX + id)?.let { Uri.parse(it) }
-                if (uri != null) Notifications.openFileAction(c, id, uri, SafStorageManager.mimeFor(name)) else null
-            } catch (t: Throwable) { Log.w(TAG, "open action failed", t); null }
-            Notifications.notifyCompleted(c, id, name, Json.long(d["size"]), open)
-            if (folder != null) ioScope.launch { try { scanPaths(c, folder, listOf(name)) } catch (t: Throwable) { Log.w(TAG, "media scan failed", t) } }
+            notifyDownloadCompleted(c, d)
         }
     }
 
@@ -2244,7 +2327,9 @@ object EngineHost {
             if (d["state"] != "finished") continue
             val id = d["id"] as? String ?: continue
             val folder = d["folder"] as? String ?: continue
-            val name = d["name"] as? String ?: continue
+            val nativeName = d["name"] as? String ?: continue
+            if (hasPendingPostProcess(c, id)) continue
+            val name = formatOutputName(c, id, nativeName)
             val key = DL_PREFIX + id
             if (!StorageManager.isStagingPath(c, folder) || StorageManager.isCopied(c, key, folder, treeStr)) continue
             val failedAt = copyFailedAt[key]
@@ -2328,8 +2413,9 @@ object EngineHost {
             ?: return Json.failure("NOT_FOUND", "That download isn't in your list")
         if (d["state"] != "finished") return Json.failure("INVALID_STATE", "This download isn't finished yet")
         val folder = d["folder"] as? String
-        val name = d["name"] as? String
-        if (folder == null || name.isNullOrEmpty()) return Json.failure("NOT_FOUND", "File not found")
+        val nativeName = d["name"] as? String
+        if (folder == null || nativeName.isNullOrEmpty()) return Json.failure("NOT_FOUND", "File not found")
+        val name = formatOutputName(c, id, nativeName)
         // Once the file was copied into the user's folder (maybe under a free name) the staged one is gone: open the
         // document Maglev created, by its URI.
         val copyUri = StorageManager.copiedUri(c, DL_PREFIX + id)
