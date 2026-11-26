@@ -115,14 +115,16 @@ public final class WireGuardProfileStore {
                 .onMalformedInput(CodingErrorAction.REPORT)
                 .onUnmappableCharacter(CodingErrorAction.REPORT)
                 .decode(ByteBuffer.wrap(bytes)).toString();
-            if (!value.isEmpty() && value.charAt(0) == '\uFEFF') value = value.substring(1);
-            if (value.indexOf('\0') >= 0 || (!allowEmpty && value.trim().isEmpty()))
+            if (!value.isEmpty() && value.charAt(0) == '\\uFEFF') value = value.substring(1);
+            if (value.indexOf('\\0') >= 0 || (!allowEmpty && value.trim().isEmpty()))
                 throw new IOException("Invalid profile text");
             return value;
         } catch (CharacterCodingException ex) { throw new IOException("Profile must be UTF-8"); }
     }
 
-    private static SecretKey key(boolean create) throws GeneralSecurityException {
+    // AndroidKeyStore.KeyStore.load() also declares IOException; preserve it for the
+    // existing encrypted-file callers rather than hiding a key-store initialization failure.
+    private static SecretKey key(boolean create) throws GeneralSecurityException, IOException {
         KeyStore ks = KeyStore.getInstance("AndroidKeyStore");
         ks.load(null);
         if (ks.containsAlias(ALIAS)) return (SecretKey) ks.getKey(ALIAS, null);
