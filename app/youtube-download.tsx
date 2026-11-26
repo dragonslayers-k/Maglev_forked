@@ -119,10 +119,13 @@ export default function YouTubeDownloadScreen() {
     .sort((a, b) => b.abr - a.abr);
   // Always offer yt-dlp's bestaudio selector even when the selected player client
   // does not expose audio-only formats in its metadata response.
-  const audioFallback: YouTubeFormat = {
-    formatId: 'bestaudio', playerClient: 'android_vr', kind: 'audio',
-    ext: 'm4a', height: 0, width: 0, fps: 0, tbr: 0, abr: 0, size: null, format: '원본 오디오',
-  };
+  const audioFallbacks: YouTubeFormat[] = [
+    { formatId: 'bestaudio', playerClient: 'android_vr', kind: 'audio', ext: '원본', height: 0, width: 0, fps: 0, tbr: 0, abr: 0, size: null, format: '원본 최고 음질' },
+    ...[320, 256, 192, 128].map((kbps) => ({
+      formatId: `bestaudio_${kbps}`, playerClient: 'android_vr', kind: 'audio' as const,
+      ext: '원본', height: 0, width: 0, fps: 0, tbr: 0, abr: 0, size: null, format: `최대 ${kbps} kbps`,
+    })),
+  ];
 
   return (
     <Screen title={screenTitle} onBack={back} scroll contentStyle={styles.content}>
@@ -150,7 +153,7 @@ export default function YouTubeDownloadScreen() {
           </View>
           <View style={styles.section}>
             <Text style={styles.heading}>오디오</Text>
-            {(audios.length > 0 ? audios : [audioFallback]).map((format) => (
+            {(audios.length > 0 ? audios : audioFallbacks).map((format) => (
               <Button key={formatKey(format)} fullWidth size="md" variant="secondary" disabled={busy}
                 label={formatLabel(format)} onPress={() => void start(format)} />
             ))}
