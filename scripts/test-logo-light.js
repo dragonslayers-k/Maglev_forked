@@ -13,9 +13,9 @@ const paths = read('components/brand/markPaths.ts');
 const header = read('components/HeaderBar.tsx');
 const appIcons = read('constants/appIcons.ts');
 
-check('Main header brand includes the plus mark', /MAGLEV\\+/.test(header) && /plusBadge/.test(header));
+check('Main header brand includes the plus mark', /MAGLEV\+/.test(header) && /plusBadge/.test(header));
 check('Header plus badge uses shared badge colour tokens', /APP_ICON_BADGE_CIRCLE/.test(header) && /APP_ICON_BADGE_PLUS/.test(header) && /APP_ICON_BADGE_CIRCLE = '#FFB000'/.test(appIcons));
-check('Header plus badge has no hardcoded colours or font weights', !/#[0-9a-fA-F]{3,8}\\b|fontWeight:/.test(header));
+check('Header plus badge has no hardcoded colours or font weights', !/#[0-9a-fA-F]{3,8}\b|fontWeight:/.test(header));
 check('MaglevMark reads the theme', /useTheme\(\)/.test(mark));
 check('MaglevMark branches on dark', /dark\s*\?\s*\{\s*body: MARK_LIME, lines: MARK_CYAN\s*\}\s*:\s*\{\s*body: colors\.text, lines: colors\.textMuted/.test(mark));
 check('MaglevMark no longer paints with the brand constants directly', !/fill=\{MARK_(LIME|CYAN)\}|backgroundColor: MARK_/.test(mark));
