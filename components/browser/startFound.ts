@@ -5,7 +5,7 @@
  */
 import type { DownloadOptions, EngineResult, UrlProbe } from '../../modules/maglev-engine/src/MaglevEngine.types';
 import { pageUrlOption } from './pageUrlOption.ts';
-import { parseNaverClipMediaId, resolveNaverClip } from '../../utils/browser/naverClip';
+import { parseNaverClipMediaId, resolveNaverClip } from '../../utils/browser/naverClip.ts';
 
 export interface StartDeps {
   headersFor: (t: { url: string; pageUrl: string; userAgent: string }) => Promise<NonNullable<DownloadOptions['headers']>>;
