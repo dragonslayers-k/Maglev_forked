@@ -92,7 +92,7 @@ async function main() {
   const screen = fs.readFileSync(path.join(root, 'app/youtube-download.tsx'), 'utf8');
   assert.ok(screen.includes('...[320, 256, 192, 128].map') && screen.includes('formatId: `bestaudio_${kbps}`'), 'audio fallback must expose selectable source bitrate caps');
   assert.ok(screen.includes('maglev_ytdlp=1') && screen.includes('추가 화질·오디오 형식 조회'), 'slow yt-dlp formats are fetched only on user request, after fast NewPipe results');
-  assert.ok(youtubeAdapter.includes('if (hasVideo && !forceYtDlp) break'), 'explicit refresh aggregates multiple valid yt-dlp player clients');
+  assert.ok(youtubeAdapter.includes('val completeSet = hasVideo && hasAudio && maxVideoHeight >= 720') && youtubeAdapter.includes('maxVideoHeight >= 1080 || client == PLAYER_CLIENTS.last()'), 'explicit refresh aggregates clients until a useful video/audio format set is available');
   assert.ok(screen.includes('maglevEngine.getYouTubeInfo'), 'YouTube screen must use the existing native extractor');
   assert.ok(screen.includes('maglevEngine.addYouTubeDownload'), 'selected formats must enter the shared native transfer queue');
 
