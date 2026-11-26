@@ -984,7 +984,7 @@ export default function BrowserScreen({ inTab = false }: { inTab?: boolean }) {
             />
           </View>
         ) : null}
-        {hasPage ? (
+        {!pipCompact && hasPage ? (
           <View style={styles.overlay} pointerEvents="box-none">
             {active ? (
               <PressableScale
