@@ -7,7 +7,7 @@ import { ThemeColors, spacing, type } from '../constants/theme';
 import { formatBytes } from '../constants/format';
 import { haptic } from '../constants/haptics';
 import { Button, ListRow, Screen, SectionHeader } from '../components/ui';
-import { Card } from '../components/settings/SettingsParts;
+import { Card } from '../components/settings/SettingsParts';
 import { parseYouTubeLink } from '../utils/browser/youtube';
 
 const formatKey = (format: YouTubeFormat) => format.playerClient + ':' + format.formatId;
