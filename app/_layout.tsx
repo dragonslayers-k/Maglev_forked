@@ -15,7 +15,6 @@ import { syncScheduleToNative } from '../utils/prefs/schedule';
 import { syncFeedAutomationToNative } from '../utils/prefs/feedAutomation';
 import { initHistory } from '../utils/history';
 import { privateSession } from '../utils/browser/privateSession';
-import { startUpdates } from '../utils/update';
 import { useSubtitleRequests } from '../components/subtitles/useSubtitleRequests';
 import { installGlobalHandler, setCurrentRoute } from '../utils/crashLog';
 
@@ -105,11 +104,6 @@ function AppNavigation() {
     void syncFeedAutomationToNative();
   }, [engineReady]);
 
-  // In-app updates (contract 27): the daily check when the app becomes active, and the download and install triggers.
-  useEffect(() => {
-    if (!engineReady) return;
-    return startUpdates();
-  }, [engineReady]);
 
   // Native splash stays up (see preventAutoHideAsync); render the background only, no navigator, until resolved.
   if (!resolved) return <View style={{ flex: 1, backgroundColor: colors.bg }} />;
@@ -187,7 +181,6 @@ function AppNavigation() {
           <Stack.Screen name="settings/subtitle-languages" />
           <Stack.Screen name="settings/subtitle-sources" />
           <Stack.Screen name="settings/subtitles" />
-          <Stack.Screen name="settings/updates" />
           <Stack.Screen name="settings/whats-new" />
           <Stack.Screen name="settings/watch" />
           <Stack.Screen name="stats" />
