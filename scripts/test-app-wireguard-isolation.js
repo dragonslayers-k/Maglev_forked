@@ -14,6 +14,7 @@ assert(!/import android\\.net\\.VpnService|extends\\s+VpnService/.test(native), 
 assert(store.includes('AndroidKeyStore') && store.includes('AES/GCM/NoPadding') && store.includes('getNoBackupFilesDir'), 'profile must be AES-GCM encrypted in no-backup app storage');
 assert(controller.includes('CLOSED_PROXY') && controller.includes('direct HTTP'), 'controller must install fail-closed proxy before starting tunnel');
 assert(host.includes('WireGuardController.prepareDownload') && host.includes('setAppWireGuardProxy'), 'HTTP download entry must apply app-local proxy');
+assert(host.includes('private fun nativeWireGuardConfig') && host.includes('key != "restart_pending"') && host.includes('key != "blocklist"') && !host.includes('result["config"]'), 'WireGuard must parse flattened Rust EffectiveConfig and strip response metadata');
 assert(host.includes('APP_WIREGUARD_TORRENT_UNSUPPORTED'), 'torrent transfers must be blocked while HTTP-only WG mode is enabled');
 assert(rust.includes('authenticated app-local HTTP proxy') && rust.includes('127.0.0.1'), 'native engine must only accept authenticated loopback HTTP proxy');
 assert(go.includes('netstack.CreateNetTUN') && proxy.includes('127.0.0.1'), 'WireGuard core must use userspace netstack and loopback proxy');
