@@ -41,7 +41,7 @@ check('typed text still goes through go(draft)', /go\(draft\)/.test(browser));
 console.log('settings');
 check('three history toggles', /prefs\.saveHistory/.test(settings) && /prefs\.suggestFromHistory/.test(settings) && /prefs\.clearHistoryOnClose/.test(settings));
 check('toggles write their prefs', /setPrefs\(\{ saveHistory \}\)/.test(settings) && /setPrefs\(\{ suggestFromHistory \}\)/.test(settings) && /setPrefs\(\{ clearHistoryOnClose \}\)/.test(settings));
-check('clear-on-close Korean subtitle is exact', copy.includes("clearOnCloseSubtitle: 'Maglev를 닫을 때 방문 기록을 삭제하고 다음 실행 시에도 정리합니다.'") && /historyCopy\.settings\.clearOnCloseSubtitle/.test(settings));
+check('clear-on-close Korean subtitle is exact', copy.includes("clearOnCloseSubtitle: 'Maglev+를 닫을 때 방문 기록을 삭제하고 다음 실행 시에도 정리합니다.'") && /historyCopy\.settings\.clearOnCloseSubtitle/.test(settings));
 check('History row opens the screen', /router\.push\('\/browser-history'\)/.test(settings));
 check('Clear history row opens the range sheet', /setClearMode\('range'\)/.test(settings));
 check('Clear browsing data uses the shared sheet in browsing-data mode', /setClearMode\('browsing-data'\)/.test(settings) && /<ClearHistorySheet/.test(settings));
