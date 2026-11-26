@@ -27,6 +27,7 @@ import com.maglev.engine.update.AppUpdater
 import com.maglev.engine.update.InstallSource
 import com.maglev.engine.update.UpdateNotices
 import com.maglev.engine.util.Json
+import com.maglev.engine.wireguard.WireGuardController
 import com.maglev.engine.youtube.YoutubeDownload
 import expo.modules.interfaces.permissions.PermissionsResponseListener
 import expo.modules.kotlin.Promise
