@@ -76,7 +76,7 @@ async function main() {
     check(`settings/${f}.tsx is deleted`, !exists(`app/settings/${f}.tsx`));
     check(`layout no longer registers settings/${f}`, !layout.includes(`name="settings/${f}"`));
   }
-  check('assistant can open the Downloads page', /downloads/.test(read('utils/assistant/tools.ts')) && /downloads: '\\/settings\\/downloads'/.test(read('utils/assistant/chatView.ts')) && /downloads: 'Adding and finishing'/.test(read('utils/assistant/toolRunner.ts')));
+  check('assistant can open the Downloads page', /downloads/.test(read('utils/assistant/tools.ts')) && read('utils/assistant/chatView.ts').includes("downloads: '/settings/downloads'") && /downloads: 'Adding and finishing'/.test(read('utils/assistant/toolRunner.ts')));
   check('assistant names Speed and sharing', /speed: 'Speed and sharing'/.test(read('utils/assistant/toolRunner.ts')));
 
   const { SETTINGS_INDEX } = await import(path.join(root, 'utils/settingsIndex.ts'));
