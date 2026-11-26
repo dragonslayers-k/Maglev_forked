@@ -202,7 +202,7 @@ export default function YouTubeDownloadScreen() {
             <Card>
               <ListRow icon={videoContainer === "original" ? "check" : "download"} title="원본 컨테이너 유지" subtitle="원본 스트림을 그대로 저장" value={videoContainer === "original" ? "선택됨" : undefined} disabled={busy} onPress={() => setVideoContainer("original")} />
               {VIDEO_OUTPUT_CONTAINERS.map((ext) => (
-                <ListRow key={"video-output-" + ext} icon={videoContainer === ext ? "check" : "refresh-cw"} title={ext.toUpperCase()} subtitle={ext === "gif" ? "GIF 애니메이션으로 변환" : "선택한 컨테이너로 변환 · 필요 시 재인코딩"} value={videoContainer === ext ? "선택됨" : undefined} disabled={busy} onPress={() => setVideoContainer(ext)} />
+                <ListRow key={"video-output-" + ext} icon={videoContainer === ext ? "check" : "recheck"} title={ext.toUpperCase()} subtitle={ext === "gif" ? "GIF 애니메이션으로 변환" : "선택한 컨테이너로 변환 · 필요 시 재인코딩"} value={videoContainer === ext ? "선택됨" : undefined} disabled={busy} onPress={() => setVideoContainer(ext)} />
               ))}
             </Card>
             <Card>
