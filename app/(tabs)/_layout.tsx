@@ -144,7 +144,7 @@ export default function TabLayout() {
       activityEnabled={freeze}
       options={
         hidden
-          ? // href null removes the tab entirely (Settings > Assistant off). expo-router throws if
+          ? // href null removes a hidden tab. expo-router throws if
             // href and tabBarButton are set together (TabsClient processScreens), so a hidden tab has no button.
             { href: null, title }
           : {
@@ -219,7 +219,7 @@ export default function TabLayout() {
         React Activity (activityEnabled): a hidden tab keeps its state, its effects are cleaned up
         and its renders drop to idle priority; coming back re-runs its effects.
         Not for Transfers (its list must be current the moment it shows), Search (its search effect
-        would run the search again on return) or Assistant (a running turn keeps streaming and
+        would run the search again on return) or another active screen (its state remains mounted and
         updating its steps while another tab is open).
       */}
       {prefs.order.map((id) => screens[id])}
@@ -252,7 +252,7 @@ const makeStyles = (c: ThemeColors) =>
       justifyContent: 'center',
       backgroundColor: c.text,
     },
-    // A small square dot: a reply is waiting in the Assistant.
+    // A small square dot: a background task has an unread update.
     dot: { position: 'absolute', top: -2, right: 6, width: 8, height: 8, backgroundColor: c.accent },
     badgeText: { fontSize: 10, lineHeight: 12, fontFamily: fontFamily.bodyStrong, color: c.bg, fontVariant: ['tabular-nums'] }, // design-exception: badge text in a fixed 16 px badge
     glyph: { width: ICON, height: ICON },
