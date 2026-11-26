@@ -1,5 +1,7 @@
 const fs = require('node:fs');
 const source = fs.readFileSync('app/youtube-download.tsx', 'utf8');
+const converter = fs.readFileSync('modules/maglev-engine/android/src/main/java/com/maglev/engine/youtube/MediaContainerConverter.kt', 'utf8');
+const nativeAdapter = fs.readFileSync('modules/maglev-engine/android/src/main/java/com/maglev/engine/youtube/YoutubeDownload.kt', 'utf8');
 const checks = [
   ['video extension selector state', /selectedVideoExt/],
   ['audio extension selector state', /selectedAudioExt/],
