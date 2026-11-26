@@ -38,7 +38,7 @@ async function main() {
   orderOf('일반', 'generalRows', ['화면 모양', '도우미', '알림', '백업 및 복원']);
   orderOf('콘텐츠 찾기', 'findRows', ['검색 사이트', '자동 다운로드', '자막']);
   orderOf('네트워크 및 전원', 'networkRows', ['네트워크', '전원', '브라우저']);
-  orderOf('앱', 'appRows', ['앱 정보', '업데이트']);
+  orderOf('앱', 'appRows', ['앱 정보', '목록 업데이트']);
   {
     const d = jsx[groups.indexOf('전송')];
     const p = ['{...downloadsRow}', '{...speedRow}', '<StorageRow', '{...scheduleRow}', '{...watchRow}'].map((x) => d.indexOf(x));
