@@ -41,9 +41,10 @@ object YoutubeDownload {
         val app = context.applicationContext
         val ytdlp = YoutubeDL.getInstance()
         ytdlp.init(app)
-        // youtubedl-android 0.18.1 always appends ffmpegPath/libffmpeg.so to yt-dlp.
-        // Maglev deliberately doesn't bundle its unsafe/incomplete FFmpeg AAR; point the wrapper
-        // at an existing directory instead. Our YouTube DASH mux path uses Android MediaMuxer.
+        // youtubedl-android 0.18.1 expects an ffmpegPath/libffmpeg.so executable, not FFmpegKit JNI.
+        // Its old bundled FFmpeg AAR remains excluded for 16 KB page compatibility. The separate
+        // FFmpegKit runtime performs real output conversion after native transfer completion;
+        // DASH source streams are muxed by Android MediaMuxer to MP4 before optional conversion.
         runCatching {
             val field = ytdlp.javaClass.getDeclaredField("ffmpegPath")
             field.isAccessible = true
@@ -298,7 +299,7 @@ object YoutubeDownload {
                 return Json.failure("ENGINE_UNAVAILABLE", "다운로드 엔진을 시작하지 못했습니다.")
             }
             BackgroundStart.start(app, MaglevTorrentService.ACTION_START)
-            val sourceExt = (requested?.ext ?: if (audioOnly) "m4a" else selected.ext ?: "mp4")
+            val sourceExt = (if (streamUrl != null) "mp4" else (requested?.ext ?: if (audioOnly) "m4a" else selected.ext ?: "mp4"))
                 .lowercase().filter { it.isLetterOrDigit() }.ifEmpty { if (audioOnly) "m4a" else "mp4" }
             val baseName = safeName(selected.title ?: if (link != null) "YouTube video" else "Web video")
             val targetExt = if (outputContainer == "original") sourceExt else outputContainer
