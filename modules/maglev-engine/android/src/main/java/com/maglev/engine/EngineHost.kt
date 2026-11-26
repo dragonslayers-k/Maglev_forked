@@ -728,10 +728,11 @@ object EngineHost {
             lastEmitAt = nowMs
             @Suppress("UNCHECKED_CAST")
             val body = LinkedHashMap(Json.camelize(res) as Map<String, Any?>)
+            val formatContext = ctx
             body["downloads"] = downloads.map { d ->
                 val copy = LinkedHashMap(d)
                 val id = d["id"] as? String
-                if (id != null) copy["name"] = formatOutputName(ctx ?: return@map d, id, d["name"] as? String)
+                if (id != null && formatContext != null) copy["name"] = formatOutputName(formatContext, id, d["name"] as? String)
                 Json.camelize(copy)
             }
             body["serviceBlocked"] = serviceBlocked
