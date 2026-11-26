@@ -24,7 +24,7 @@ import kotlin.math.abs
 object YoutubeDownload {
     private const val TAG = "MaglevYouTube"
     private val formatIdPattern = Regex("^[A-Za-z0-9._-]{1,64}$")
-    private val PLAYER_CLIENTS = listOf("newpipe", "android_vr", "web_safari")
+    private val PLAYER_CLIENTS = listOf("android_vr", "web_safari", "web_embedded")
 
     /**
      * Initialize the bundled extractor only. Never check/download an yt-dlp update on the
@@ -140,7 +140,7 @@ object YoutubeDownload {
                     allFormats.addAll(found)
                     val hasVideo = found.any { it["kind"] == "video" }
                     val hasAudio = found.any { it["kind"] == "audio" }
-                    if (hasVideo) break
+                    if (hasVideo && !forceYtDlp) break
                 } catch (e: Throwable) {
                     rethrowFatal(e)
                     // A broken runtime/class initializer is not an extractor-client failure.
