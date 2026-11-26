@@ -66,7 +66,8 @@ async function main() {
   assert.ok(youtubeAdapter.includes('groupBy { it["formatId"].toString() }'), 'duplicate format IDs from different player clients must collapse to one row');
   assert.ok(youtubeAdapter.includes('formatId.startsWith("bestaudio")'), 'yt-dlp fallback still recognizes its bestaudio selector');
   assert.ok(youtubeAdapter.includes('availableFormats.filter'), 'audio fallback selects an actual audio-only format from the extractor metadata');
-  assert.ok(youtubeAdapter.includes('maxAudioKbps') && youtubeAdapter.includes('capped.ifEmpty { audioFormats }'), 'audio bitrate choices must select an available source bitrate without claiming to re-encode');
+  assert.ok(youtubeAdapter.includes('maxAudioKbps') && youtubeAdapter.includes('audioFormats.filter { it.abr <= maxAudioKbps }.maxByOrNull'), 'audio bitrate presets must enforce a strict ceiling and never silently exceed the selected source bitrate');
+  assert.ok(!youtubeAdapter.includes('capped.ifEmpty { audioFormats }'), 'a missing bitrate ceiling must fail visibly instead of selecting a higher bitrate');
 
   assert.ok(youtubeAdapter.includes('NewPipeYoutube.get(app, sourceUrl)'), 'YouTube metadata uses the fast NewPipe extractor first');
   assert.ok(youtubeAdapter.includes('getQueryParameter("maglev_ytdlp") == "1"') && youtubeAdapter.includes('link != null && !forceYtDlp'), 'on-demand format refresh must bypass NewPipe and force yt-dlp');
