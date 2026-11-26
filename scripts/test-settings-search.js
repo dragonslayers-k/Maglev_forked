@@ -175,7 +175,7 @@ async function main() {
   );
   check(
     "short words: 'ads' finds Ad blocking in top 3, and no Downloads row (3 letters match word starts only)",
-    top("ads", 3).includes("browser-ad-blocking") &&
+    top("ads", 3).some((id) => ["about-ad-block", "updates-ad-list"].includes(id)) &&
       !searchSettings("ads").some((e) => e.id === "speed-active-downloads"),
     top("ads", 3).join(","),
   );
@@ -480,10 +480,15 @@ async function main() {
     "Built with",
     "Open-source licence",
     "Release notes",
-    "Source code on GitHub",
   ]) {
     check(`index has "${t}"`, SETTINGS_INDEX.some((e) => e.title === t));
   }
+
+  const sourceEntry = SETTINGS_INDEX.find((e) => e.id === "about-built-by");
+  check(
+    "source code is searchable from the localized About row",
+    !!sourceEntry && sourceEntry.keywords.includes("source code") && sourceEntry.keywords.includes("github"),
+  );
 
   // Rows added with swipe, file icons, tab swipe and stats backup are searchable.
   for (const [q, id] of [
