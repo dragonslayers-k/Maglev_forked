@@ -95,6 +95,8 @@ assert(applyKeepRules('').includes('com.maglev.engine'));
 // --- JitPack repository settings plugin: current Expo templates and idempotency ---
 {
   const { addJitpackRepository, MARKER } = require('../plugins/withJitpackRepository');
+  const expoConfig = require('../app.json').expo;
+  assert.deepStrictEqual(expoConfig.autolinking.android.buildFromSource, ['.*'], 'build Expo modules from bundled source instead of invalid remote precompiled POMs');
   const modernTemplate = [
     'pluginManagement {',
     '    repositories { google(); mavenCentral() }',
