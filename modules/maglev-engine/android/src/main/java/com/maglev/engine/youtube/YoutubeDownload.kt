@@ -102,13 +102,14 @@ object YoutubeDownload {
     }
 
     fun info(context: Context, rawUrl: String): Map<String, Any?> {
+        val forceYtDlp = runCatching { Uri.parse(rawUrl).getQueryParameter("maglev_ytdlp") == "1" }.getOrDefault(false)
         val link = YouTubeUrl.parse(rawUrl)
         val sourceUrl = link?.canonicalUrl ?: httpMediaUrl(rawUrl)
             ?: return Json.failure("INVALID_SOURCE", "HTTP(S) 웹페이지 주소를 입력하세요.")
         val clients = if (link != null) PLAYER_CLIENTS else listOf("generic")
         return try {
             val app = context.applicationContext
-            if (link != null) {
+            if (link != null && !forceYtDlp) {
                 val fastInfo = runCatching { NewPipeYoutube.get(app, sourceUrl) }.getOrNull()
                 if (fastInfo != null) {
                     val fastFormats = NewPipeYoutube.formats(fastInfo)
