@@ -8,7 +8,7 @@ const checks = [
   ['all seven requested video output containers are selectable', source.includes("VIDEO_OUTPUT_CONTAINERS = ['mp4', 'webm', 'mkv', 'mov', 'avi', 'flv', 'gif']")],
   ['all eight requested audio output containers are selectable', source.includes("AUDIO_OUTPUT_CONTAINERS = ['mp3', 'm4a', 'aac', 'alac', 'flac', 'opus', 'wav', 'vorbis']")],
   ['format kind and output container are passed to native download', source.includes('format.formatId, format.playerClient, format.kind, audioBitrateKbps ?? null, outputContainer')],
-  ['native adapter stores postprocess metadata for real output conversion', nativeAdapter.includes('"postprocess" to linkedMapOf')],
+  ['native adapter stores postprocess metadata for real output conversion', nativeAdapter.includes('options["postprocess"] = linkedMapOf')],
   ['FFmpegKit is executed for output conversion', converter.includes('FFmpegKit.execute(command)')],
   ['audio and video conversion codecs are present', converter.includes('libmp3lame') && converter.includes('libx264') && converter.includes('libopus')],
   ['container conversion writes to a temporary file before replacing output', converter.includes('maglev-convert.tmp') && converter.includes('temp.renameTo(output)')],
