@@ -178,6 +178,7 @@ function AppNavigation() {
           <Stack.Screen name="settings/network" />
           <Stack.Screen name="settings/network-advanced" />
           <Stack.Screen name="settings/wireguard" />
+          <Stack.Screen name="settings/wireguard" />
           <Stack.Screen name="settings/notifications" />
           <Stack.Screen name="settings/power" />
           <Stack.Screen name="settings/scheduling" />
