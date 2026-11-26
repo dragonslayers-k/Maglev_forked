@@ -92,6 +92,22 @@ export const SETTINGS_INDEX: SettingEntry[] = [
     "통합 구성",
   ),
   e(
+    "about-barrel-port-scope",
+    "Barrel 1.1.2 APK 분석·이식 범위",
+    "about",
+    "앱 정보",
+    ["Barrel", "1.1.2", "APK 분석", "다운로드 엔진", "이식 범위", "Range", "Resume", "HLS", "DASH", "MSE", "SourceBuffer", "자막"],
+    "통합 구성",
+  ),
+  e(
+    "about-integrated-feature-audit",
+    "통합 기능 감사·이식 계획",
+    "about",
+    "앱 정보",
+    ["통합 구성", "참고 원천", "Barrel", "MPMux", "WireGuard", "YouTube", "출력 컨테이너", "미구현", "수용 테스트"],
+    "통합 구성",
+  ),
+  e(
     "about-crash-log",
     "충돌 기록 지우기",
     "about",

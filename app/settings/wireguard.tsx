@@ -73,7 +73,7 @@ export default function AppWireGuardSettings() {
         />
         <ListRow
           title="HTTP/HTTPS 다운로드에 사용"
-          subtitle={enabled ? (running ? '앱 내부 터널 실행 중 · HTTP/HTTPS 다운로드만 사용' : '앱 내부 터널을 시작하는 중') : '꺼짐'}
+          subtitle={enabled ? (running ? '로컬 프록시 실행 중 · 실제 peer 연결은 다운로드 요청으로 확인' : '앱 내부 터널을 시작하는 중') : '꺼짐'}
           accessory={<Toggle value={enabled} onValueChange={(v) => void changeEnabled(v)} accessibilityLabel="앱 내부 WireGuard" />}
         />
       </Card>
@@ -86,7 +86,7 @@ export default function AppWireGuardSettings() {
       <Card>
         <ListRow
           title="로컬 프록시 상태"
-          subtitle={running ? '프로세스 내 프록시 실행 중 (원격 핸드셰이크는 실제 요청 시 확인)' : '아직 시작되지 않음'}
+          subtitle={running ? '로컬 프록시 프로세스만 확인됨 · 원격 handshake는 아직 검증되지 않음' : '아직 시작되지 않음'}
         />
       </Card>
     </SettingsPage>

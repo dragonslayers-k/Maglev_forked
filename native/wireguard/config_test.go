@@ -3,6 +3,7 @@
 package wireguard
 
 import (
+	"context"
 	"encoding/base64"
 	"errors"
 	"net/netip"
@@ -23,6 +24,7 @@ func TestValidateSupportedConfig(t *testing.T) {
 		"\ufeff" + strings.ReplaceAll(fixtureConfig(), "\n", "\r\n"),
 		strings.Replace(fixtureConfig(), "Address = 10.77.0.2/32", "Address = 10.77.0.2/32, fd00:77::2/128\nMTU = 1280", 1),
 		strings.Replace(fixtureConfig(), "Endpoint = 127.0.0.1:51820", "Endpoint = [::1]:51820 # test peer", 1),
+		strings.Replace(fixtureConfig(), "Endpoint = 127.0.0.1:51820", "Endpoint = vpn.example.com:51820", 1),
 	} {
 		if err := Validate(text); err != nil {
 			t.Fatal(err)
@@ -101,12 +103,47 @@ func TestBareAllowedIPsRemainHostRoutes(t *testing.T) {
 	}
 }
 
+func TestHostnameEndpointIsResolvedBeforeUAPI(t *testing.T) {
+	text := strings.Replace(fixtureConfig(), "Endpoint = 127.0.0.1:51820", "Endpoint = vpn.example.com:51820", 1)
+	c, err := parseConfig(text)
+	if err != nil { t.Fatal(err) }
+	defer c.clearKeys()
+	if c.endpoint.IsValid() || c.endpointHost != "vpn.example.com" || c.endpointPort != 51820 {
+		t.Fatal("hostname endpoint was not preserved for startup resolution")
+	}
+	err = c.resolveEndpoint(context.Background(), func(_ context.Context, host string) ([]netip.Addr, error) {
+		if host != "vpn.example.com" { t.Fatal("resolver received a different hostname") }
+		return []netip.Addr{netip.MustParseAddr("8.8.8.8")}, nil
+	})
+	if err != nil { t.Fatal(err) }
+	if got := c.endpoint.String(); got != "8.8.8.8:51820" || !strings.Contains(c.uapi(), "endpoint=8.8.8.8:51820\\n") {
+		t.Fatalf("resolved endpoint not applied to UAPI: %q", got)
+	}
+}
+
+func TestHostnameEndpointResolutionFailureIsSafe(t *testing.T) {
+	text := strings.Replace(fixtureConfig(), "Endpoint = 127.0.0.1:51820", "Endpoint = vpn.example.com:51820", 1)
+	c, err := parseConfig(text)
+	if err != nil { t.Fatal(err) }
+	defer c.clearKeys()
+	err = c.resolveEndpoint(context.Background(), func(context.Context, string) ([]netip.Addr, error) {
+		return nil, errors.New("private resolver failure")
+	})
+	var configErr *ConfigError
+	if !errors.As(err, &configErr) || configErr.Code != "endpoint_dns_failed" { t.Fatalf("expected endpoint DNS error code, got %v", err) }
+	if strings.Contains(err.Error(), "vpn.example.com") { t.Fatal("DNS error leaked endpoint hostname") }
+}
+
+func TestValidateRejectsMalformedEndpointHostname(t *testing.T) {
+	text := strings.Replace(fixtureConfig(), "127.0.0.1:51820", "vpn_example.com:51820", 1)
+	if err := Validate(text); err == nil { t.Fatal("expected malformed hostname to be rejected") }
+}
+
 func TestValidateRejectsUnsupportedOrUnsafeConfig(t *testing.T) {
 	cases := map[string]string{
 		"shell hook":         strings.Replace(fixtureConfig(), "[Peer]", "PostUp = touch /tmp/never-executed\n[Peer]", 1),
 		"routing table":      strings.Replace(fixtureConfig(), "[Peer]", "Table = auto\n[Peer]", 1),
 		"save config":        strings.Replace(fixtureConfig(), "[Peer]", "SaveConfig = true\n[Peer]", 1),
-		"hostname endpoint":  strings.Replace(fixtureConfig(), "127.0.0.1:51820", "vpn.example:51820", 1),
 		"endpoint no port":   strings.Replace(fixtureConfig(), "127.0.0.1:51820", "127.0.0.1", 1),
 		"zero endpoint port": strings.Replace(fixtureConfig(), "127.0.0.1:51820", "127.0.0.1:0", 1),
 		"endpoint multicast": strings.Replace(fixtureConfig(), "127.0.0.1:51820", "224.0.0.1:51820", 1),
@@ -164,7 +201,7 @@ func TestValidationErrorsHaveStableLocalizationCodes(t *testing.T) {
 		"duplicate_address":     strings.Replace(config, "Address = 10.77.0.2/32", "Address = 10.77.0.2/32, 10.77.0.2/32", 1),
 		"invalid_dns":           strings.Replace(config, "DNS = 10.77.0.1", "DNS = dns.invalid", 1),
 		"invalid_mtu":           strings.Replace(config, "[Peer]", "MTU = 0\n[Peer]", 1),
-		"invalid_endpoint":      strings.Replace(config, "127.0.0.1:51820", "vpn.example:51820", 1),
+		"invalid_endpoint":      strings.Replace(config, "127.0.0.1:51820", "vpn_example.com:51820", 1),
 		"invalid_routes":        strings.Replace(config, "10.77.0.0/24", "10.77.0.0/33", 1),
 		"unsupported_directive": strings.Replace(config, "[Peer]", "PostUp = secret-hook-marker\n[Peer]", 1),
 		"invalid_value":         strings.Replace(config, "PrivateKey = ", "PrivateKey = BAD", 1),

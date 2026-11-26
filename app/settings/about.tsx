@@ -8,6 +8,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { Button, Dialog, ListRow, SectionHeader, Toggle } from '../../components/ui';
 import { useMaglevEngine } from '../../context/EngineContext';
 import { Card, SettingsPage } from '../../components/settings/SettingsParts';
+import { FocusAnchor, rowKey } from '../../components/settings/settingsFocus';
 import { Wordmark } from '../../components/settings/Wordmark';
 import { MaglevMark } from '../../components/brand/MaglevMark';
 import { errorScreenCopy, highlightCopy } from '../../constants/copy';
@@ -138,8 +139,12 @@ export default function AboutSettings() {
         <ListRow title="MPMux 버퍼 멀티플렉서" subtitle="MSE/SourceBuffer appendBuffer 캡처와 라이브 mux 참고. 실제 바이트 캡처·init/media segment 조립·파일 저장은 미구현입니다." icon="external" onPress={() => void Linking.openURL('https://mpmux.com/buffermuxer')} />
         <ListRow title="Morphe WireGuard 패치" subtitle="userspace WireGuard·인증 로컬 프록시·.conf 암호화 저장 코드가 있습니다. 터널/다운로드 실패 보고가 있어 원격 handshake와 HTTP/HTTPS 실제 프록시 경로는 미검증입니다." icon="github" onPress={() => void Linking.openURL('https://github.com/seo-rii/morphe-wireguard-patches')} />
         <ListRow title="FFmpeg · 오디오 후처리" subtitle="FFmpegKit 변환기와 완료 후처리 큐 코드가 있습니다. MP3·M4A·Opus 및 영상 컨테이너 변환은 저장 실패 보고가 있어 완료로 인정하지 않습니다." />
-        <ListRow title="Barrel 1.1.2 APK 분석·이식 범위" subtitle="정적 분석 원문과 기능별 clean-room 이식 계획입니다. APK 자체는 포함하지 않으며 기능 이식은 별도 검증합니다." icon="file" onPress={() => void Linking.openURL('https://github.com/dragonslayers-k/Maglev_forked/blob/feature/p1-video-detection-observer/docs/reference/Barrel_1.1.2_APK_%EC%8B%AC%EC%B8%B5_%EB%B6%84%EC%84%9D_%EB%8B%A4%EC%9A%B4%EB%A1%9C%EB%93%9C_%EA%B8%B0%EB%8A%A5_%EC%9D%B4%EC%8B%9D_%EC%84%A4%EA%B3%84%EC%84%9C.md')} />
-        <ListRow title="통합 기능 감사·이식 계획" subtitle="현재 코드 위치, 미구현 범위, 우선순위와 수용 테스트를 확인합니다." icon="file" onPress={() => void Linking.openURL('https://github.com/dragonslayers-k/Maglev_forked/blob/feature/p1-video-detection-observer/docs/INTEGRATED_FEATURE_AUDIT_AND_PORTING_PLAN_KO.md')} />
+        <FocusAnchor anchorKey={rowKey("Barrel 1.1.2 APK 분석·이식 범위")}>
+          <ListRow title="Barrel 1.1.2 APK 분석·이식 범위" subtitle="정적 분석 원문과 기능별 clean-room 이식 계획입니다. APK 자체는 포함하지 않으며 기능 이식은 별도 검증합니다." icon="file" onPress={() => void Linking.openURL('https://github.com/dragonslayers-k/Maglev_forked/blob/feature/p1-video-detection-observer/docs/reference/Barrel_1.1.2_APK_%EC%8B%AC%EC%B8%B5_%EB%B6%84%EC%84%9D_%EB%8B%A4%EC%9A%B4%EB%A1%9C%EB%93%9C_%EA%B8%B0%EB%8A%A5_%EC%9D%B4%EC%8B%9D_%EC%84%A4%EA%B3%84%EC%84%9C.md')} />
+        </FocusAnchor>
+        <FocusAnchor anchorKey={rowKey("통합 기능 감사·이식 계획")}>
+          <ListRow title="통합 기능 감사·이식 계획" subtitle="현재 코드 위치, 미구현 범위, 우선순위와 수용 테스트를 확인합니다." icon="file" onPress={() => void Linking.openURL('https://github.com/dragonslayers-k/Maglev_forked/blob/feature/p1-video-detection-observer/docs/INTEGRATED_FEATURE_AUDIT_AND_PORTING_PLAN_KO.md')} />
+        </FocusAnchor>
       </Card>
       <SectionHeader title="기본 기능" />
       <Card>

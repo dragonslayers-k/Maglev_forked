@@ -113,11 +113,15 @@ object WireGuardController {
         val port = try { NativeTunnel.start(config, USER, password, 0) }
         catch (_: Throwable) { return@synchronized Json.failure(
             "APP_WIREGUARD_START_FAILED", "앱 내부 WireGuard를 시작하지 못했습니다. 직접 연결로 우회하지 않았습니다.") }
-        if (port !in 1..65535) {
-            runCatching { NativeTunnel.stop() }
-            return@synchronized Json.failure(
-                "APP_WIREGUARD_START_FAILED", "WireGuard 로컬 프록시 포트가 올바르지 않습니다.")
-        }
+        if (port == -4) return@synchronized Json.failure(
+            "APP_WIREGUARD_ENDPOINT_DNS_FAILED",
+            "WireGuard Endpoint 도메인 DNS 조회에 실패했습니다. 네트워크 또는 DNS를 확인하세요. 직접 연결로 우회하지 않았습니다.")
+        if (port == -1) return@synchronized Json.failure(
+            "APP_WIREGUARD_PROFILE_INVALID", "WireGuard 프로필 설정이 올바르지 않습니다.")
+        if (port == -2) return@synchronized Json.failure(
+            "APP_WIREGUARD_ALREADY_RUNNING", "WireGuard userspace 엔진이 이미 실행 중입니다.")
+        if (port !in 1..65535) return@synchronized Json.failure(
+            "APP_WIREGUARD_START_FAILED", "WireGuard 로컬 프록시를 시작하지 못했습니다. 직접 연결로 우회하지 않았습니다.")
         val url = "http://$USER:$password@127.0.0.1:$port"
         localProxy = url
         running = true

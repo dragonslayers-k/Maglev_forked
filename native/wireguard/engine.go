@@ -75,6 +75,14 @@ func startWithBind(text, username, password string, listenPort int, bind conn.Bi
 		return nil, err
 	}
 	defer c.clearKeys()
+	if !c.endpoint.IsValid() {
+		resolveCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		err = c.resolveEndpoint(resolveCtx, func(ctx context.Context, host string) ([]netip.Addr, error) {
+			return net.DefaultResolver.LookupNetIP(ctx, "ip", host)
+		})
+		cancel()
+		if err != nil { return nil, err }
+	}
 	if !validCredentials(username, password) || listenPort < 0 || listenPort > 65535 {
 		return nil, errors.New("invalid local proxy credentials or port")
 	}

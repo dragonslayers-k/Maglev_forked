@@ -6,6 +6,8 @@ package wireguard
 
 import (
 	"bufio"
+	"context"
+	"net"
 	"encoding/base64"
 	"encoding/hex"
 	"errors"
@@ -44,6 +46,8 @@ type config struct {
 	dns        []netip.Addr
 	routes     []netip.Prefix
 	endpoint   netip.AddrPort
+	endpointHost string
+	endpointPort uint16
 	listenPort uint16
 	keepalive  uint16
 	mtu        int
@@ -151,11 +155,24 @@ func parseConfig(text string) (_ *config, resultErr error) {
 			c.psk, err = parseKey(value, true)
 			c.hasPSK = true
 		case "peer.endpoint":
-			c.endpoint, err = netip.ParseAddrPort(value)
-			if err != nil || !isUnicast(c.endpoint.Addr()) || c.endpoint.Port() == 0 {
-				return nil, invalid("invalid_endpoint", "Endpoint must be numeric IPv4:port or [IPv6]:port. Hostnames are unsupported in this version.")
+			host, portText, splitErr := net.SplitHostPort(value)
+			port, portErr := parseUint16(portText)
+			if splitErr != nil || host == "" || portErr != nil || port == 0 {
+				return nil, invalid("invalid_endpoint", "Endpoint must be an IP address or DNS hostname with a valid UDP port.")
 			}
-			c.endpoint = netip.AddrPortFrom(c.endpoint.Addr().Unmap(), c.endpoint.Port())
+			if addr, parseErr := netip.ParseAddr(host); parseErr == nil {
+				if !isUnicast(addr) {
+					return nil, invalid("invalid_endpoint", "Endpoint address must be unicast.")
+				}
+				c.endpoint = netip.AddrPortFrom(addr.Unmap(), port)
+			} else {
+				host = strings.TrimSuffix(strings.ToLower(host), ".")
+				if !validEndpointHostname(host) {
+					return nil, invalid("invalid_endpoint", "Endpoint hostname is invalid.")
+				}
+				c.endpointHost = host
+				c.endpointPort = port
+			}
 		case "peer.allowedips":
 			for _, item := range strings.Split(value, ",") {
 				p, parseErr := parsePrefix(strings.TrimSpace(item))
@@ -199,6 +216,45 @@ func parseConfig(text string) (_ *config, resultErr error) {
 		}
 	}
 	return c, nil
+}
+
+// DNS endpoint names are accepted during profile import without network access.
+// Resolve them only at tunnel startup, before writing numeric WireGuard UAPI.
+func validEndpointHostname(host string) bool {
+	if host == "" || len(host) > 253 || strings.ContainsAny(host, " /\\\\:@[]%") {
+		return false
+	}
+	for _, label := range strings.Split(host, ".") {
+		if len(label) == 0 || len(label) > 63 || label[0] == '-' || label[len(label)-1] == '-' {
+			return false
+		}
+		for _, r := range label {
+			if !(r >= 'a' && r <= 'z') && !(r >= '0' && r <= '9') && r != '-' {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+func (c *config) resolveEndpoint(ctx context.Context, lookup func(context.Context, string) ([]netip.Addr, error)) error {
+	if c.endpoint.IsValid() {
+		return nil
+	}
+	if c.endpointHost == "" || c.endpointPort == 0 {
+		return invalid("invalid_endpoint", "Endpoint is missing or invalid.")
+	}
+	addresses, err := lookup(ctx, c.endpointHost)
+	if err != nil {
+		return invalid("endpoint_dns_failed", "Could not resolve the WireGuard endpoint hostname.")
+	}
+	for _, addr := range addresses {
+		if addr.IsValid() && addr.Zone() == "" && isUnicast(addr) {
+			c.endpoint = netip.AddrPortFrom(addr.Unmap(), c.endpointPort)
+			return nil
+		}
+	}
+	return invalid("endpoint_dns_no_address", "The WireGuard endpoint hostname has no usable unicast address.")
 }
 
 // Like wg-quick, a bare numeric address denotes one host, never a subnet.

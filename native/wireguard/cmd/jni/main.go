@@ -14,6 +14,7 @@ import "C"
 import (
 	"errors"
 	"sync"
+	"strings"
 
 	wg "app.morphe/wireguard"
 )
@@ -40,6 +41,7 @@ func morphe_wg_start(config, username, password *C.char, port C.int) (result C.i
 	if err != nil {
 		var configErr *wg.ConfigError
 		if errors.As(err, &configErr) {
+			if strings.HasPrefix(configErr.Code, "endpoint_dns_") { return -4 }
 			return -1
 		}
 		return -3
