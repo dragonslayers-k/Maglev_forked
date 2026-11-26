@@ -1,6 +1,8 @@
 package com.maglev.engine.youtube
 
 import android.content.Context
+import android.webkit.CookieManager
+import com.maglev.engine.EngineHost
 import org.schabi.newpipe.extractor.NewPipe
 import org.schabi.newpipe.extractor.services.youtube.extractors.YoutubeStreamExtractor
 import org.schabi.newpipe.extractor.downloader.Downloader
