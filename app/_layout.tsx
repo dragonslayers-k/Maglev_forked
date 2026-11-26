@@ -13,6 +13,7 @@ import { StarPrompt } from '../components/StarPrompt';
 import { HighlightSheet } from '../components/HighlightSheet';
 import { syncScheduleToNative } from '../utils/prefs/schedule';
 import { syncFeedAutomationToNative } from '../utils/prefs/feedAutomation';
+import { startListUpdates } from '../utils/lists';
 import { initHistory } from '../utils/history';
 import { privateSession } from '../utils/browser/privateSession';
 import { useSubtitleRequests } from '../components/subtitles/useSubtitleRequests';
@@ -104,6 +105,12 @@ function AppNavigation() {
     void syncFeedAutomationToNative();
   }, [engineReady]);
 
+
+  // Data lists update independently of app APK releases/self-updater.
+  useEffect(() => {
+    if (!engineReady) return;
+    return startListUpdates();
+  }, [engineReady]);
 
   // Native splash stays up (see preventAutoHideAsync); render the background only, no navigator, until resolved.
   if (!resolved) return <View style={{ flex: 1, backgroundColor: colors.bg }} />;
