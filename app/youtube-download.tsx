@@ -118,7 +118,7 @@ export default function YouTubeDownloadScreen() {
           </View>
           <View style={styles.section}>
             <Text style={styles.heading}>오디오</Text>
-            {[...audios, audioFallback].map((format) => (
+            {(audios.length > 0 ? audios : [audioFallback]).map((format) => (
               <Button key={formatKey(format)} fullWidth size="md" variant="secondary" disabled={busy}
                 label={formatLabel(format)} onPress={() => void start(format)} />
             ))}
