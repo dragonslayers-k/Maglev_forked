@@ -22,6 +22,16 @@ const ALLOW = {
   "feeds: Added so far": "feed status, read-only",
   "feeds: Waiting to be added": "feed status, read-only",
   "about: Release notes": "link to the What's new page, which is indexed there",
+  // Read-only source register rows, not app settings; searchable source-code entry is MAGLEV original.
+  "about: YTDLnis · yt-dlp": "informational source register row",
+  "about: NewPipe Extractor": "informational source register row",
+  "about: LJ Downloader 참고": "informational source register row",
+  "about: MPMux Video Downloader · Chrome 확장": "informational source register row",
+  "about: MPMux 정적 다운로더": "informational source register row",
+  "about: MPMux 버퍼 멀티플렉서": "informational source register row",
+  "about: Morphe WireGuard 패치": "informational source register row",
+  "about: FFmpeg · 오디오 후처리": "informational source register row",
+  "about: 구현 상태 문서": "informational source register row",
   // Per-item or computed titles (no fixed text to look up).
   "about: l.title": "list of project links",
   "licenses: l.name": "one row per open-source licence",

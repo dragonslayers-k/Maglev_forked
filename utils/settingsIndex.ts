@@ -64,14 +64,6 @@ export const SETTINGS_INDEX: SettingEntry[] = [
     "통합 구성",
   ),
   e(
-    "about-update-method",
-    "업데이트 방식",
-    "about",
-    "앱 정보",
-    ["apk", "release", "lists", "update", "separate", "version"],
-    "통합 구성",
-  ),
-  e(
     "about-highlights",
     "Show new features after updates",
     "about",
@@ -87,7 +79,7 @@ export const SETTINGS_INDEX: SettingEntry[] = [
   ),
   e(
     "about-built-by",
-    "MAGLEV 기반 기능",
+    "MAGLEV 원본 기반",
     "about",
     "앱 정보",
     [
@@ -1181,7 +1173,7 @@ export const SETTINGS_INDEX: SettingEntry[] = [
   // Search sources
   e(
     "search-adult",
-    "성인 검색 사이트 표시",
+    "성인 사이트를 목록에 표시",
     "search-providers",
     "검색 사이트",
     [
@@ -1675,20 +1667,6 @@ export const SETTINGS_INDEX: SettingEntry[] = [
     "legal",
     "open source",
   ],
-  ),
-  e(
-    "about-source-code",
-    "YouTube 추출 엔진",
-    "about",
-    "앱 정보",
-    [
-    "github",
-    "code",
-    "repo",
-    "source",
-    "open source",
-  ],
-    "통합 구성",
   ),
   e(
     "whats-new-latest",

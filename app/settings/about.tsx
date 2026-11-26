@@ -137,6 +137,10 @@ export default function AboutSettings() {
         <ListRow title="FFmpeg · 오디오 후처리" subtitle="실행 가능한 안전한 변환 엔진을 포함하지 않아 MP3 변환·코덱 변환은 지원 완료 상태가 아닙니다." />
         <ListRow title="구현 상태 문서" subtitle="원천별 실제 반영 코드, 미구현 범위와 검증 조건을 확인합니다." icon="file" onPress={() => void Linking.openURL('https://github.com/dragonslayers-k/Maglev_forked/blob/feature/p1-video-detection-observer/docs/FINAL_SOURCE_IMPLEMENTATION_MATRIX_KO.md')} />
       </Card>
+      <SectionHeader title="기본 기능" />
+      <Card>
+        <ListRow title="광고 차단" subtitle="MAGLEV 차단 목록과 브라우저 필터를 유지합니다. 차단 목록 업데이트는 APK 업데이트와 별도로 관리됩니다." icon="shield-check" />
+      </Card>
       {crashCount > 0 ? (
         <Card>
           <ListRow
