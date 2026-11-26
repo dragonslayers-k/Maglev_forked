@@ -29,11 +29,19 @@ let pageUrlOption = () => { throw new Error('missing'); };
 let startFound = null;
 if (hasHelper) {
   let privateOn = false;
-  ({ pageUrlOption } = load(helperPath, { '../../utils/prefs/browser': { getBrowserPrefs: () => ({ privateBrowsing: privateOn }) } }));
+  const browserPrefsStub = { getBrowserPrefs: () => ({ privateBrowsing: privateOn }) };
+  ({ pageUrlOption } = load(helperPath, {
+    '../../utils/prefs/browser': browserPrefsStub,
+    '../../utils/prefs/browser.ts': browserPrefsStub,
+  }));
   privateOn = true;
   check('nothing is sent while Private browsing is on', JSON.stringify(pageUrlOption('https://site.test/watch')) === '{}');
   privateOn = false;
-  ({ startFound } = load('components/browser/startFound.ts', { './pageUrlOption': { pageUrlOption } }));
+  ({ startFound } = load('components/browser/startFound.ts', {
+    './pageUrlOption': { pageUrlOption },
+    './pageUrlOption.ts': { pageUrlOption },
+    '../../utils/browser/naverClip.ts': { parseNaverClipMediaId: () => null, resolveNaverClip: async () => ({ url: '' }) },
+  }));
 }
 const safe = (f) => { try { return f(); } catch { return 'threw'; } };
 check('https page is sent', JSON.stringify(safe(() => pageUrlOption('https://site.test/watch?v=1'))) === '{"pageUrl":"https://site.test/watch?v=1"}');
