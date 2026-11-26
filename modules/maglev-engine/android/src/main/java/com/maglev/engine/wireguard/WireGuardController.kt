@@ -90,6 +90,15 @@ object WireGuardController {
         if (!hasProfile(context)) return@synchronized Json.failure(
             "APP_WIREGUARD_PROFILE_MISSING", "저장된 WireGuard 프로필이 없습니다. 직접 연결로 우회하지 않았습니다.")
 
+        // Downloads can be started from a share intent or after process recreation, before the foreground
+        // engine has been initialized. Never read/apply its proxy config until the engine is ready.
+        if (!EngineHost.isEngineInitialized()) {
+            val engineStarted = EngineHost.ensureStarted()
+            if (engineStarted["ok"] != true) return@synchronized Json.failure(
+                "APP_WIREGUARD_ENGINE_START_FAILED",
+                engineStarted["message"]?.toString() ?: "다운로드 엔진을 시작하지 못했습니다.")
+        }
+
         val hasSaved = WireGuardProfileStore.hasOriginalProxy(context)
         if (!hasSaved) {
             val current = EngineHost.getAppWireGuardProxy()
