@@ -1,7 +1,6 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Stack } from 'expo-router';
 import { getBlocklistInfo, type BlocklistInfo } from 'maglev-engine';
-import { useTheme } from '../../context/ThemeContext';
 import { Button, ListRow, SectionHeader, Toggle } from '../../components/ui';
 import { Caption, Card, SettingsPage } from '../../components/settings/SettingsParts';
 import { listsCopy } from '../../constants/copy';
@@ -11,7 +10,6 @@ import { adBusy, sourcesBusy } from '../../utils/lists/machine';
 import { relativeTime } from '../../utils/feeds';
 
 export default function ListUpdatesSettings() {
-  const { colors } = useTheme();
   const [prefs, setPrefs] = useListPrefs();
   const lists = useListsState();
   const [adInfo, setAdInfo] = useState<BlocklistInfo | null>(null);
