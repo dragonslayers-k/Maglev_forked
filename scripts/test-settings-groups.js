@@ -49,7 +49,11 @@ check('전송은 추가 및 완료, 속도 및 공유, 저장 공간, 예약, �
   const p = ['{...downloadsRow}', '{...speedRow}', '<StorageRow', '{...scheduleRow}', '{...watchRow}'].map((x) => d.indexOf(x));
   return p.every((x, i) => x >= 0 && (i === 0 || x > p[i - 1]));
 })());
-check('App group is About, Updates, then Stats, with no sections of their own', /appRows[^=]*=\s*\[\s*\{[^}]*/title: '앱 정보'[\s\S]*?title: '업데이트'//.test(index) && /<SettingsRow key=\{r\.route\} \{\.\.\.r\} \/>\s*\)\)\}\s*<StatsRow \/>/.test(index) && !/SectionHeader title="About"/.test(index));
+check('App group is Korean app info, updates, then Stats, with no sections of their own', (() => {
+  const appInfo = index.indexOf("title: '앱 정보'");
+  const updates = index.indexOf("title: '업데이트'");
+  return appInfo >= 0 && updates > appInfo && /<SettingsRow key=\{r\.route\} \{\.\.\.r\} \/>\s*\)\)\}\s*<StatsRow \/>/.test(index) && !/SectionHeader title="About"/.test(index);
+})());
 check('NeedsAttention banners sit above the groups', at('<NeedsAttention />') > 0 && at('<NeedsAttention />') < tpos[0]);
 check('Interface row is titled Appearance, route kept', /title: '화면 모양'[^}]*route: 'interface'/.test(index) && !/title: 'Interface'/.test(index));
 check('merged row shows limits and queue', /`\$\{limits\} · \$\{queue\}`/.test(index) && /route: 'speed'/.test(index));
