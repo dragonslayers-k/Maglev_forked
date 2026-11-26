@@ -134,6 +134,8 @@ async function main() {
   }
   check('stream links are told by path', sc.streamKindOfLink('https://a.test/x/v.m3u8?t=1') === 'hls' && sc.streamKindOfLink('https://a.test/v.MPD#x') === 'dash' && sc.streamKindOfLink('https://a.test/v.mp4') === null && sc.streamKindOfLink('https://a.test/m3u8/file.zip') === null);
   check('add download probes streams and opens the stream sheet', /streamKindOfLink\(input\)/.test(read('app/add-download.tsx')) && /<StreamSheet item=\{streamItem\}/.test(read('app/add-download.tsx')));
+  check('Naver Shorts collapses detected fragments into one whole-clip item', /naverclip:/.test(read('app/browser.tsx')) && /visible\\.filter\\(item => item\\.kind !== 'video'\\)/.test(read('app/browser.tsx')));
+  check('browser save resolves Naver Shorts to progressive MP4', /resolveNaverClip\\(naverClipPage\\)/.test(read('components/browser/startFound.ts')));
   check('no height falls back to bandwidth tiers', sc.qualityName(blind[0], blind) === 'Low quality' && sc.qualityName(blind[1], blind) === 'Medium quality' && sc.qualityName(blind[2], blind) === 'High quality' && sc.qualityName(blind[0], [blind[0]]) === 'Medium quality');
   const tr = [{ id: 't1', lang: 'en', name: 'English', bandwidth: null }, { id: 't2', lang: 'fr', name: null, bandwidth: null }, { id: 't3', lang: null, name: null, bandwidth: null }];
   check('audio label: name, lang, Track N', sc.audioLabel(tr[0], 0) === 'English' && sc.audioLabel(tr[1], 1) === 'fr' && sc.audioLabel(tr[2], 2) === 'Track 3');
