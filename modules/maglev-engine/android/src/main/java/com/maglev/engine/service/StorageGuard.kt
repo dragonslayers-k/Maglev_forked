@@ -29,6 +29,6 @@ object StorageGuard {
         (free - (reserve(total) - com.maglev.engine.storage.Admission.RESERVE_BYTES).coerceAtLeast(0L)).coerceAtLeast(0L)
 
     /** Notification title and text while storage pauses everything (contract section 2). */
-    const val PAUSED_TITLE = "Paused: phone storage is almost full"
-    const val PAUSED_TEXT = "Free up space"
+    const val PAUSED_TITLE = "일시 정지됨: 휴대전화 저장 공간이 거의 없습니다"
+    const val PAUSED_TEXT = "공간 확보"
 }
