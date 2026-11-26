@@ -3,6 +3,7 @@ package com.maglev.engine.youtube
 import android.content.Context
 import android.webkit.CookieManager
 import com.maglev.engine.EngineHost
+import com.maglev.engine.storage.StorageManager
 import org.schabi.newpipe.extractor.NewPipe
 import org.schabi.newpipe.extractor.services.youtube.extractors.YoutubeStreamExtractor
 import org.schabi.newpipe.extractor.downloader.Downloader
@@ -143,24 +144,33 @@ object NewPipeYoutube {
         return out
     }
 
-    fun add(context: Context, url: String, formatId: String, audioBitrateKbps: Double? = null): Map<String, Any?>? {
+    fun add(context: Context, url: String, formatId: String, audioBitrateKbps: Double? = null, outputContainer: String = "original"): Map<String, Any?>? {
         if (!formatId.startsWith("npv") && !formatId.startsWith("npa")) return null
+        val kind = if (formatId.startsWith("npa")) "audio" else "video"
+        val allowed = if (kind == "audio") MediaContainerConverter.AUDIO_CONTAINERS else MediaContainerConverter.VIDEO_CONTAINERS
+        if (outputContainer != "original" && outputContainer !in allowed) return failure("INVALID_ARGUMENT", "출력 컨테이너가 올바르지 않습니다.")
         val info = get(context, url)
         if (formatId.startsWith("npa")) {
             val itag = formatId.removePrefix("npa").toIntOrNull()
                 ?: return failure("INVALID_ARGUMENT", "오디오 형식 ID가 올바르지 않습니다.")
             val stream = info.audioStreams.firstOrNull { it.itagItem?.id == itag && it.content.isNotBlank() }
                 ?: return failure("YOUTUBE_AUDIO_URL_MISSING", "선택한 오디오 형식의 주소를 갱신하지 못했습니다.")
-            val ext = if (stream.format?.name.orEmpty().contains("WEBM", true)) "webm" else "m4a"
-            return EngineHost.addDownload(stream.content, mapOf(
-                "name" to (safeName(info.name) + "." + ext),
+            val sourceExt = if (stream.format?.name.orEmpty().contains("WEBM", true)) "webm" else "m4a"
+            val targetExt = if (outputContainer == "original") sourceExt else outputContainer
+            val outputExt = MediaContainerConverter.outputExtension("audio", targetExt)
+            val baseName = safeName(info.name)
+            val sourceName = "$baseName.$sourceExt"
+            val needsPostProcess = outputContainer != "original" && (outputExt != sourceExt || targetExt in setOf("alac", "vorbis"))
+            val outputName = if (needsPostProcess) uniqueOutputName(context, baseName, outputExt, sourceName) else sourceName
+            val options = linkedMapOf<String, Any?>(
+                "name" to sourceName,
                 "headers" to mapOf("User-Agent" to USER_AGENT, "Referer" to url),
                 "pageUrl" to url,
-                // YouTube audio URLs are often throttled on a single connection. The native
-                // engine only splits after a 206 Range probe and validator check; otherwise
-                // it safely falls back to one connection. Four parts are a bounded compromise.
+                // Native Range transfer uses four bounded parts after a 206/validator probe.
                 "segments" to 4,
-            ))
+            )
+            addPostProcess(options, "audio", sourceExt, targetExt, outputName, needsPostProcess)
+            return EngineHost.addDownload(stream.content, options)
         }
 
         val height = formatId.removePrefix("npv").toIntOrNull()
@@ -197,23 +207,47 @@ object NewPipeYoutube {
                 }
                 selection["audioId"] = audioId
             }
-            return EngineHost.addDownload(dash, mapOf(
-                "name" to (safeName(info.name) + "_" + height + "p.mp4"),
-                "headers" to headers,
-                "pageUrl" to url,
-                "stream" to selection,
-            ))
+            val sourceExt = "mp4"
+            val targetExt = if (outputContainer == "original") sourceExt else outputContainer
+            val outputExt = MediaContainerConverter.outputExtension("video", targetExt)
+            val baseName = safeName(info.name) + "_" + height + "p"
+            val sourceName = "$baseName.$sourceExt"
+            val needsPostProcess = outputContainer != "original" && outputExt != sourceExt
+            val outputName = if (needsPostProcess) uniqueOutputName(context, baseName, outputExt, sourceName) else sourceName
+            val options = linkedMapOf<String, Any?>("name" to sourceName, "headers" to headers, "pageUrl" to url, "stream" to selection)
+            addPostProcess(options, "video", sourceExt, targetExt, outputName, needsPostProcess)
+            return EngineHost.addDownload(dash, options)
         }
 
         val progressive = info.videoStreams
             .filter { it.height == height && it.content.isNotBlank() && !it.isVideoOnly }
             .maxByOrNull { it.bitrate }
             ?: return failure("YOUTUBE_STREAM_UNSUPPORTED", "이 영상은 " + height + "p 화질의 오디오 포함 스트림을 제공하지 않습니다.")
-        return EngineHost.addDownload(progressive.content, mapOf(
-            "name" to (safeName(info.name) + "_" + height + "p.mp4"),
-            "headers" to mapOf("User-Agent" to USER_AGENT, "Referer" to url),
-            "pageUrl" to url,
-        ))
+        val sourceExt = "mp4"
+        val targetExt = if (outputContainer == "original") sourceExt else outputContainer
+        val outputExt = MediaContainerConverter.outputExtension("video", targetExt)
+        val baseName = safeName(info.name) + "_" + height + "p"
+        val sourceName = "$baseName.$sourceExt"
+        val needsPostProcess = outputContainer != "original" && outputExt != sourceExt
+        val outputName = if (needsPostProcess) uniqueOutputName(context, baseName, outputExt, sourceName) else sourceName
+        val options = linkedMapOf<String, Any?>("name" to sourceName, "headers" to mapOf("User-Agent" to USER_AGENT, "Referer" to url), "pageUrl" to url)
+        addPostProcess(options, "video", sourceExt, targetExt, outputName, needsPostProcess)
+        return EngineHost.addDownload(progressive.content, options)
+    }
+
+    private fun addPostProcess(options: MutableMap<String, Any?>, kind: String, sourceExt: String, targetExt: String, outputName: String, enabled: Boolean) {
+        if (enabled) options["postprocess"] = linkedMapOf("kind" to kind, "sourceExt" to sourceExt, "targetExt" to targetExt, "outputName" to outputName)
+    }
+
+    private fun uniqueOutputName(context: Context, baseName: String, extension: String, sourceName: String): String {
+        val folder = StorageManager.activeTarget(context).path
+        var candidate = "$baseName.$extension"
+        var index = 1
+        while (candidate == sourceName || File(folder, candidate).exists()) {
+            candidate = "$baseName ($index).$extension"
+            index++
+        }
+        return candidate
     }
 
     private fun failure(code: String, message: String) = mapOf("ok" to false, "code" to code, "message" to message)
