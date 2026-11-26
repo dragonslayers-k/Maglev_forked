@@ -124,7 +124,8 @@ async function main() {
   assert.ok(!browserScreen.includes('MPMux 사용 안내') && !browserScreen.includes('Chrome 확장 프로그램'), 'Android browser does not show misleading external MPMux/Chrome extension popup links');
   const streamSheet = fs.readFileSync(path.join(root, 'components/browser/StreamSheet.tsx'), 'utf8');
   assert.ok(!streamSheet.includes('PC MPMux 안내') && !streamSheet.includes('mpmux.com/ko'), 'Android stream sheet does not offer a PC-only recorder as an app feature');
-  assert.ok(browserScreen.includes('DRM 보호 영상은 저장할 수 없습니다'), 'DRM refusal remains explicit');
+  assert.ok(browserScreen.includes('notices.browser.drm'), 'browser routes DRM detections to the shared refusal notice');
+  assert.ok(copy.includes("drm: 'DRM 보호 영상은 저장할 수 없습니다.'"), 'shared copy keeps the explicit DRM refusal in Korean');
   assert.ok(!browserScreen.includes('decryptDrm') && !browserScreen.includes('widevineDecrypt'), 'no DRM decryption adapter is shipped');
   console.log('test-youtube-intents: all assertions passed');
 }
