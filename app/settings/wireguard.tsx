@@ -73,13 +73,13 @@ export default function AppWireGuardSettings() {
         />
         <ListRow
           title="HTTP/HTTPS 다운로드에 사용"
-          subtitle={enabled ? (running ? '로컬 프록시 준비됨 · 다운로드 요청 시 터널 사용' : '켜짐 · 다음 HTTP 다운로드 시작 시 터널 준비') : '꺼짐'}
+          subtitle={enabled ? (running ? '앱 내부 터널 실행 중 · HTTP/HTTPS 다운로드만 사용' : '앱 내부 터널을 시작하는 중') : '꺼짐'}
           accessory={<Toggle value={enabled} onValueChange={(v) => void changeEnabled(v)} accessibilityLabel="앱 내부 WireGuard" />}
         />
       </Card>
       <Caption tone="warning">
         이 기능은 Android VpnService를 등록하지 않고 APN이나 휴대폰 전체 경로를 변경하지 않습니다.
-        Maglev의 HTTP/HTTPS 다운로드 엔진만 앱 내부 로컬 프록시를 사용합니다.
+        스위치를 켜면 앱 내부 userspace WireGuard 터널과 인증된 로컬 프록시가 즉시 실행됩니다. Maglev의 HTTP/HTTPS 다운로드 엔진만 앱 내부 로컬 프록시를 사용합니다.
         토렌트·DHT와 브라우저/WebView 요청은 이 터널에 포함되지 않으며, WireGuard가 켜져 있으면 토렌트 추가·재개를 차단합니다.
         터널 시작 또는 프록시 적용에 실패하면 직접 연결로 우회하지 않습니다.
       </Caption>

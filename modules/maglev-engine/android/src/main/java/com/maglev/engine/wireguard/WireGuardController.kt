@@ -37,9 +37,24 @@ object WireGuardController {
                     "APP_WIREGUARD_TORRENT_PAUSE_FAILED", "기존 토렌트 전송을 안전하게 멈추지 못해 WireGuard를 켜지 않았습니다.")
             }
             context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putBoolean(ENABLED, true).apply()
+            // Start the userspace tunnel and authenticated loopback proxy immediately when the
+            // app-local switch is enabled; it is not deferred until the first download.
+            val started = prepareDownload(context)
+            if (started["ok"] != true) {
+                val savedProxy = if (WireGuardProfileStore.hasOriginalProxy(context)) {
+                    WireGuardProfileStore.loadOriginalProxy(context)
+                } else null
+                if (EngineHost.isEngineInitialized()) EngineHost.setAppWireGuardProxy(savedProxy)
+                runCatching { NativeTunnel.stop() }
+                running = false
+                localProxy = null
+                WireGuardProfileStore.clearOriginalProxy(context)
+                context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putBoolean(ENABLED, false).apply()
+                return@synchronized started
+            }
             return@synchronized mapOf(
-                "ok" to true, "enabled" to true,
-                "message" to "앱 내부 WireGuard는 HTTP 다운로드를 시작할 때 연결됩니다.")
+                "ok" to true, "enabled" to true, "running" to true,
+                "message" to "앱 내부 WireGuard userspace 터널과 로컬 프록시를 실행했습니다.")
         }
 
         val hasSaved = WireGuardProfileStore.hasOriginalProxy(context)
