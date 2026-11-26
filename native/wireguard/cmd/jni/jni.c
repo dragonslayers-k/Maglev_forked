@@ -105,13 +105,9 @@ JNIEXPORT jint JNICALL Java_com_maglev_engine_wireguard_NativeTunnel_start(
     free_text(pass);
     free_text(user);
     free_text(conf);
-    if (result == -1) {
-        throw_error(env, "java/lang/IllegalArgumentException", "Invalid or unsupported WireGuard configuration.");
-    } else if (result == -2) {
-        throw_error(env, "java/lang/IllegalStateException", "WireGuard proxy is already running.");
-    } else if (result <= 0) {
-        throw_error(env, "java/lang/IllegalStateException", "Could not start the local WireGuard proxy.");
-    }
+    // Negative return codes are part of NativeTunnel.start's status contract:
+    // -1 invalid profile, -2 duplicate engine, -3 engine startup failure,
+    // -4 endpoint DNS failure. Throwing here hid those codes from Kotlin.
     return (jint) result;
 }
 

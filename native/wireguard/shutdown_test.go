@@ -12,7 +12,7 @@ import (
 
 	"golang.zx2c4.com/wireguard/device"
 	"golang.zx2c4.com/wireguard/tun"
-	"golang.zx2c4.com/wireguard/tun/netstack"
+	"app.morphe/wireguard/netstack"
 )
 
 // gatedShutdownTUN holds a real peer receiver inside Write. Its own Close waits

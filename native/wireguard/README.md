@@ -161,6 +161,23 @@ The commands above document how to run the tests. The
 [maintenance validation report](../../docs/wireguard-i18n-2.1.4.md) records what
 was actually executed separately from device expectations.
 
+## Local netstack shutdown hardening
+
+The app keeps a small local copy of WireGuard's MIT-licensed
+`tun/netstack/tun.go` at the version pinned in `go.mod`. The copy preserves
+its upstream SPDX and copyright header. The behavioral delta is lifecycle
+synchronization: `WriteNotify` and `Close` are serialized, a dedicated
+shutdown signal wakes pending readers and senders, and the packet channel itself
+is never closed while a gVisor notification callback could still be sending.
+This prevents the upstream `send on closed channel` panic seen during concurrent
+userspace tunnel shutdown. Changes to this file must be compared against the
+pinned upstream revision and retained under its MIT notice.
+
+JNI startup error codes are preserved across the Java boundary:
+`-1` invalid profile, `-2` duplicate engine, `-3` engine startup failure,
+and `-4` endpoint DNS failure. Kotlin owns localization and rollback; the C
+shim must not replace these codes with generic exceptions.
+
 ## Dependencies and licenses
 
 This new component follows the surrounding GPL-3.0 project and its mandatory

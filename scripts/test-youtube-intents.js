@@ -107,7 +107,7 @@ async function main() {
   assert.ok(screen.includes('format.playerClient'), 'the selected extractor client must be preserved');
   assert.ok(screen.includes("formatId: 'bestaudio'"), 'a bestaudio fallback remains available only when no real audio formats were extracted');
   assert.ok(screen.includes("formatId: 'bestaudio', playerClient: 'android_vr'"), 'the placeholder bestaudio must route to yt-dlp, not NewPipe format-ID parsing');
-  assert.ok(screen.includes('audios.length > 0 ? audios : audioFallbacks'), 'real audio bitrate/format choices replace the placeholder selector');
+  assert.ok(screen.includes('const audioChoices = visibleAudios.length > 0 ? visibleAudios : selectedAudioExt === \'all\' ? audioFallbacks : [];') && screen.includes('selectedAudioFormat = audioChoices.find'), 'real audio bitrate/format choices remain primary and fallback presets are used only when needed');
   assert.ok(screen.includes('오디오만 · 최고 음질'), 'audio-only fallback label is Korean');
   assert.ok(!screen.includes('ytdlpEngine.download'), 'screen must not create a second standalone download queue');
   const packageJson = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));

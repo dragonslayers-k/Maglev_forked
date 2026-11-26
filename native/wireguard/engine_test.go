@@ -36,7 +36,7 @@ import (
 	"golang.zx2c4.com/wireguard/conn"
 	"golang.zx2c4.com/wireguard/conn/bindtest"
 	"golang.zx2c4.com/wireguard/device"
-	"golang.zx2c4.com/wireguard/tun/netstack"
+	"app.morphe/wireguard/netstack"
 )
 
 const testUser = "test-app"
