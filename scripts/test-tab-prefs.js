@@ -20,8 +20,8 @@ const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 const d = t.defaultTabPrefs();
 check('default order is today\'s bar, Browser last', same(d.order, ['index', 'search', 'feeds', 'settings', 'browse']));
 check('default hides only Browser', same(d.hidden, ['browse']));
-check('default visible matches today (assistant on)', same(t.visibleTabs(d, { assistantEnabled: true }), ['index', 'search', 'feeds', 'settings']));
-check('assistant setting off removes the assistant tab', same(t.visibleTabs(d, { assistantEnabled: false }), ['index', 'search', 'feeds', 'settings']));
+check('default visible excludes removed Assistant', same(t.visibleTabs(d), ['index', 'search', 'feeds', 'settings']));
+check('legacy assistant preference has no effect', same(t.visibleTabs(d), ['index', 'search', 'feeds', 'settings']));
 
 // normalize
 check('normalize(null) is defaults', same(t.normalizeTabPrefs(null), d));
@@ -54,8 +54,8 @@ check('move does not mutate its input', (() => { const c = t.defaultTabPrefs(); 
 
 // visibleTabs follows order
 const moved = t.setTabShown(t.moveTab(t.moveTab(d, 'settings', 'up'), 'settings', 'up'), 'browse', true);
-check('visibleTabs follows saved order and shown flags', same(t.visibleTabs(moved, { assistantEnabled: true }), ['index', 'settings', 'search', 'feeds', 'browse']));
-check('visibleTabs never returns an empty bar', t.visibleTabs({ order: [], hidden: [] }, { assistantEnabled: false }).length >= 2);
+check('visibleTabs follows saved order and shown flags', same(t.visibleTabs(moved), ['index', 'settings', 'search', 'feeds', 'browse']));
+check('visibleTabs never returns an empty bar', t.visibleTabs({ order: [], hidden: [] }).length >= 2);
 
 // Static wiring
 const layout = read('app/(tabs)/_layout.tsx');
