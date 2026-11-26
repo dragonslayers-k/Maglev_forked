@@ -21,11 +21,8 @@ const ALLOW = {
   "feeds: Last checked": "feed status, read-only",
   "feeds: Added so far": "feed status, read-only",
   "feeds: Waiting to be added": "feed status, read-only",
-  "updates: Updates": "info line shown when another app manages updates",
   "about: Release notes": "link to the What's new page, which is indexed there",
   // Per-item or computed titles (no fixed text to look up).
-  "about: updateCopy.available(version)": "status row built from the new version number",
-  "updates: updateCopy.available((info?.version ?? newerManaged?.version) as string)": "status row built from the new version number",
   "about: l.title": "list of project links",
   "licenses: l.name": "one row per open-source licence",
   "subtitle-languages: phoneLanguageLabel()": "the phone's own language, a fixed first row of the list",
