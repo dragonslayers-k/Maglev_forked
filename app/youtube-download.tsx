@@ -50,6 +50,8 @@ export default function YouTubeDownloadScreen() {
   const [selectedAudioExt, setSelectedAudioExt] = useState('all');
   const [videoContainer, setVideoContainer] = useState('original');
   const [audioContainer, setAudioContainer] = useState('original');
+  const [videoContainerExpanded, setVideoContainerExpanded] = useState(false);
+  const [audioContainerExpanded, setAudioContainerExpanded] = useState(false);
   const isYouTube = Boolean(parseYouTubeLink(String(url || '')));
   const screenTitle = parseYouTubeLink(String(url || '')) ? 'YouTube 다운로드' : '웹사이트 동영상 다운로드';
 
@@ -200,10 +202,15 @@ export default function YouTubeDownloadScreen() {
               ))}
             </Card>
             <Card>
-              <ListRow icon={videoContainer === "original" ? "check" : "download"} title="원본 컨테이너 유지" subtitle="원본 스트림을 그대로 저장" value={videoContainer === "original" ? "선택됨" : undefined} disabled={busy} onPress={() => setVideoContainer("original")} />
-              {VIDEO_OUTPUT_CONTAINERS.map((ext) => (
-                <ListRow key={"video-output-" + ext} icon={videoContainer === ext ? "check" : "recheck"} title={ext.toUpperCase()} subtitle={ext === "gif" ? "GIF 애니메이션으로 변환" : "선택한 컨테이너로 변환 · 필요 시 재인코딩"} value={videoContainer === ext ? "선택됨" : undefined} disabled={busy} onPress={() => setVideoContainer(ext)} />
-              ))}
+              <ListRow icon="download" title="출력 컨테이너" subtitle={videoContainer === "original" ? "원본 컨테이너 유지" : videoContainer.toUpperCase()} value={videoContainerExpanded ? "접기" : "목록"} disabled={busy} onPress={() => setVideoContainerExpanded((open) => !open)} />
+              {videoContainerExpanded ? (
+                <>
+                  <ListRow icon={videoContainer === "original" ? "check" : "download"} title="원본 컨테이너 유지" subtitle="원본 스트림을 그대로 저장" value={videoContainer === "original" ? "선택됨" : undefined} disabled={busy} onPress={() => { setVideoContainer("original"); setVideoContainerExpanded(false); }} />
+                  {VIDEO_OUTPUT_CONTAINERS.map((ext) => (
+                    <ListRow key={"video-output-" + ext} icon={videoContainer === ext ? "check" : "recheck"} title={ext.toUpperCase()} subtitle={ext === "gif" ? "GIF 애니메이션으로 변환" : "선택한 컨테이너로 변환 · 필요 시 재인코딩"} value={videoContainer === ext ? "선택됨" : undefined} disabled={busy} onPress={() => { setVideoContainer(ext); setVideoContainerExpanded(false); }} />
+                  ))}
+                </>
+              ) : null}
             </Card>
             <Card>
               {visibleVideos.map((format) => (
@@ -234,10 +241,15 @@ export default function YouTubeDownloadScreen() {
               ))}
             </Card>
             <Card>
-              <ListRow icon={audioContainer === "original" ? "check" : "download"} title="원본 컨테이너 유지" subtitle="원본 오디오를 그대로 저장" value={audioContainer === "original" ? "선택됨" : undefined} disabled={busy} onPress={() => setAudioContainer("original")} />
-              {AUDIO_OUTPUT_CONTAINERS.map((ext) => (
-                <ListRow key={"audio-output-" + ext} icon={audioContainer === ext ? "check" : "recheck"} title={ext === "alac" ? "ALAC · M4A" : ext === "vorbis" ? "VORBIS · OGG" : ext.toUpperCase()} subtitle="선택한 오디오 컨테이너·코덱으로 변환" value={audioContainer === ext ? "선택됨" : undefined} disabled={busy} onPress={() => setAudioContainer(ext)} />
-              ))}
+              <ListRow icon="download" title="출력 컨테이너" subtitle={audioContainer === "original" ? "원본 컨테이너 유지" : audioContainer === "alac" ? "ALAC · M4A" : audioContainer === "vorbis" ? "VORBIS · OGG" : audioContainer.toUpperCase()} value={audioContainerExpanded ? "접기" : "목록"} disabled={busy} onPress={() => setAudioContainerExpanded((open) => !open)} />
+              {audioContainerExpanded ? (
+                <>
+                  <ListRow icon={audioContainer === "original" ? "check" : "download"} title="원본 컨테이너 유지" subtitle="원본 오디오를 그대로 저장" value={audioContainer === "original" ? "선택됨" : undefined} disabled={busy} onPress={() => { setAudioContainer("original"); setAudioContainerExpanded(false); }} />
+                  {AUDIO_OUTPUT_CONTAINERS.map((ext) => (
+                    <ListRow key={"audio-output-" + ext} icon={audioContainer === ext ? "check" : "recheck"} title={ext === "alac" ? "ALAC · M4A" : ext === "vorbis" ? "VORBIS · OGG" : ext.toUpperCase()} subtitle="선택한 오디오 컨테이너·코덱으로 변환" value={audioContainer === ext ? "선택됨" : undefined} disabled={busy} onPress={() => { setAudioContainer(ext); setAudioContainerExpanded(false); }} />
+                  ))}
+                </>
+              ) : null}
             </Card>
             <Card>
               {(visibleAudios.length > 0 ? visibleAudios : selectedAudioExt === 'all' ? audioFallbacks : []).map((format, index) => (
