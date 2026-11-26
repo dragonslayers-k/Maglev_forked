@@ -139,3 +139,9 @@ Release fallback workflow must compile the app-local WireGuard JNI library itsel
 Barrel 1.1.2 static analysis confirms the service/worker/DB structure, HaulMediaBridge, HaulMseBridge, HaulBlobBridge, HaulGrabberBridge, MSE/SourceBuffer hooks, HLS/DASH segment/resume traces and a WebMediaKeepAliveService class-name trace. These are static APK traces, not runtime proof. Smart Connect semantics and PiP are not proven by the analysis document; implement and test them as separate MAGLEV+ requirements, not falsely attribute them to Barrel.
 
 Remaining user-required gates: actual smart connection decision path; direct/HLS/DASH video recognition; download while playing; MSE/SourceBuffer capture and mux for non-DRM streams; HLS Live segment handling; background playback service/media session/audio focus; native PiP entry/exit; actual YouTube target-format output; app-local WireGuard handshake and tunneled HTTPS with no system route changes. Keep PR Draft and do not release until device acceptance.
+
+
+## 2026-11-27 CI follow-up #540/#541
+- #540 exposed JSX closing-tag errors in the compact YouTube selector; #541 repaired the JSX.
+- #541's remaining JS failure came from stale tests expecting the previous inline-chip/expandable-list design. Assertions now verify extension and format selection sheets.
+- Release fallback JNI build command continuations were corrected to a single shell continuation backslash; release workflow must still be explicitly tested before release use.
