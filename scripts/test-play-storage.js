@@ -61,7 +61,7 @@ async function main() {
 
   const sp = playPlan(half, { state: 'PAUSED', pausedBy: 'storage_full' });
   check('a storage-paused torrent is blocked with a storage reason', sp.kind === 'blocked' && sp.reason === 'storageFull', JSON.stringify(sp));
-  check('storage-blocked Play message points to freeing space', /free up space/i.test(copy.playCopy.storageFull ?? '') && !/resume/i.test(copy.playCopy.storageFull ?? ''));
+  check('storage-blocked Play message points to freeing space', /공간을 확보/.test(copy.playCopy.storageFull ?? '') && !/resume/i.test(copy.playCopy.storageFull ?? ''));
   const pa = fs.readFileSync(path.join(root, 'components/detail/playActions.ts'), 'utf8');
   check('playActions uses the storage message for a storage block', /storageFull/.test(pa));
 
@@ -117,9 +117,9 @@ async function main() {
   check('selected bytes add known sizes only', selectedBytes(rows, new Set(['t2', 'dl_c', 'dl_a'])) === 14000);
 
   // Copy strings.
-  check('paused title matches the notification', copy.storageCopy.pausedTitle === 'Paused: phone storage is almost full');
-  check('free up space action', copy.storageCopy.freeUp === 'Free up space' && copy.storageCopy.removeAction === 'Remove and delete files');
-  check('play label', copy.playCopy.label === 'Play');
+  check('paused title matches the notification', copy.storageCopy.pausedTitle === '일시 정지됨: 휴대전화 저장 공간이 거의 없습니다');
+  check('free up space action', copy.storageCopy.freeUp === '공간 확보' && copy.storageCopy.removeAction === '항목 및 파일 삭제');
+  check('play label', copy.playCopy.label === '재생');
   {
     const card = fs.readFileSync(path.join(__dirname, '..', 'components', 'TransferCard.tsx'), 'utf8');
     check('row Play uses the video icon, not the Resume triangle', /<IconButton icon="file-video"[^>]*playCopy\.a11y/.test(card) && !/<IconButton icon="play"[^>]*playCopy\.a11y/.test(card));
