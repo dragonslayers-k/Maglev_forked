@@ -16,10 +16,10 @@ const output = babel.transformSync(
 ).code;
 
 assert.match(output, /KoreanText as Text/);
-assert.match(output, /from ['"]\\.\\.\\/components\\/ui\\/KoreanText['"]/);
+assert.match(output, /from ['"]\.\.\/components\/ui\/KoreanText['"]/);
 assert.match(output, /View/);
 assert.match(output, /Pressable/);
-assert.doesNotMatch(output, /import \\{ Text,/);
+assert.doesNotMatch(output, /import \{ Text,/);
 const wrapper = require('node:fs').readFileSync(path.join(root, 'components/ui/KoreanText.tsx'), 'utf8');
 assert.match(wrapper, /koUiText/);
 assert.match(wrapper, /translateChildren/);
