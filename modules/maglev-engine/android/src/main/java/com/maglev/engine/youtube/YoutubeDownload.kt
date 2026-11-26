@@ -218,13 +218,16 @@ object YoutubeDownload {
             val app = context.applicationContext
             prepareYtDlp(app)
             val selected = YoutubeDL.getInstance().getInfo(requestFor(sourceUrl, playerClient))
-            val audioOnly = formatId == "bestaudio"
+            val audioOnly = formatId.startsWith("bestaudio")
+            val maxAudioKbps = formatId.removePrefix("bestaudio").removePrefix("_").toDoubleOrNull()
             val availableFormats = selected.formats.orEmpty()
+            val audioFormats = availableFormats.filter { format ->
+                !format.acodec.isNullOrBlank() && format.acodec != "none" &&
+                    (format.vcodec.isNullOrBlank() || format.vcodec == "none")
+            }
             val requested = if (audioOnly) {
-                availableFormats.filter { format ->
-                    !format.acodec.isNullOrBlank() && format.acodec != "none" &&
-                        (format.vcodec.isNullOrBlank() || format.vcodec == "none")
-                }.maxByOrNull { it.abr }
+                val capped = maxAudioKbps?.let { cap -> audioFormats.filter { it.abr <= cap } }.orEmpty()
+                (capped.ifEmpty { audioFormats }).maxByOrNull { it.abr }
             } else availableFormats.firstOrNull { it.formatId == formatId }
             if (audioOnly && requested == null) {
                 return Json.failure(
