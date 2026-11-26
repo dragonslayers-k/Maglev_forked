@@ -61,7 +61,8 @@ async function main() {
   assert.ok(youtubeAdapter.includes('playerClient == "generic"'), 'generic page formats are tagged separately from YouTube clients');
   assert.ok(youtubeAdapter.includes('EngineHost.probeStream'), 'HLS/DASH formats must use Maglev stream engine');
   assert.ok(youtubeAdapter.includes('youtube:player_client='), 'selected format must be re-extracted with its original client');
-  assert.match(nativeModule, /formatId: String, playerClient: String/, 'native bridge must carry the selected extractor client');
+  assert.match(nativeModule, /formatId: String, playerClient: String, audioBitrateKbps: Double\?/, 'native bridge must carry the selected audio bitrate ceiling for video downloads');
+  assert.ok(youtubeAdapter.includes('targetAudioBps') && youtubeAdapter.includes('YOUTUBE_AUDIO_BITRATE_UNAVAILABLE'), 'adaptive video downloads must enforce the selected separate-audio bitrate ceiling');
   assert.ok(youtubeAdapter.includes('ytdlp.init(app)') && youtubeAdapter.includes('field.set(ytdlp, File(app.applicationInfo.nativeLibraryDir))'), 'initialize bundled yt-dlp and reset the wrapper ffmpeg path without downloading updates');
   assert.ok(youtubeAdapter.includes('groupBy { it["formatId"].toString() }'), 'duplicate format IDs from different player clients must collapse to one row');
   const formatInventory = youtubeAdapter.slice(youtubeAdapter.indexOf('val videoFormats = grouped["video"]'), youtubeAdapter.indexOf('val choices = videoFormats + audioFormats'));
