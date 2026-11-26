@@ -206,6 +206,13 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "autolinking": {
+      "android": {
+        "buildFromSource": [
+          ".*"
+        ]
+      }
     }
   }
 }
