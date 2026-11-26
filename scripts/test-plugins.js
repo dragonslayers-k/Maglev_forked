@@ -15,6 +15,7 @@ assert.deepStrictEqual(applySizeProperties(props), props, 'props not idempotent'
 
 const rules = applyKeepRules('# existing\n-keep class a.B');
 assert(rules.includes('-keep class com.maglev.engine.** { *; }'));
+assert(rules.includes('-dontwarn java.beans.BeanDescriptor'), 'suppresses optional JavaBeans-only Rhino reference on Android');
 assert(rules.includes('native <methods>'));
 assert(rules.startsWith('# existing\n'));
 assert.strictEqual(applyKeepRules(rules), rules, 'rules not idempotent');
