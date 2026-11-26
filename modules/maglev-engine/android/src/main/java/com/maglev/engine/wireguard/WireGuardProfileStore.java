@@ -115,8 +115,8 @@ public final class WireGuardProfileStore {
                 .onMalformedInput(CodingErrorAction.REPORT)
                 .onUnmappableCharacter(CodingErrorAction.REPORT)
                 .decode(ByteBuffer.wrap(bytes)).toString();
-            if (!value.isEmpty() && value.charAt(0) == '\\uFEFF') value = value.substring(1);
-            if (value.indexOf('\\0') >= 0 || (!allowEmpty && value.trim().isEmpty()))
+            if (!value.isEmpty() && value.charAt(0) == 0xFEFF) value = value.substring(1);
+            if (value.indexOf(0) >= 0 || (!allowEmpty && value.trim().isEmpty()))
                 throw new IOException("Invalid profile text");
             return value;
         } catch (CharacterCodingException ex) { throw new IOException("Profile must be UTF-8"); }
