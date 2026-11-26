@@ -29,7 +29,7 @@ export default function SubtitlesSettings() {
       <Stack.Screen options={{ headerShown: false }} />
       <Card>
         <ListRow
-          title="Subtitles"
+          title="자막"
           subtitle={SETTINGS_SWITCH_SUBTITLE}
           accessory={<Toggle value={sub.enabled} onValueChange={(enabled) => patch({ enabled })} accessibilityLabel={SETTINGS_TITLE} />}
         />
