@@ -656,7 +656,7 @@ export class MaglevEngineBridge implements MaglevEngineApi {
     try {
       return await PictureInPictureModule.enterBrowserPictureInPicture();
     } catch (e: any) {
-      return { ok: false, code: 'PIP_FAILED', message: String(e?.message ?? e) };
+      return { ok: false, code: 'INTERNAL', message: String(e?.message ?? e) };
     }
   }
   public getAppWireGuardStatus(): Promise<EngineResult<{ enabled: boolean; hasProfile: boolean; running: boolean }>> {

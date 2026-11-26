@@ -26,9 +26,9 @@ class MaglevWatchModule : Module() {
         AsyncFunction("enterBrowserPictureInPicture") { promise: Promise ->
             val activity = appContext.currentActivity
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
-                promise.resolve(mapOf("ok" to false, "code" to "PIP_UNSUPPORTED", "message" to "Picture-in-picture requires Android 8.0 or later."))
+                promise.resolve(mapOf("ok" to false, "code" to "UNSUPPORTED", "message" to "Picture-in-picture requires Android 8.0 or later."))
             } else if (activity == null) {
-                promise.resolve(mapOf("ok" to false, "code" to "ACTIVITY_UNAVAILABLE", "message" to "The app screen is not available."))
+                promise.resolve(mapOf("ok" to false, "code" to "NOT_READY", "message" to "The app screen is not available."))
             } else {
                 try {
                     val params = PictureInPictureParams.Builder()
@@ -36,7 +36,7 @@ class MaglevWatchModule : Module() {
                         .build()
                     promise.resolve(mapOf("ok" to activity.enterPictureInPictureMode(params)))
                 } catch (_: Throwable) {
-                    promise.resolve(mapOf("ok" to false, "code" to "PIP_FAILED", "message" to "Android could not start picture-in-picture."))
+                    promise.resolve(mapOf("ok" to false, "code" to "INTERNAL", "message" to "Android could not start picture-in-picture."))
                 }
             }
         }
