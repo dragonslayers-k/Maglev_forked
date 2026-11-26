@@ -41,8 +41,8 @@ async function main() {
 
   // --- the setting round trip (AGENTS.md rule 6) ---
   console.log('setting: add without asking');
-  const { DEFAULT_SETTINGS } = await import('../modules/maglev-engine/src/Maglev+Settings.types.ts');
-  const { migrateSettings, Maglev+SettingsStore } = await import('../modules/maglev-engine/src/Maglev+SettingsStore.ts');
+  const { DEFAULT_SETTINGS } = await import('../modules/maglev-engine/src/MaglevSettings.types.ts');
+  const { migrateSettings, MaglevSettingsStore } = await import('../modules/maglev-engine/src/MaglevSettingsStore.ts');
   const { toGovernance } = await import('../modules/maglev-engine/src/toNativeConfig.ts');
   check('default is off', DEFAULT_SETTINGS.storage.addWithoutAsking === false);
   check('governance carries it (off)', toGovernance(DEFAULT_SETTINGS).quickAdd === false);
@@ -51,13 +51,13 @@ async function main() {
   check('migrate fills an old payload with false', migrateSettings({ version: 2, settings: { storage: {} } }).storage.addWithoutAsking === false);
   check('migrate ignores a wrong type', migrateSettings({ settings: { storage: { addWithoutAsking: 'yes' } } }).storage.addWithoutAsking === false);
   check('governance carries it (on) and the appearance mode', toGovernance(on).quickAdd === true && toGovernance(on).appearanceMode === 'light');
-  const store = Maglev+SettingsStore.getInstance();
+  const store = MaglevSettingsStore.getInstance();
   store.updateSettings({ storage: { ...store.getSettings().storage, addWithoutAsking: true } });
   check('store update sticks', store.getSettings().storage.addWithoutAsking === true && toGovernance(store.getSettings()).quickAdd === true);
   store.resetToDefaults();
-  const types = read('modules/maglev-engine/src/Maglev+Engine.types.ts');
+  const types = read('modules/maglev-engine/src/MaglevEngine.types.ts');
   check('GovernanceConfig types the new fields', /quickAdd\??: boolean/.test(types) && /appearanceMode\??: /.test(types));
-  const module_ = read(ENGINE_KT + 'Maglev+EngineModule.kt');
+  const module_ = read(ENGINE_KT + 'MaglevEngineModule.kt');
   check('setGovernance saves quick share prefs', /QuickSharePrefs\.save\(/.test(module_));
   const prefs = read(ENGINE_KT + 'share/QuickSharePrefs.kt');
   check('Kotlin reads add_without_asking, default false', /add_without_asking/.test(prefs) && /getBoolean\(KEY_ADD_WITHOUT_ASKING, false\)/.test(prefs));
@@ -67,7 +67,7 @@ async function main() {
   const copy = read('constants/copy.ts');
   const m = /\/\/ region quick share[\s\S]*?\/\/ endregion quick share/.exec(copy);
   check('copy block is marked', !!m);
-  check('copy has the Korean card strings', m && /공유한 항목에서 링크를 찾지 못했습니다/.test(m[0]) && /웹 페이지이며 파일이 아닙니다/.test(m[0]) && /Maglev+에 추가했습니다/.test(m[0]));
+  check('copy has the Korean card strings', m && /공유한 항목에서 링크를 찾지 못했습니다/.test(m[0]) && /웹 페이지이며 파일이 아닙니다/.test(m[0]) && /Maglev\\+에 추가했습니다/.test(m[0]));
   const text = read(ENGINE_KT + 'share/QuickShareText.kt');
   const plain = m ? m[0].slice(m[0].indexOf('gettingDetails')) : '';
   const strings = [...plain.matchAll(/'([^'\n]{6,})'|"([^"\n]{6,})"/g)].map((x) => x[1] || x[2]).filter((s) => s.length > 0);
@@ -101,7 +101,7 @@ async function main() {
   const main = acts.find((a) => a.$['android:name'] === '.MainActivity');
   check('activity declared', !!quick);
   check('activity is exported, off the recents list, own affinity', quick && quick.$['android:exported'] === 'true' && quick.$['android:excludeFromRecents'] === 'true' && quick.$['android:taskAffinity'] === '');
-  check('activity uses the translucent theme', quick && quick.$['android:theme'] === '@style/Maglev+QuickShare');
+  check('activity uses the translucent theme', quick && quick.$['android:theme'] === '@style/MaglevQuickShare');
   const flat = (a) => (a['intent-filter'] || []).map((f) => ({
     actions: (f.action || []).map((x) => x.$['android:name'].split('.').pop()),
     cats: (f.category || []).map((x) => x.$['android:name'].split('.').pop()),
@@ -160,7 +160,7 @@ async function main() {
     check('VIEW hand-offs use the browser file name (8.1)', /ACTION_VIEW\) cls = ShareClassify\.withHandOffName\(cls, handOffName\(original\)\)/.test(qa) && /"com\.android\.extra\.filename"/.test(qa));
   }
   const styles = read('modules/maglev-engine/android/src/main/res/values/quick_share.xml');
-  check('theme resource', /name="Maglev+QuickShare"/.test(styles) && /windowIsTranslucent/.test(styles));
+  check('theme resource', /name="MaglevQuickShare"/.test(styles) && /windowIsTranslucent/.test(styles));
   const act = read(ENGINE_KT + 'share/QuickShareActivity.kt');
   check('activity finishes without starting MainActivity for the card', !/startActivity[\s\S]{0,40}MainActivity\.class/.test(act));
   check('activity adds through EngineHost add paths', /EngineHost\.addTorrent|QuickShareAdd\.add/.test(act + read(ENGINE_KT + 'share/QuickShareAdd.kt')));
@@ -169,7 +169,7 @@ async function main() {
   check('add path starts the engine and the service', /EngineHost\.ensureStarted\(\)/.test(add) && /BackgroundStart\.start\(/.test(add));
   check('EngineHost exposes ensureStarted', /fun ensureStarted\(/.test(read(ENGINE_KT + 'EngineHost.kt')));
   check('routes: browser prefill and free space', /maglev:\/\/browser\?url=/.test(act) && /maglev:\/\/free-space/.test(act));
-  check('Toast text uses Korean copy', /Maglev+에 추가했습니다/.test(text));
+  check('Toast text uses Korean copy', /Maglev\\+에 추가했습니다/.test(text));
   check('no Compose in the share code', !/androidx\.compose/.test(act + read(ENGINE_KT + 'share/QuickShareCard.kt')));
   check('no system monospace', !/Typeface\.MONOSPACE|"monospace"/.test(read(ENGINE_KT + 'share/QuickShareCard.kt')));
 
