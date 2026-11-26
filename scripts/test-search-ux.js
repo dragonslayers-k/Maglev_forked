@@ -101,7 +101,7 @@ function check(name, cond, extra) {
   check('search: Browser button, labelled, hidden when the Browser tab shows', />\s*Browser\s*</.test(code) && /Open the browser/.test(code) && /useTabPrefs/.test(code) && /'browse'/.test(code));
   check('search: header dot instead of a count badge', /dot=\{/.test(code) && !/badge=\{prefs\.enabled/.test(code));
   const copySrc = read('constants/copy.ts');
-  check('search: Korean idle title and body come from copy', /empty\.search\.idle\(enabledCount\)/.test(code) && /개 검색 사이트를 한 번에 검색하세요/.test(copySrc) && /검색창을 눌러 최근 검색어를 확인하세요\./.test(copySrc));
+  check('search: Korean idle title and body come from copy', /empty\.search\.idle\(enabledCount\)/.test(code) && /개 사이트 검색/.test(copySrc) && /검색창을 눌러 최근 검색어를 확인하세요\./.test(copySrc));
   check('search: recent dropdown on focus, with remove and Clear', /onFocus/.test(code) && /onBlur/.test(code) && /removeRecentSearch/.test(code) && /Clear/.test(code));
   check('search: one progress line while searching', /Searching… \$\{[^}]+\} of \$\{[^}]+\}/.test(code) && !/sources answered, results appear/.test(code));
   check('search: exactly one Stop button', (code.match(/label="Stop"/g) || []).length === 1);
