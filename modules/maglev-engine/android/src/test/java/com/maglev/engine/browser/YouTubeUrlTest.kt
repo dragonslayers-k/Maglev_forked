@@ -1,5 +1,7 @@
 package com.maglev.engine.browser
 
+import com.maglev.engine.youtube.YoutubeDownload
+
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertFalse
@@ -58,5 +60,14 @@ class YouTubeUrlTest {
         assertEquals(3661, YouTubeUrl.parse("https://youtube.com/watch?v=AbCdEf12345&t=1h1m1s")?.startSeconds)
         assertNull(YouTubeUrl.parse("https://youtube.com/watch?v=AbCdEf12345&t=999999")?.startSeconds)
         assertNull(YouTubeUrl.parse("https://youtube.com/watch?v=AbCdEf12345&t=notatime")?.startSeconds)
+    }
+
+    @Test fun newPipeClientPassesYouTubeDownloadValidation() {
+        assertTrue(YoutubeDownload.isValidClient(true, "newpipe"))
+        assertTrue(YoutubeDownload.isValidClient(true, "android_vr"))
+        assertTrue(YoutubeDownload.isValidClient(true, "web_safari"))
+        assertFalse(YoutubeDownload.isValidClient(true, "generic"))
+        assertTrue(YoutubeDownload.isValidClient(false, "generic"))
+        assertFalse(YoutubeDownload.isValidClient(false, "newpipe"))
     }
 }
