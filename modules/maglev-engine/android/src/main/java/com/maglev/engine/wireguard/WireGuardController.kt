@@ -31,6 +31,14 @@ object WireGuardController {
         if (enabled) {
             if (!hasProfile(context)) return@synchronized Json.failure(
                 "APP_WIREGUARD_PROFILE_MISSING", "먼저 WireGuard .conf 프로필을 가져오세요.")
+            // The settings screen can be opened before the native engine/service has started.
+            // Start it from the saved config before reading or replacing its proxy settings.
+            if (!EngineHost.isEngineInitialized()) {
+                val engineStarted = EngineHost.ensureStarted()
+                if (engineStarted["ok"] != true) return@synchronized Json.failure(
+                    "APP_WIREGUARD_ENGINE_START_FAILED",
+                    engineStarted["message"]?.toString() ?: "다운로드 엔진을 시작하지 못했습니다.")
+            }
             if (EngineHost.isEngineInitialized()) {
                 val paused = EngineHost.pauseTorrentsForAppWireGuard()
                 if (paused["ok"] != true) return@synchronized Json.failure(
