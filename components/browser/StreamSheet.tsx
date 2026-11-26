@@ -205,10 +205,7 @@ export function StreamSheet({ item, pageTitle, userAgent = '', pageUrl = '', onC
         <View style={styles.actions}>
           <Button label="링크 복사" icon="copy" variant="ghost" onPress={() => onCopyLink(it.url)} disabled={adding} />
           {protectedStream ? (
-            <>
-              <Text style={styles.meta}>MPMux는 비암호화 MSE/HLS 버퍼 캡처용 대안이며, DRM 암호화 영상의 복호화나 우회는 지원하지 않습니다.</Text>
-              <Button label="PC MPMux 안내" variant="secondary" onPress={() => void Linking.openURL('https://mpmux.com/ko').catch(() => setMessage('MPMux 안내 페이지를 열지 못했습니다.'))} />
-            </>
+            <Text style={styles.meta}>보호되거나 브라우저 버퍼 기반인 스트림은 현재 Android 앱 내 녹화가 지원되지 않습니다. DRM 복호화·보호 우회는 수행하지 않습니다.</Text>
           ) : null}
           {phase === 'error' ? (
             canRetry ? <Button label="다시 시도" onPress={() => setTries((n) => n + 1)} /> : <Button label="닫기" onPress={onClose} />
