@@ -29,8 +29,10 @@ internal object MediaContainerConverter {
         val commands = if (kind == "audio") audioCommands(source, temp, ext) else videoCommands(source, temp, ext)
         var lastError = "FFmpeg 변환에 실패했습니다."
         for (command in commands) {
-            val session = runCatching { FFmpegKit.execute(command) }.getOrElse {
-                lastError = it.message ?: it.javaClass.simpleName
+            val session = try {
+                FFmpegKit.execute(command)
+            } catch (t: Throwable) {
+                lastError = t.message ?: t.javaClass.simpleName
                 temp.delete()
                 continue
             }
