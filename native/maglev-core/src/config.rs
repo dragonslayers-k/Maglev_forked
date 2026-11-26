@@ -124,7 +124,7 @@ impl NativeConfig {
     pub fn validate(&self) -> Result<(), EngineError> {
         if let Some(p) = &self.proxy_url {
             let lower = p.to_ascii_lowercase();
-            let ok = (lower.starts_with("socks5://") || lower.starts_with("socks5h://"))
+            let socks = (lower.starts_with("socks5://") || lower.starts_with("socks5h://"))
                 && lower.rsplit('@').next().is_some_and(|hostport| {
                     let hp = hostport
                         .trim_start_matches("socks5h://")
@@ -134,10 +134,21 @@ impl NativeConfig {
                         None => false,
                     }
                 });
-            if !ok {
+            // App-local WireGuard exposes an authenticated IPv4 loopback HTTP proxy.
+            // Permit only that narrow HTTP form; ordinary remote HTTP proxies are not accepted.
+            let local_http = p.strip_prefix("http://").and_then(|rest| {
+                let (auth, endpoint) = rest.rsplit_once('@')?;
+                let (user, password) = auth.split_once(':')?;
+                let (host, port) = endpoint.rsplit_once(':')?;
+                let valid_port = port.parse::<u16>().is_ok_and(|n| n != 0);
+                ( !user.is_empty() && !password.is_empty() && host == "127.0.0.1" && valid_port
+                    && !endpoint.contains('/') && !endpoint.contains('?') && !endpoint.contains('#'))
+                    .then_some(())
+            }).is_some();
+            if !socks && !local_http {
                 return Err(EngineError::new(
                     ErrorCode::Internal,
-                    "That proxy address isn't valid. Use socks5://host:port",
+                    "Use socks5://host:port or an authenticated app-local HTTP proxy",
                 ));
             }
         }
@@ -313,6 +324,9 @@ mod tests {
         assert!(NativeConfig::from_json("not json").is_err());
         assert!(NativeConfig::from_json(r#"{"encryption":"sometimes"}"#).is_err());
         assert!(NativeConfig::from_json(r#"{"proxy_url":"http://x:1"}"#).is_err());
+        assert!(NativeConfig::from_json(r#"{"proxy_url":"http://u:p@proxy.example:8080"}"#).is_err());
+        assert!(NativeConfig::from_json(r#"{"proxy_url":"http://u:p@127.0.0.1:0"}"#).is_err());
+        assert!(NativeConfig::from_json(r#"{"proxy_url":"http://maglev:token@127.0.0.1:12345"}"#).is_ok());
         assert!(NativeConfig::from_json(r#"{"proxy_url":"socks5://host"}"#).is_err());
         let cfg = NativeConfig::from_json(r#"{"seed_ratio_limit":-3,"proxy_url":"  "}"#).unwrap();
         assert_eq!(cfg.seed_ratio_limit, 0.0);
