@@ -105,9 +105,9 @@ async function main() {
 
   // ---- the wordmark stays Silkscreen: only the header wordmark uses type.brand
   const brandUsers = walk('app').concat(walk('components')).filter((f) => /type\.brand|fontFamily\.brand|family\.brand/.test(read(f)));
-  // About's explicit MAGLEV+ wordmark uses the brand face for the plus; the info ticket remains another approved use.
+  // About's plus uses the heading token, not the brand wordmark face.
   // 0.28: the NEW | version badge on the new-feature highlight is a third approved user (Silkscreen plate).
-  check('only HeaderBar and the star ticket use the brand (wordmark) font (components/HeaderBar.tsx, components/highlight/Station.tsx, components/settings/StarTicket.tsx)', brandUsers.sort().join() === 'app/settings/about.tsx,components/HeaderBar.tsx,components/highlight/Station.tsx,components/settings/StarTicket.tsx', brandUsers.join(', '));
+  check('only HeaderBar and the star ticket use the brand (wordmark) font (components/HeaderBar.tsx, components/highlight/Station.tsx, components/settings/StarTicket.tsx)', brandUsers.sort().join() === 'components/HeaderBar.tsx,components/highlight/Station.tsx,components/settings/StarTicket.tsx', brandUsers.join(', '));
   check('no file hardcodes the Silkscreen name outside constants and _layout', walk('app').concat(walk('components'), walk('context'), walk('utils')).every((f) => !/'Silkscreen'/.test(read(f))));
   check('screen titles use the heading slot', /type\.heading/.test(read('components/ui/Screen.tsx')));
 
