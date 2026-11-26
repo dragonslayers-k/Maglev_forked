@@ -56,6 +56,7 @@ async function main() {
 
   assert.ok(youtubeAdapter.includes('PLAYER_CLIENTS = listOf("android_vr", "web_safari", "web_embedded")'), 'fast NewPipe extraction is primary with two yt-dlp fallbacks');
   assert.ok(youtubeAdapter.includes('playerClient != "generic"'), 'generic extraction does not force a YouTube player client');
+  assert.ok(youtubeAdapter.includes('addOption("--no-warnings")'), 'missing optional FFmpeg must not pollute the user-facing extractor diagnostics');
   assert.ok(youtubeAdapter.includes('httpMediaUrl(rawUrl)'), 'generic extraction validates HTTP(S) page URLs');
   assert.ok(youtubeAdapter.includes('playerClient == "generic"'), 'generic page formats are tagged separately from YouTube clients');
   assert.ok(youtubeAdapter.includes('EngineHost.probeStream'), 'HLS/DASH formats must use Maglev stream engine');
