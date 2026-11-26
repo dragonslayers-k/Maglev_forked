@@ -142,9 +142,34 @@ export default function BrowserScreen({ inTab = false }: { inTab?: boolean }) {
   const blocked = data.blocked;
   const foundAll = data.found;
   const dismissed = data.dismissed;
+  const naverClipMediaId = page?.url ? parseNaverClipMediaId(page.url) : null;
+  const naverClipPageUrl = naverClipMediaId ? page?.url ?? null : null;
   const [undo, setUndo] = useState<{ message: string; ids: string[] } | null>(null);
   const undoTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const found = useMemo(() => visibleFound(foundAll, dismissed), [foundAll, dismissed]);
+  const found = useMemo(() => {
+    const visible = visibleFound(foundAll, dismissed);
+    if (!naverClipMediaId || !naverClipPageUrl) return visible;
+    const syntheticId = 'naverclip:' + naverClipMediaId;
+    if (dismissed.has(syntheticId)) return visible.filter(item => item.kind !== 'video');
+    // The page exposes a carousel of TS fragments; present one actionable whole-clip item instead.
+    const nonVideo = visible.filter(item => item.kind !== 'video');
+    const clip: FoundItem = {
+      id: syntheticId,
+      url: naverClipPageUrl,
+      kind: 'video',
+      mime: 'video/mp4',
+      ext: 'mp4',
+      name: (page?.title?.trim() || 'NAVER Clip') + '.mp4',
+      size: null,
+      width: null,
+      height: null,
+      source: 'page',
+      stream: null,
+      pageUrl: naverClipPageUrl,
+      pageTitle: page?.title ?? '',
+    };
+    return [...nonVideo, clip];
+  }, [foundAll, dismissed, naverClipMediaId, naverClipPageUrl, page?.title]);
   const [trayOpen, setTrayOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const bookmarks = useBookmarks();
