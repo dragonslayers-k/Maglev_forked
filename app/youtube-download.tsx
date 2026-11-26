@@ -41,6 +41,8 @@ export default function YouTubeDownloadScreen() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [loadingMoreFormats, setLoadingMoreFormats] = useState(false);
+  const [selectedVideo, setSelectedVideo] = useState<string | null>(null);
+  const [selectedAudio, setSelectedAudio] = useState<string | null>(null);
   const isYouTube = Boolean(parseYouTubeLink(String(url || '')));
   const screenTitle = parseYouTubeLink(String(url || '')) ? 'YouTube 다운로드' : '웹사이트 동영상 다운로드';
 
@@ -58,8 +60,13 @@ export default function YouTubeDownloadScreen() {
     void maglevEngine.getYouTubeInfo(rawUrl)
       .then((result) => {
         if (!alive) return;
-        if (result.ok) setInfo(result);
-        else setError(result.message || '동영상 정보를 가져오지 못했습니다.');
+        if (result.ok) {
+          setInfo(result);
+          const initialVideo = result.formats.filter((format) => format.kind === 'video').sort((a, b) => b.height - a.height || b.tbr - a.tbr)[0];
+          const initialAudio = result.formats.filter((format) => format.kind === 'audio').sort((a, b) => b.abr - a.abr)[0];
+          setSelectedVideo(initialVideo ? formatKey(initialVideo) : null);
+          setSelectedAudio(initialAudio ? formatKey(initialAudio) : null);
+        } else setError(result.message || '동영상 정보를 가져오지 못했습니다.');
       })
       .catch((cause: unknown) => {
         if (alive) setError(cause instanceof Error ? cause.message : '동영상 정보를 조회하지 못했습니다.');
@@ -168,9 +175,9 @@ export default function YouTubeDownloadScreen() {
             <SectionHeader title="동영상 형식 · 화질" />
             <Card>
               {videos.map((format) => (
-                <ListRow key={formatKey(format)} icon="download" title={formatTitle(format)}
-                  subtitle={formatSubtitle(format)} value={formatSize(format)} disabled={busy}
-                  onPress={() => void start(format)} />
+                <ListRow key={formatKey(format)} icon={selectedVideo === formatKey(format) ? "check" : "download"} title={formatTitle(format)}
+                  subtitle={[formatSubtitle(format), formatSize(format)].join(' · ')} value={selectedVideo === formatKey(format) ? "선택됨" : undefined} disabled={busy}
+                  onPress={() => setSelectedVideo(formatKey(format))} />
               ))}
               {videos.length === 0 ? <Text style={styles.muted}>다운로드 가능한 동영상 형식이 없습니다.</Text> : null}
             </Card>
@@ -184,11 +191,14 @@ export default function YouTubeDownloadScreen() {
             <SectionHeader title="오디오 형식 · 음질" />
             <Card>
               {(audios.length > 0 ? audios : audioFallbacks).map((format, index) => (
-                <ListRow key={formatKey(format)} icon="download" title={formatTitle(format, index === 0)}
-                  subtitle={formatSubtitle(format)} value={formatSize(format)} disabled={busy}
-                  onPress={() => void start(format)} />
+                <ListRow key={formatKey(format)} icon={selectedAudio === formatKey(format) ? "check" : "download"} title={formatTitle(format, index === 0)}
+                  subtitle={[formatSubtitle(format), formatSize(format)].join(' · ')} value={selectedAudio === formatKey(format) ? "선택됨" : undefined} disabled={busy}
+                  onPress={() => setSelectedAudio(formatKey(format))} />
               ))}
             </Card>
+            <Button fullWidth size="lg" disabled={busy || !((audios.length > 0 ? audios : audioFallbacks).some((format) => formatKey(format) === selectedAudio))} loading={busy}
+              label={busy ? "다운로드 추가 중…" : "선택한 오디오 다운로드"}
+              onPress={() => { const chosen = (audios.length > 0 ? audios : audioFallbacks).find((format) => formatKey(format) === selectedAudio); if (chosen) void start(chosen); }} />
           </View>
         </>
       ) : null}
