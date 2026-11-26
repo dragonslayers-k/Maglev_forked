@@ -25,7 +25,6 @@ import kotlinx.coroutines.withContext
 import okhttp3.Headers.Companion.toHeaders
 import okhttp3.OkHttpClient
 import okhttp3.RequestBody.Companion.toRequestBody
-import java.time.Instant
 import kotlin.coroutines.Continuation
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
@@ -40,7 +39,7 @@ class PoTokenWebView private constructor(
     private val exceptionHandler = CoroutineExceptionHandler { context, exception ->
         onInitializationError(exception)
     }
-    private lateinit var expirationInstant: Instant
+    private var expirationAtMillis = 0L
 
     //region Initialization
     init {
@@ -151,7 +150,7 @@ class PoTokenWebView private constructor(
             val (integrityToken, expirationTimeInSeconds) = parseIntegrityTokenData(response)
 
             // leave 10 minutes of margin just to be sure
-            expirationInstant = Instant.now().plusSeconds(expirationTimeInSeconds - 600)
+            expirationAtMillis = System.currentTimeMillis() + (expirationTimeInSeconds - 600) * 1000L
 
             withContext(Dispatchers.Main) {
                 webView.evaluateJavascript(
@@ -231,7 +230,7 @@ class PoTokenWebView private constructor(
     }
 
     fun isExpired(): Boolean {
-        return Instant.now().isAfter(expirationInstant)
+        return System.currentTimeMillis() >= expirationAtMillis
     }
     //endregion
 
