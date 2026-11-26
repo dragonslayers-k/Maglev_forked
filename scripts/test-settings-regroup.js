@@ -56,7 +56,7 @@ async function main() {
   const dpos = ['Adding downloads', 'Link downloads', 'When downloads finish'].map((t) => dl.indexOf(`<SectionHeader title="${t}"`));
   check('downloads.tsx has the three sections in order', dpos.every((p, i) => p > 0 && (i === 0 || p > dpos[i - 1])));
   check('downloads.tsx title is Adding and finishing', /<SettingsPage title="Adding and finishing"/.test(dl));
-  check('downloads.tsx has Add without asking and clipboard row', /quickShareCopy\\.setting\\.title/.test(dl) && /<ClipboardSetting/.test(dl));
+  check('downloads.tsx has Add without asking and clipboard row', dl.includes('quickShareCopy.setting.title') && dl.includes('<ClipboardSetting'));
   check('downloads.tsx renders Parts then Retry', dl.indexOf('<PartsSection') > 0 && dl.indexOf('<RetrySection') > dl.indexOf('<PartsSection'));
   check('downloads.tsx has Close when done and Resume after restart', /Close when done/.test(dl) && /Resume after restart/.test(dl) && /autoExitOnComplete/.test(dl) && /resumeAfterRestart/.test(dl));
   check('Link downloads sits between Adding and When downloads finish', dl.indexOf('<PartsSection') > dpos[1] && dl.indexOf('<RetrySection') < dpos[2]);
