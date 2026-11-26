@@ -63,8 +63,19 @@ async function main() {
   const network = read('app/settings/network.tsx');
   const advanced = read('app/settings/network-advanced.tsx');
   check('Network keeps Wi-Fi only, mobile data, VPN, networks', ['Wi-Fi only', 'Share on mobile data', 'Only download over a VPN', 'Only on these networks'].every((t) => network.includes(`title="${t}"`)));
-  for (const t of ['Incoming port', 'UPnP', 'DHT', 'Local peer discovery', 'SOCKS5 proxy', 'Block listed IPs']) {
-    check(`'${t}' moved to Advanced`, advanced.includes(`title="${t}"`) && !network.includes(`title="${t}"`));
+  // These labels are localized in the current Korean UI. Check the actual row
+  // labels and their location, rather than stale English source strings.
+  const movedRows = [
+    ['Incoming port', '수신 포트'],
+    ['UPnP', 'UPnP'],
+    ['DHT', 'DHT'],
+    ['Local peer discovery', '로컬 피어 검색'],
+    ['SOCKS5 proxy', 'SOCKS5 프록시'],
+    ['Block listed IPs', '목록의 IP 차단'],
+  ];
+  for (const [oldLabel, currentLabel] of movedRows) {
+    check(`'${oldLabel}' moved to Advanced`,
+      advanced.includes(`title="${currentLabel}"`) && !network.includes(`title="${currentLabel}"`));
   }
   check('Network links to the Advanced page', /router\.push\('\/settings\/network-advanced'/.test(network));
   check('Advanced page is registered in the layout', /settings\/network-advanced/.test(read('app/_layout.tsx')));
