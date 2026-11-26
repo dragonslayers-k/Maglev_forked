@@ -105,13 +105,13 @@ export default function YouTubeDownloadScreen() {
     }
   }, [url, loadingMoreFormats, busy]);
 
-  const start = useCallback(async (format: YouTubeFormat) => {
+  const start = useCallback(async (format: YouTubeFormat, audioBitrateKbps?: number) => {
     if (!url || busy) return;
     setBusy(true);
     setError(null);
     haptic('tap');
     try {
-      const result = await maglevEngine.addYouTubeDownload(String(url), format.formatId, format.playerClient);
+      const result = await maglevEngine.addYouTubeDownload(String(url), format.formatId, format.playerClient, audioBitrateKbps ?? null);
       if (!result.ok) {
         setError(result.message || '다운로드를 전송 목록에 추가하지 못했습니다.');
         return;
@@ -159,6 +159,7 @@ export default function YouTubeDownloadScreen() {
       ext: '원본', height: 0, width: 0, fps: 0, tbr: 0, abr: 0, size: null, format: `최대 ${kbps} kbps`,
     })),
   ];
+  const selectedAudioFormat = (audios.length > 0 ? audios : audioFallbacks).find((format) => formatKey(format) === selectedAudio);
 
   return (
     <Screen title={screenTitle} onBack={back} scroll contentStyle={styles.content}>
@@ -183,7 +184,7 @@ export default function YouTubeDownloadScreen() {
             </Card>
             <Button fullWidth size="lg" disabled={busy || !videos.some((format) => formatKey(format) === selectedVideo)} loading={busy}
               label={busy ? "다운로드 추가 중…" : "선택한 동영상 다운로드"}
-              onPress={() => { const chosen = videos.find((format) => formatKey(format) === selectedVideo); if (chosen) void start(chosen); }} />
+              onPress={() => { const chosen = videos.find((format) => formatKey(format) === selectedVideo); if (chosen) void start(chosen, selectedAudioFormat?.abr > 0 ? selectedAudioFormat.abr : undefined); }} />
             {isYouTube ? (
               <Button fullWidth size="md" variant="secondary" disabled={busy || loadingMoreFormats}
                 loading={loadingMoreFormats} label={loadingMoreFormats ? '추가 형식 조회 중…' : '추가 화질·오디오 형식 조회'}
@@ -192,7 +193,7 @@ export default function YouTubeDownloadScreen() {
           </View>
           <View style={styles.section}>
             <SectionHeader title="오디오 형식 · 음질" />
-            <Text style={styles.muted}>목록에서 원본 코덱·컨테이너를 선택합니다. MP3 변환은 아직 지원하지 않으며 파일 확장자만 바꾸지 않습니다.</Text>
+            <Text style={styles.muted}>목록에서 원본 코덱·컨테이너와 음질을 선택합니다. 선택한 음질은 분리 오디오 트랙이 있는 적응형 동영상에 적용됩니다. 영상에 오디오가 포함된 형식은 원본 오디오를 유지합니다. MP3 변환은 FFmpeg 인코더가 통합되기 전까지 지원하지 않습니다.</Text>
             <Card>
               {(audios.length > 0 ? audios : audioFallbacks).map((format, index) => (
                 <ListRow key={formatKey(format)} icon={selectedAudio === formatKey(format) ? "check" : "download"} title={formatTitle(format, index === 0)}
