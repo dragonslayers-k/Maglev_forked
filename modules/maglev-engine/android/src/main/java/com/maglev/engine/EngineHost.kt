@@ -294,7 +294,7 @@ object EngineHost {
         if (!initialized) return@synchronized Json.failure("NOT_INITIALIZED", "다운로드 엔진이 아직 시작되지 않았습니다.")
         val result = call { NativeCore.nativeGetEffectiveConfig() }
         if (!isOk(result)) return@synchronized result
-        val config = nativeWireGuardConfig(result)
+        val config = nativeWireGuardConfig(result).toMutableMap()
         if (config.isEmpty()) return@synchronized Json.failure("INTERNAL", "다운로드 엔진 설정 응답이 비어 있습니다.")
         config["proxy_url"] = proxyUrl
         call { NativeCore.nativeApplyConfig(Json.toJson(config)) }
