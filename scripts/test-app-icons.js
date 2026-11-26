@@ -181,7 +181,7 @@ async function main() {
 
   // ---- picker and copy
   const copy = await import('../constants/copy.ts');
-  check('copy has the picker caption', /leave Maglev/.test(copy.appIconCopy.hint) && copy.appIconCopy.hint.split(/\s+/).length <= 16 && /\.$/.test(copy.appIconCopy.hint));
+  check('copy has the picker caption', /Maglev를 나가면/.test(copy.appIconCopy.hint) && copy.appIconCopy.hint.split(/\s+/).length <= 16 && /\.$/.test(copy.appIconCopy.hint));
   check('accessibility label reads "Teal app icon, selected"', copy.appIconCopy.a11y('Teal', true) === 'Teal 앱 아이콘, 선택됨' && copy.appIconCopy.a11y('Teal', false) === 'Teal 앱 아이콘');
   const ui = read('components/settings/AppIconSection.tsx');
   check('picker is Android only', /Platform\.OS !== 'android'\) return null/.test(ui));
