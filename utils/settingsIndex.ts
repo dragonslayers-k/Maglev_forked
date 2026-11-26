@@ -683,7 +683,7 @@ export const SETTINGS_INDEX: SettingEntry[] = [
   ),
   e(
     "browser-clear-on-close",
-    "Maglev 종료 시 방문 기록 삭제",
+    "Maglev+ 종료 시 방문 기록 삭제",
     "browser",
     "브라우저",
     [
