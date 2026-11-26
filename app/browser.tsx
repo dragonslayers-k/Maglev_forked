@@ -575,9 +575,7 @@ export default function BrowserScreen({ inTab = false }: { inTab?: boolean }) {
       const d = getData(id);
       if (id !== activeIdRef.current || d.notes.has(e.note)) return;
       d.notes.add(e.note);
-      showNotice({ message: e.note === 'drm'
-        ? 'DRM 보호 영상은 저장할 수 없습니다. 보호를 우회하지 않습니다.'
-        : '이 플레이어는 브라우저 녹화 기능이 아직 연결되지 않았습니다. 직접 미디어 주소 또는 HLS/DASH 감지 여부를 확인하세요.' }, 4500);
+      showNotice({ message: e.note === 'drm' ? notices.browser.drm : notices.browser.mseCaptureUnavailable }, 4500);
     },
     onNewWindow: (id, e) => void openTabChecked({ url: e.url, opener: id }),
     onPopupRequest: (id, e) => setPopups((p) => popupsApi.request(p, id, { url: e.url, kind: e.kind, sourceUrl: e.sourceUrl })),
