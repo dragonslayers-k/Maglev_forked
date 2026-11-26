@@ -47,8 +47,8 @@ async function main() {
   console.log('Copy: engine -> downloader');
   const copy = read('constants/copy.ts');
   const addErr = read('utils/addErrorNotice.ts');
-  check("engineError title is \"The downloader didn't start\"", /engineError: \{\s*title: "The downloader didn't start"/.test(copy));
-  check("engineStopped title is 'The downloader stopped'", /title: 'The downloader stopped'/.test(copy));
+  check("engineError title is Korean", /engineError: \{\s*title: "다운로더가 시작되지 않았습니다"/.test(copy));
+  check("engineStopped title is Korean", /title: '다운로더가 중지되었습니다'/.test(copy));
   check("button is 'Start the downloader'", /START_ENGINE_LABEL = 'Start the downloader'/.test(addErr));
   const errScreen = read('app/engine-error.tsx');
   check('error screen messages say downloader', /The downloader took too long to start\./.test(errScreen) && /The downloader didn't say why\./.test(errScreen));
