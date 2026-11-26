@@ -824,15 +824,6 @@ export const textSizeCopy = {
 } as const;
 // endregion browser find and text size
 
-// region star prompt (docs/NATIVE_CONTRACT.md section 33)
-export const starCopy = {
-  title: 'Enjoying Maglev?',
-  body: 'A star on GitHub helps other people find it.',
-  star: 'Star on GitHub',
-  notNow: 'Not now',
-  never: "Don't ask again",
-} as const;
-// endregion star prompt
 
 // region subtitle settings (docs/NATIVE_CONTRACT.md section 36.10). Strings shared with the sheet live in utils/subtitles/copy.ts.
 export const subtitleSettingsCopy = {

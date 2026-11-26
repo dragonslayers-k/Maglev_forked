@@ -416,14 +416,6 @@ export const SETTINGS_INDEX: SettingEntry[] = [
     "What to restore",
   ),
   e(
-    "backup-part-assistant",
-    "도우미",
-    "backup",
-    "백업 및 복원",
-    ["restore", "ai", "chat"],
-    "What to restore",
-  ),
-  e(
     "backup-part-torrents",
     "Torrents",
     "backup",
@@ -1815,7 +1807,7 @@ export const SYNONYM_GROUPS: string[][] = [
   ["folder", "location", "path", "directory", "storage", "sd"],
   ["notifications", "notifs", "alerts"],
   ["theme", "dark", "light", "oled", "colour", "color", "accent"],
-  ["ai", "assistant", "chat", "language", "model"],
+  ["ai", "chat", "language", "model"],
 ];
 
 /**

@@ -9,7 +9,6 @@ import { ThemeProvider, useTheme } from '../context/ThemeContext';
 import { EngineProvider, useEngineStatus } from '../context/EngineContext';
 import NavigationBarSync from '../components/NavigationBarSync';
 import { NoticeHost } from '../components/ui/NoticeHost';
-import { StarPrompt } from '../components/StarPrompt';
 import { HighlightSheet } from '../components/HighlightSheet';
 import { syncScheduleToNative } from '../utils/prefs/schedule';
 import { syncFeedAutomationToNative } from '../utils/prefs/feedAutomation';
@@ -195,7 +194,6 @@ function AppNavigation() {
       </Stack>
       {main ? <SubtitleRequestRunner /> : null}
       {main ? <NoticeHost /> : null}
-      {main ? <StarPrompt /> : null}
       {main ? <HighlightSheet /> : null}
     </>
   );
