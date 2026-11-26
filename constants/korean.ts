@@ -428,6 +428,15 @@ const KO_UI: Record<string, string> = {
   "More below": "아래에 더 있습니다",
   "Parts": "파일 조각",
   "App version": "앱 버전",
+  "Start the downloader": "다운로더 시작",
+  "Pick folder again": "폴더 다시 선택",
+  "The folder is not available.": "폴더를 사용할 수 없습니다.",
+  "The downloader stopped": "다운로더가 중지되었습니다",
+  "It couldn't be started again.": "다시 시작하지 못했습니다.",
+  "Already in your list": "이미 목록에 있습니다",
+  "That link is not a valid torrent": "올바른 토렌트 링크가 아닙니다",
+  "Could not add the torrent": "토렌트를 추가하지 못했습니다",
+  "Try again in a moment.": "잠시 후 다시 시도하세요.",
 };
 
 export function koUiText(value: string | null | undefined): string {
