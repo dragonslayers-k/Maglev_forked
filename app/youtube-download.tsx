@@ -99,7 +99,7 @@ export default function YouTubeDownloadScreen() {
 
   return (
     <Screen title={screenTitle} onBack={back} scroll contentStyle={styles.content}>
-      {loading ? <Text style={styles.muted}>yt-dlp로 영상과 오디오 형식을 분석하고 있습니다…</Text> : null}
+      {loading ? <Text style={styles.muted}>YouTube 형식과 오디오 음질을 확인하고 있습니다…</Text> : null}
       {error ? <Text style={styles.error}>{error}</Text> : null}
       {info ? (
         <>
