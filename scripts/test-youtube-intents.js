@@ -66,6 +66,7 @@ async function main() {
   assert.ok(youtubeAdapter.includes('formatId == "bestaudio"'), 'yt-dlp fallback still recognizes its bestaudio selector');
   assert.ok(youtubeAdapter.includes('availableFormats.filter'), 'audio fallback selects an actual audio-only format from the extractor metadata');
   assert.ok(youtubeAdapter.includes('NewPipeYoutube.get(app, sourceUrl)'), 'YouTube metadata uses the fast NewPipe extractor first');
+  assert.ok(youtubeAdapter.includes('getQueryParameter("maglev_ytdlp") == "1"') && youtubeAdapter.includes('link != null && !forceYtDlp'), 'on-demand format refresh must bypass NewPipe and force yt-dlp');
   assert.ok(youtubeAdapter.includes('fastFormats.any { it["kind"] == "audio" }'), 'only return NewPipe primary formats when real audio choices exist');
   assert.ok(youtubeAdapter.includes('NewPipeYoutube.add(app, sourceUrl, formatId)'), 'NewPipe format selection is handled by the native adapter');
   assert.ok(youtubeAdapter.includes('getDeclaredField("ffmpegPath")') && youtubeAdapter.includes('field.set(ytdlp, File(app.applicationInfo.nativeLibraryDir))'), 'reset the wrapper stale FFmpeg path after its unconditional append');
@@ -88,6 +89,7 @@ async function main() {
   const screen = fs.readFileSync(path.join(root, 'app/youtube-download.tsx'), 'utf8');
   assert.ok(screen.includes('maglevEngine.getYouTubeInfo'), 'YouTube screen must use the existing native extractor');
   assert.ok(screen.includes('maglevEngine.addYouTubeDownload'), 'selected formats must enter the shared native transfer queue');
+  assert.ok(screen.includes('maglev_ytdlp=1') && screen.includes('추가 화질·오디오 형식 조회'), 'slow yt-dlp formats are fetched only on user request, after fast NewPipe results');
   assert.ok(screen.includes('format.playerClient'), 'the selected extractor client must be preserved');
   assert.ok(screen.includes("formatId: 'bestaudio'"), 'a bestaudio fallback remains available only when no real audio formats were extracted');
   assert.ok(screen.includes("formatId: 'bestaudio', playerClient: 'android_vr'"), 'the placeholder bestaudio must route to yt-dlp, not NewPipe format-ID parsing');
