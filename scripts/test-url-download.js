@@ -19,6 +19,30 @@ async function main() {
   const link = await import('../modules/maglev-engine/src/downloadLink.ts');
   const copy = await import('../utils/downloadCopy.ts');
   const { MockDownloads, mockSizeFor } = await import('../modules/maglev-engine/src/MaglevMockDownloads.ts');
+  const naverClip = await import('../utils/browser/naverClip.ts');
+
+  // NAVER Clip shares contain a mediaId, not the actual downloadable file URL.
+  console.log('NAVER Clip');
+  const shortsUrl = 'https://m.naver.com/shorts/?seedMediaId=72B42EEE67846A3F4B42E53AED191A36F493&serviceType=CLIP';
+  check('recognizes a Naver Shorts media id', naverClip.parseNaverClipMediaId(shortsUrl) === '72B42EEE67846A3F4B42E53AED191A36F493');
+  check('rejects a lookalike host', naverClip.parseNaverClipMediaId('https://evil.example/shorts/?seedMediaId=72B42EEE67846A3F493') === null);
+  const clipFixture = {
+    card: { content: { title: 'sample clip', vod: { playback: { MPD: [{ Period: [{ AdaptationSet: [
+      { mimeType: 'audio/mp4', Representation: [{ BaseURL: ['https://cdn.example/audio.m4a'] }] },
+      { mimeType: 'video/mp4', Representation: [{ BaseURL: [{ value: 'https://cdn.example/clip.mp4?token=fresh' }] }] },
+      { mimeType: 'video/mp2t', Representation: [{ BaseURL: ['https://cdn.example/segment.ts'] }] },
+    ] }] }] } } } },
+  };
+  check('selects progressive MP4 only, not audio or TS fragments', naverClip.findNaverClipMp4(clipFixture)?.url === 'https://cdn.example/clip.mp4?token=fresh');
+  let requested = '';
+  const fakeFetch = async (url) => {
+    requested = String(url);
+    return { ok: true, status: 200, json: async () => clipFixture };
+  };
+  const clip = await naverClip.resolveNaverClip(shortsUrl, fakeFetch);
+  check('resolves one MP4 and preserves the signed URL', clip.url === 'https://cdn.example/clip.mp4?token=fresh');
+  check('requests the single-media playback API', requested.includes('/shortformhub/feeds/v9/card') && requested.includes('seedMediaId=72B42EEE67846A3F4B42E53AED191A36F493'));
+
 
   // ---- links ----
   console.log('links');
