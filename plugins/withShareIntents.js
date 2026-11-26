@@ -78,7 +78,7 @@ const QUICK_ACTIVITY = 'com.maglev.engine.share.QuickShareActivity';
 const A = 'android.intent.action.';
 const C = 'android.intent.category.';
 /** Shown in the text-selection menu (per-filter label: https://developer.android.com/guide/topics/manifest/intent-filter-element#label). */
-const PROCESS_TEXT_LABEL = 'Download with Maglev+';
+const PROCESS_TEXT_LABEL = 'Maglev+로 다운로드';
 const TORRENT_TYPES = ['application/x-bittorrent', 'application/x-torrent'];
 /**
  * Types a browser can attach to an http(s) VIEW. A filter with a mime type matches only an intent that carries a
