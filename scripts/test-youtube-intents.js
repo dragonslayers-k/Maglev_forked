@@ -75,7 +75,7 @@ async function main() {
   assert.ok(youtubeAdapter.includes('getDeclaredField("ffmpegPath")') && youtubeAdapter.includes('field.set(ytdlp, File(app.applicationInfo.nativeLibraryDir))'), 'reset the wrapper stale FFmpeg path after its unconditional append');
   assert.ok(youtubeAdapter.includes('YOUTUBE_AUDIO_FORMAT_UNRESOLVED'), 'audio-only must fail explicitly when yt-dlp did not resolve an audio-only requested format');
   assert.ok(youtubeAdapter.includes('YOUTUBE_AUDIO_URL_MISSING'), 'audio-only must not fall back to the default video URL');
-  assert.ok(youtubeAdapter.includes('if (hasVideo && !forceYtDlp) break'), 'metadata extraction must stop after a usable video client to avoid slow redundant client calls');
+  assert.ok(youtubeAdapter.includes('val completeSet = hasVideo && hasAudio && maxVideoHeight >= 720') && youtubeAdapter.includes('maxVideoHeight >= 1080 || client == PLAYER_CLIENTS.last()'), 'forced format refresh must keep scanning below 720p, then stop once video quality and audio are sufficient');
   assert.ok(youtubeAdapter.includes('"sizeEstimated" to (exactBytes == null && estimatedBytes != null)'), 'unknown extractor sizes must be estimated from bitrate and duration when possible');
   assert.ok(youtubeAdapter.includes('fallbackKbps = when'), 'missing bitrate must still get a labeled resolution-based estimate');
   assert.ok(youtubeAdapter.includes('height <= 360 -> 750.0') && youtubeAdapter.includes('height <= 1080 -> 5_500.0'), 'resolution fallback must cover common YouTube qualities');
