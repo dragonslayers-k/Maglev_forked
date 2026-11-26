@@ -42,6 +42,33 @@ async function main() {
   const clip = await naverClip.resolveNaverClip(shortsUrl, fakeFetch);
   check('resolves one MP4 and preserves the signed URL', clip.url === 'https://cdn.example/clip.mp4?token=fresh');
   check('requests the single-media playback API', requested.includes('/shortformhub/feeds/v9/card') && requested.includes('seedMediaId=72B42EEE67846A3F4B42E53AED191A36F493'));
+  const { startFound } = await import('../components/browser/startFound.ts');
+  const oldFetch = globalThis.fetch;
+  let probedUrl = '';
+  let savedUrl = '';
+  let referer = '';
+  globalThis.fetch = fakeFetch;
+  try {
+    const started = await startFound({
+      headersFor: async () => ({ 'User-Agent': 'test-agent' }),
+      probeUrl: async (url, options) => {
+        probedUrl = url;
+        referer = options.headers.Referer;
+        return { ok: true, name: 'clip.mp4', size: 1 };
+      },
+      startDownload: async (url, options) => {
+        savedUrl = url;
+        check('browser save keeps Naver page referer', options.headers.Referer === shortsUrl);
+        return { ok: true, id: 'dl_naver_clip' };
+      },
+    }, { url: shortsUrl, pageUrl: shortsUrl, userAgent: 'test-agent' });
+    check('browser save probes the resolved single MP4', started.ok && probedUrl === 'https://cdn.example/clip.mp4?token=fresh');
+    check('browser save queues the same resolved MP4', savedUrl === probedUrl);
+    check('browser probe carries the Naver page referer', referer === shortsUrl);
+  } finally {
+    globalThis.fetch = oldFetch;
+  }
+
 
 
   // ---- links ----
