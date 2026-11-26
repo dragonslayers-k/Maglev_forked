@@ -274,7 +274,7 @@ export default function SearchProvidersSettings() {
 
       <View style={styles.section}>
         <SectionHeader title="검색 사이트 범위" />
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow} accessibilityRole="radiogroup" accessibilityLabel="검색 범주">
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow} accessibilityRole="radiogroup" accessibilityLabel="검색 사이트 범위">
           {CATEGORY_ORDER.filter((c) => c !== 'adult' || prefs.adult).map((c) => (
             <Chip key={c} label={CATEGORY_LABEL[c]} role="radio" selected={category === c} onPress={() => setCategory(c)} />
           ))}
