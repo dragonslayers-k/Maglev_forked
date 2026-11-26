@@ -77,7 +77,7 @@ async function main() {
   assert.ok(youtubeAdapter.includes('NewPipeYoutube.get(app, sourceUrl)'), 'YouTube metadata uses the fast NewPipe extractor first');
   assert.ok(youtubeAdapter.includes('getQueryParameter("maglev_ytdlp") == "1"') && youtubeAdapter.includes('link != null && !forceYtDlp'), 'on-demand format refresh must bypass NewPipe and force yt-dlp');
   assert.ok(youtubeAdapter.includes('fastFormats.any { it["kind"] == "audio" }'), 'only return NewPipe primary formats when real audio choices exist');
-  assert.ok(youtubeAdapter.includes('NewPipeYoutube.add(app, sourceUrl, formatId)'), 'NewPipe format selection is handled by the native adapter');
+  assert.ok(youtubeAdapter.includes('NewPipeYoutube.add(app, sourceUrl, formatId, audioBitrateKbps)'), 'NewPipe format selection and chosen audio bitrate are handled by the native adapter');
   assert.ok(youtubeAdapter.includes('getDeclaredField("ffmpegPath")') && youtubeAdapter.includes('field.set(ytdlp, File(app.applicationInfo.nativeLibraryDir))'), 'reset the wrapper stale FFmpeg path after its unconditional append');
   assert.ok(youtubeAdapter.includes('YOUTUBE_AUDIO_FORMAT_UNRESOLVED'), 'audio-only must fail explicitly when yt-dlp did not resolve an audio-only requested format');
   assert.ok(youtubeAdapter.includes('YOUTUBE_AUDIO_URL_MISSING'), 'audio-only must not fall back to the default video URL');
