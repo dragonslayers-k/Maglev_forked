@@ -13,7 +13,7 @@ const formatKey = (format: YouTubeFormat) => format.playerClient + ':' + format.
 const codecName = (format: YouTubeFormat) => (format.format || '').split(/[·,|]/).map((s) => s.trim()).filter(Boolean).slice(-1)[0] || '';
 const formatLabel = (format: YouTubeFormat) => {
   const quality = format.kind === 'audio'
-    ? (format.formatId === 'bestaudio' ? '오디오만 · 원본 최고 음질' : (format.abr > 0 ? Math.round(format.abr) + ' kbps 오디오' : '오디오'))
+    ? (format.formatId === 'bestaudio' ? '오디오만 · 최고 음질' : (format.abr > 0 ? Math.round(format.abr) + ' kbps 오디오' : '오디오'))
     : (format.height > 0 ? format.height + 'p' + (format.height >= 2160 ? ' · 4K' : format.height >= 1440 ? ' · QHD' : format.height >= 1080 ? ' · FHD' : format.height >= 720 ? ' · HD' : '') : '동영상');
   const rawSize = format.size && format.size > 0 ? formatBytes(format.size) : '용량 확인 필요';
   const size = format.sizeEstimated ? '예상 ' + rawSize : rawSize;
