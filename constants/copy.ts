@@ -48,7 +48,7 @@ export const glossary = {
 export const ACRONYMS = ['VPN', 'URL', 'RSS', 'SD', 'DHT', 'IP', 'ID', 'USB', 'UI', 'OK', 'API', 'VLC', 'HTTP', 'HTTPS', 'UPnP', 'DRM', 'HLS', 'DASH', 'MIME', 'MP4', 'M3U8'] as const;
 
 /** Capitalised words that may appear mid-sentence. */
-export const PROPER_WORDS = ['Maglev', "Maglev's", 'Android', 'Transfers', 'Wi-Fi', 'Atom', 'Settings', 'Search', 'Feeds', 'Undo', 'Retry', 'Inter'] as const;
+export const PROPER_WORDS = ['Maglev', 'Maglev+', "Maglev+'s", 'Android', 'Transfers', 'Wi-Fi', 'Atom', 'Settings', 'Search', 'Feeds', 'Undo', 'Retry', 'Inter'] as const;
 
 const toName = (s: string | number) => String(s);
 
