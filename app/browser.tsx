@@ -50,6 +50,7 @@ import { getBrowserPrefs, updateBrowserPrefs, useBrowserPrefs } from '../utils/p
 import { keepHosts, privateSession } from '../utils/browser/privateSession';
 import { hostsToWipe } from '../utils/browser/privateHosts';
 import { buildMediaMenu, hasMenu, parseMediaHit, type MediaHit } from '../utils/browser/mediaHit';
+import { parseNaverClipMediaId } from '../utils/browser/naverClip';
 import { flushTabs, recordVisit } from '../utils/history';
 import { activeTab, backTarget, getTab, isBlank, liveTabs, switcherOrder } from '../utils/browser/tabs';
 import * as popupsApi from '../utils/browser/popups';
