@@ -18,6 +18,8 @@ const MARKER = '# maglev-size-reduction';
 const KEEP_RULES = `
 ${MARKER}
 -keep class com.maglev.engine.** { *; }
+# Rhino's optional JavaBeans reflection path references a Java SE class absent on Android.
+-dontwarn java.beans.BeanDescriptor
 -keepclassmembers class * {
     native <methods>;
 }
