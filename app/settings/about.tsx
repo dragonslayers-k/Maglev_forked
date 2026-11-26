@@ -124,26 +124,16 @@ export default function AboutSettings() {
           <ListRow key={l.url} title={l.title} onPress={() => void Linking.openURL(l.url)} />
         ))}
       </Card>
-      <SectionHeader title="통합 구성" />
+      <SectionHeader title="통합 구성 · 참고 원천" />
       <Card>
-        <ListRow
-          title="MAGLEV 기반 기능"
-          subtitle="토렌트·링크 다운로드, 브라우저, 검색, RSS, 자막 및 전송 관리를 유지합니다."
-        />
-        <ListRow
-          title="YouTube 추출 엔진"
-          subtitle="NewPipe Extractor를 우선 사용하고 yt-dlp로 추가 형식 분석을 제공합니다."
-          icon="github"
-          onPress={() => void Linking.openURL('https://github.com/yt-dlp/yt-dlp')}
-        />
-        <ListRow
-          title="광고 차단"
-          subtitle="MAGLEV의 내장 차단 목록과 브라우저 광고 차단 기능을 유지합니다."
-        />
-        <ListRow
-          title="업데이트 방식"
-          subtitle="APK 릴리스와 광고 차단·검색 목록 업데이트는 별도로 관리됩니다."
-        />
+        <ListRow title="MAGLEV 원본 기반" subtitle="토렌트·직접 링크·브라우저·HLS/DASH·RSS·자막·공통 전송 목록을 기반으로 유지합니다." icon="github" onPress={() => void Linking.openURL('https://github.com/Kaos599/Maglev')} />
+        <ListRow title="YTDLnis · yt-dlp" subtitle="YouTube 형식 선택과 추가 화질 조회를 참고해 일부 적용했습니다. 재생목록·후처리·MP3 변환 등 전체 기능 이식은 완료되지 않았습니다." icon="github" onPress={() => void Linking.openURL('https://github.com/deniscerri/ytdlnis')} />
+        <ListRow title="NewPipe Extractor" subtitle="빠른 YouTube 메타데이터·원본 오디오/영상 형식 조회 경로에 사용합니다." icon="github" onPress={() => void Linking.openURL('https://github.com/TeamNewPipe/NewPipeExtractor')} />
+        <ListRow title="LJ Downloader 참고" subtitle="WebView·요청·DOM 기반 미디어 감지 일부를 반영했습니다. 사이트별 플러그인과 전체 헤더 복원은 미완성입니다." />
+        <ListRow title="MPMux · 브라우저 확장 참고" subtitle="정적 Range·HLS VOD 흐름을 비교·참고했습니다. MSE 버퍼 캡처와 라이브 mux는 아직 구현·검증되지 않았습니다." icon="external" onPress={() => void Linking.openURL('https://mpmux.com/buffermuxer')} />
+        <ListRow title="Morphe WireGuard 패치" subtitle="앱 내부 터널/프록시 구조를 조사 중입니다. 현재 앱에는 WireGuard .conf 가져오기나 WireGuard 터널이 통합되어 있지 않습니다." icon="github" onPress={() => void Linking.openURL('https://github.com/seo-rii/morphe-wireguard-patches')} />
+        <ListRow title="FFmpeg · 오디오 후처리" subtitle="실행 가능한 안전한 변환 엔진을 포함하지 않아 MP3 변환·코덱 변환은 지원 완료 상태가 아닙니다." />
+        <ListRow title="구현 상태 문서" subtitle="원천별 실제 반영 코드, 미구현 범위와 검증 조건을 확인합니다." icon="file" onPress={() => void Linking.openURL('https://github.com/dragonslayers-k/Maglev_forked/blob/feature/p1-video-detection-observer/docs/FINAL_SOURCE_IMPLEMENTATION_MATRIX_KO.md')} />
       </Card>
       {crashCount > 0 ? (
         <Card>
