@@ -26,6 +26,10 @@ object YoutubeDownload {
     private val formatIdPattern = Regex("^[A-Za-z0-9._-]{1,64}$")
     private val PLAYER_CLIENTS = listOf("android_vr", "web_safari", "web_embedded")
 
+    /** NewPipe is a separate fast provider; it must pass the same validation before its add() branch. */
+    internal fun isValidClient(isYouTube: Boolean, playerClient: String): Boolean =
+        if (isYouTube) playerClient in PLAYER_CLIENTS || playerClient == "newpipe" else playerClient == "generic"
+
     /**
      * Initialize the bundled extractor only. Never check/download an yt-dlp update on the
      * interactive metadata or download path: that network update made first-run analysis block.
@@ -199,7 +203,7 @@ object YoutubeDownload {
         val link = YouTubeUrl.parse(rawUrl)
         val sourceUrl = link?.canonicalUrl ?: httpMediaUrl(rawUrl)
             ?: return Json.failure("INVALID_SOURCE", "HTTP(S) 웹페이지 주소를 입력하세요.")
-        val validClient = if (link != null) playerClient in PLAYER_CLIENTS else playerClient == "generic"
+        val validClient = isValidClient(link != null, playerClient)
         if (!formatIdPattern.matches(formatId) || !validClient) {
             return Json.failure("INVALID_ARGUMENT", "선택한 형식이 올바르지 않습니다.")
         }
