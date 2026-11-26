@@ -632,6 +632,8 @@ export interface YouTubeFormat {
   size: number | null;
   /** True when size is calculated from bitrate × duration rather than reported by the extractor. */
   sizeEstimated?: boolean;
+  /** Whether the selected video stream contains audio already. */
+  hasAudio?: boolean;
   format: string | null;
 }
 

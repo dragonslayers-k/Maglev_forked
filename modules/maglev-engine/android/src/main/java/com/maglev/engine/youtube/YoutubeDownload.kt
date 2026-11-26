@@ -389,6 +389,7 @@ object YoutubeDownload {
             "abr" to f.abr,
             "size" to bytes,
             "sizeEstimated" to (exactBytes == null && estimatedBytes != null),
+            "hasAudio" to hasAudio,
             "format" to f.formatNote,
         )
     }

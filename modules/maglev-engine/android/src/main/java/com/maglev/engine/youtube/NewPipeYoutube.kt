@@ -111,6 +111,7 @@ object NewPipeYoutube {
                 "abr" to 0,
                 "size" to bytes,
                 "sizeEstimated" to (exactBytes == null),
+                "hasAudio" to !selected.isVideoOnly,
                 "format" to ("DASH · " + selected.codec),
             )
         }
