@@ -22,6 +22,7 @@ const ALLOW = {
   "feeds: Added so far": "feed status, read-only",
   "feeds: Waiting to be added": "feed status, read-only",
   "about: Release notes": "link to the What's new page, which is indexed there",
+  "about: MAGLEV 원본 기반": "read-only original project source register row",
   // Read-only source register rows, not app settings; searchable source-code entry is MAGLEV original.
   "about: YTDLnis · yt-dlp": "informational source register row",
   "about: NewPipe Extractor": "informational source register row",
