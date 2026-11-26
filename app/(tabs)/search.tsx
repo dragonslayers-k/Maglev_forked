@@ -866,7 +866,7 @@ export default function SearchScreen() {
         <Reveal visible={showRecents}>
           {/* A scroll view with handled taps: a tap on a row registers before the field loses focus. */}
           <ScrollView keyboardShouldPersistTaps="handled" scrollEnabled={false} style={styles.recentsWrap}>
-            <View style={styles.recentsCard} accessibilityLabel="Recent searches">
+            <View style={styles.recentsCard} accessibilityLabel="최근 검색어">
               <View style={styles.recentsHead}>
                 <Text style={styles.sectionLabel} accessibilityRole="header">
                   Recent
@@ -902,7 +902,7 @@ export default function SearchScreen() {
           </ScrollView>
         </Reveal>
       </View>
-      <View accessibilityRole="radiogroup" accessibilityLabel="Category">
+      <View accessibilityRole="radiogroup" accessibilityLabel="검색 범주">
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.catScroll} contentContainerStyle={styles.chips}>
         {categories.map((c) => (
           <Chip key={c} role="radio" label={CATEGORY_LABEL[c]} selected={c === category} onPress={() => updatePrefs({ lastCategory: c })} />
