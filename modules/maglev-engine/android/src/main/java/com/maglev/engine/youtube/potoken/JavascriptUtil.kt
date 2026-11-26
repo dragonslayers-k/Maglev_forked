@@ -1,5 +1,7 @@
 package com.maglev.engine.youtube.potoken
 
+// Adapted from YTDLnis by Denis Çerri, GPL-3.0; upstream source commit 81da6855f964c94a438889d6e1bf9ec2923a2396.
+
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
