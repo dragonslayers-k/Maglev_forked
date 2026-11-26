@@ -1266,7 +1266,7 @@ export const SETTINGS_INDEX: SettingEntry[] = [
   // Search sources
   e(
     "search-adult",
-    "Show adult sources",
+    "성인 검색 사이트 표시",
     "search-providers",
     "검색 사이트",
     [
@@ -1281,11 +1281,11 @@ export const SETTINGS_INDEX: SettingEntry[] = [
       "porn sites",
       "block",
     ],
-    "What sources to show",
+    "표시할 검색 사이트",
   ),
   e(
     "search-warn-unsafe",
-    "Warn about risky sources",
+    "위험한 검색 사이트 경고",
     "search-providers",
     "검색 사이트",
     [
@@ -1298,11 +1298,11 @@ export const SETTINGS_INDEX: SettingEntry[] = [
       "safety",
       "risky",
     ],
-    "What sources to show",
+    "표시할 검색 사이트",
   ),
   e(
     "search-clear-checks",
-    "Clear site checks",
+    "사이트 확인 기록 지우기",
     "search-providers",
     "검색 사이트",
     [
@@ -1314,19 +1314,19 @@ export const SETTINGS_INDEX: SettingEntry[] = [
       "site",
       "sign out",
     ],
-    "What sources to show",
+    "표시할 검색 사이트",
   ),
   e(
     "search-wait-slow",
-    "Wait for slow sources",
+    "느린 검색 사이트 대기 시간",
     "search-providers",
     "검색 사이트",
     ["timeout", "slow", "seconds", "wait", "time", "delay", "speed"],
-    "How search behaves",
+    "검색 동작",
   ),
   e(
     "search-results-per-source",
-    "Results per source",
+    "검색 사이트별 결과 수",
     "search-providers",
     "검색 사이트",
     [
@@ -1339,11 +1339,11 @@ export const SETTINGS_INDEX: SettingEntry[] = [
       "per site",
       "per source",
     ],
-    "How search behaves",
+    "검색 동작",
   ),
   e(
     "search-trusted-uploaders",
-    "Trusted uploaders only",
+    "신뢰된 업로더만 표시",
     "search-providers",
     "검색 사이트",
     [
@@ -1356,11 +1356,11 @@ export const SETTINGS_INDEX: SettingEntry[] = [
       "safe",
       "uploader",
     ],
-    "How search behaves",
+    "검색 동작",
   ),
   e(
     "search-hide-dead",
-    "Hide dead torrents",
+    "시더 없는 토렌트 숨기기",
     "search-providers",
     "검색 사이트",
     [
@@ -1373,11 +1373,11 @@ export const SETTINGS_INDEX: SettingEntry[] = [
       "empty",
       "filter",
     ],
-    "How search behaves",
+    "검색 동작",
   ),
   e(
     "search-category",
-    "Show sources for",
+    "검색 사이트 범위",
     "search-providers",
     "검색 사이트",
     [
@@ -1392,11 +1392,11 @@ export const SETTINGS_INDEX: SettingEntry[] = [
       "only movies",
       "only",
     ],
-    "Show sources for",
+    "검색 사이트 범위",
   ),
   e(
     "search-name-lines",
-    "Result name lines",
+    "결과 이름 줄 수",
     "search-providers",
     "검색 사이트",
     [
@@ -1417,7 +1417,7 @@ export const SETTINGS_INDEX: SettingEntry[] = [
   ),
   e(
     "search-jackett",
-    "Connect Jackett or Prowlarr",
+    "Jackett 또는 Prowlarr 연결",
     "search-providers",
     "검색 사이트",
     [
@@ -1430,7 +1430,7 @@ export const SETTINGS_INDEX: SettingEntry[] = [
       "own server",
       "tracker",
     ],
-    "Your own indexer",
+    "사용자 지정 검색 서버",
   ),
 
   // Speed & queue
