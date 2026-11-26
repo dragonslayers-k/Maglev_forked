@@ -14,11 +14,12 @@ import com.yausername.youtubedl_android.YoutubeDL
 import com.yausername.youtubedl_android.YoutubeDLRequest
 import com.yausername.youtubedl_android.mapper.VideoFormat
 import com.yausername.youtubedl_android.mapper.VideoInfo
+import java.io.File
 import kotlin.math.abs
 
 /**
- * YouTube extraction adapter. It tries clients that can expose formats without an app-managed PO token,
- * then hands direct files or HLS/DASH playlists to Maglev's own transfer/stream engine.
+ * YouTube extraction adapter. NewPipe supplies PO-token-enabled adaptive formats; yt-dlp remains fallback.
+ * Direct files and DASH playlists are handed to Maglev's own transfer/stream engine.
  */
 object YoutubeDownload {
     private const val TAG = "MaglevYouTube"
@@ -32,7 +33,17 @@ object YoutubeDownload {
      */
     @Synchronized
     private fun prepareYtDlp(context: Context) {
-        YoutubeDL.getInstance().init(context.applicationContext)
+        val app = context.applicationContext
+        val ytdlp = YoutubeDL.getInstance()
+        ytdlp.init(app)
+        // youtubedl-android 0.18.1 always appends ffmpegPath/libffmpeg.so to yt-dlp.
+        // Maglev deliberately doesn't bundle its unsafe/incomplete FFmpeg AAR; point the wrapper
+        // at an existing directory instead. Our YouTube DASH mux path uses Android MediaMuxer.
+        runCatching {
+            val field = ytdlp.javaClass.getDeclaredField("ffmpegPath")
+            field.isAccessible = true
+            field.set(ytdlp, File(app.applicationInfo.nativeLibraryDir))
+        }.onFailure { Log.w(TAG, "Unable to reset missing bundled FFmpeg path", it) }
     }
 
     private fun currentYtDlpVersion(context: Context): String =
@@ -71,14 +82,11 @@ object YoutubeDownload {
      * YouTube needs an explicit player client. Other yt-dlp-supported HTTP(S) pages use the site's
      * registered extractor. Generic extraction is only invoked by an explicit user action.
      */
-    private fun requestFor(url: String, playerClient: String, ffmpegDirectory: String? = null): YoutubeDLRequest {
+    private fun requestFor(url: String, playerClient: String): YoutubeDLRequest {
         val request = YoutubeDLRequest(url).addOption("--no-playlist")
         if (playerClient != "generic") {
             request.addOption("--extractor-args", "youtube:player_client=" + playerClient)
         }
-        // The wrapper appends a stale nativeLibraryDir/libffmpeg.so path even when FFmpeg is excluded.
-        // Override it with an existing directory to avoid the missing-path warning on metadata/audio.
-        if (!ffmpegDirectory.isNullOrBlank()) request.addOption("--ffmpeg-location", ffmpegDirectory)
         return request
     }
 
@@ -125,7 +133,7 @@ object YoutubeDownload {
 
             for (client in clients) {
                 try {
-                    val current = YoutubeDL.getInstance().getInfo(requestFor(sourceUrl, client, app.applicationInfo.nativeLibraryDir))
+                    val current = YoutubeDL.getInstance().getInfo(requestFor(sourceUrl, client))
                     if (metadata == null || metadata?.title.isNullOrBlank()) metadata = current
                     val found = (current.formats ?: arrayListOf()).mapNotNull { format -> toFormat(format, client, current.duration) }
                     allFormats.addAll(found)
@@ -208,7 +216,7 @@ object YoutubeDownload {
         return try {
             val app = context.applicationContext
             prepareYtDlp(app)
-            val selected = YoutubeDL.getInstance().getInfo(requestFor(sourceUrl, playerClient, app.applicationInfo.nativeLibraryDir))
+            val selected = YoutubeDL.getInstance().getInfo(requestFor(sourceUrl, playerClient))
             val audioOnly = formatId == "bestaudio"
             val availableFormats = selected.formats.orEmpty()
             val requested = if (audioOnly) {
