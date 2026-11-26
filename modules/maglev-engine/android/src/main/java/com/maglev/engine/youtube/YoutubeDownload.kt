@@ -112,7 +112,7 @@ object YoutubeDownload {
                 val fastInfo = runCatching { NewPipeYoutube.get(app, sourceUrl) }.getOrNull()
                 if (fastInfo != null) {
                     val fastFormats = NewPipeYoutube.formats(fastInfo)
-                    if (fastFormats.any { it["kind"] == "video" }) {
+                    if (fastFormats.any { it["kind"] == "video" } && fastFormats.any { it["kind"] == "audio" }) {
                         return linkedMapOf(
                             "ok" to true,
                             "videoId" to link.videoId,
