@@ -2042,7 +2042,14 @@ object EngineHost {
         return res
     }
     fun retryDownload(id: String): Map<String, Any?> {
-        ctx?.let { AutoRetry.reset(it, id) } // a retry by hand starts the automatic count again
+        ctx?.let { c ->
+            AutoRetry.reset(c, id) // a retry by hand starts the automatic count again
+            val spec = pendingPostProcess(c, id)
+            if (spec?.get("failed") == true) {
+                val retrySpec = LinkedHashMap(spec).apply { remove("failed") }
+                formatPrefs(c).edit().putString(postProcessKey(id), Json.toJson(retrySpec)).apply()
+            }
+        }
         return call { NativeCore.nativeRetryDownload(id) }.also { pollNow() }
     }
 
@@ -2081,7 +2088,14 @@ object EngineHost {
         val res = call { NativeCore.nativeRemoveDownload(id, deleteFiles) }
         if (isOk(res)) {
             val key = DL_PREFIX + id
-            ctx?.let { StorageManager.clearCopied(it, key) }
+            ctx?.let { c ->
+                val prefs = formatPrefs(c)
+                val outputName = prefs.getString(outputNameKey(id), null)
+                val outputFolder = prefs.getString(outputFolderKey(id), null)
+                if (deleteFiles && !outputName.isNullOrBlank() && !outputFolder.isNullOrBlank()) File(outputFolder, outputName).delete()
+                prefs.edit().remove(postProcessKey(id)).remove(outputNameKey(id)).remove(outputFolderKey(id)).apply()
+                StorageManager.clearCopied(c, key)
+            }
             // Delete file also removes the copy in the chosen folder (contract 17.z).
             if (copyUri != null) {
                 try { ctx?.let { SafStorageManager.deleteDocument(it, android.net.Uri.parse(copyUri)) } }
@@ -2160,7 +2174,7 @@ object EngineHost {
             if (d["state"] != "finished") continue
             val id = d["id"] as? String ?: continue
             val spec = pendingPostProcess(c, id) ?: continue
-            if (!postProcessing.add(id)) continue
+            if (spec["failed"] == true || !postProcessing.add(id)) continue
             ioScope.launch {
                 try {
                     val folder = d["folder"] as? String
@@ -2169,8 +2183,9 @@ object EngineHost {
                     val kind = spec["kind"] as? String
                     val targetExt = spec["targetExt"] as? String
                     if (folder.isNullOrBlank() || sourceName.isNullOrBlank() || outputName.isNullOrBlank() || kind.isNullOrBlank() || targetExt.isNullOrBlank()) {
-                        formatPrefs(c).edit().remove(postProcessKey(id)).apply()
-                        Notifications.notifyPostProcessFailed(c, id, sourceName ?: id, "변환 설정이 올바르지 않습니다.")
+                        val failedSpec = LinkedHashMap(spec).apply { put("failed", true) }
+                        formatPrefs(c).edit().putString(postProcessKey(id), Json.toJson(failedSpec)).apply()
+                        Notifications.notifyTorrentError(c, id, "변환 실패 · ${sourceName ?: id} · 변환 설정이 올바르지 않습니다.")
                     } else {
                         val source = File(folder, sourceName)
                         val output = File(folder, outputName)
@@ -2185,14 +2200,16 @@ object EngineHost {
                             if (source.absolutePath != output.absolutePath) source.delete()
                             notifyDownloadCompleted(c, d + ("name" to outputName))
                         } else {
-                            formatPrefs(c).edit().remove(postProcessKey(id)).apply()
-                            Notifications.notifyPostProcessFailed(c, id, sourceName, error)
+                            val failedSpec = LinkedHashMap(spec).apply { put("failed", true) }
+                            formatPrefs(c).edit().putString(postProcessKey(id), Json.toJson(failedSpec)).apply()
+                            Notifications.notifyTorrentError(c, id, "변환 실패 · $sourceName · ${error.take(150)}")
                         }
                     }
                 } catch (t: Throwable) {
                     Log.e(TAG, "YouTube output conversion failed", t)
-                    formatPrefs(c).edit().remove(postProcessKey(id)).apply()
-                    Notifications.notifyPostProcessFailed(c, id, d["name"] as? String ?: id, t.message ?: "FFmpeg 변환에 실패했습니다.")
+                    val spec = pendingPostProcess(c, id)
+                    if (spec != null) { val failedSpec = LinkedHashMap(spec).apply { put("failed", true) }; formatPrefs(c).edit().putString(postProcessKey(id), Json.toJson(failedSpec)).apply() }
+                    Notifications.notifyTorrentError(c, id, "변환 실패 · ${d["name"] as? String ?: id} · ${(t.message ?: "FFmpeg 변환에 실패했습니다.").take(150)}")
                 } finally {
                     postProcessing.remove(id)
                     pollNow()
