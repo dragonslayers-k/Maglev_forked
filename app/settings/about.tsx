@@ -191,7 +191,7 @@ const makeStyles = (c: ThemeColors) =>
   StyleSheet.create({
     brand: { alignItems: 'center', gap: spacing.lg, paddingVertical: spacing.xxl },
     wordmarkRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.xs },
-    wordmarkPlus: { ...type.brand, fontSize: 38, lineHeight: 44, color: c.accent, fontWeight: '900' },
+    wordmarkPlus: { ...type.heading, fontSize: type.size.display, color: c.accent },
     footer: { minHeight: touch.min, alignItems: 'center', justifyContent: 'center', paddingVertical: spacing.md },
     dialogBody: { ...type.body, color: c.textMuted },
     footerText: { ...type.mono, fontSize: type.size.md, color: c.textMuted, textAlign: 'center' },
