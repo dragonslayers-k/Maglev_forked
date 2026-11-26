@@ -15,11 +15,11 @@ export default function AssistantSettings() {
   const p = useAssistantPrefs();
   const used = p.tokensUsed.input + p.tokensUsed.output;
   return (
-    <SettingsPage title="Assistant">
+    <SettingsPage title="도우미">
       <Stack.Screen options={{ headerShown: false }} />
       <Card>
         <ListRow
-          title="Assistant"
+          title="도우미"
           subtitle="Adds an Assistant tab. When off, the tab is gone and nothing is sent anywhere."
           accessory={
             <Toggle
