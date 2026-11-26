@@ -65,7 +65,7 @@ check('step 1 no longer says "Fast, simple torrents."', !/Fast, simple torrents\
 const m = copy.match(/export const onboarding = \{([\s\S]*?)\n\};/);
 const ob = m ? m[1] : '';
 check('onboarding copy lives in constants/copy.ts', !!m);
-check('promise names links and videos, not only torrents', /link/i.test(ob) && /video/i.test(ob));
+check('Korean promise names links and videos, not only torrents', /링크/.test(ob) && /동영상/.test(ob));
 check('no hype words or exclamation marks in onboarding copy', !/!|seamless|powerful|blazing|effortless|supercharge|revolution|unleash/i.test(ob));
 
 if (failed) {
