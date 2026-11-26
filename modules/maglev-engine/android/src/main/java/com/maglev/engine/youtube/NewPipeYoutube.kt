@@ -1,0 +1,193 @@
+package com.maglev.engine.youtube
+
+import android.content.Context
+import org.schabi.newpipe.extractor.NewPipe
+import org.schabi.newpipe.extractor.downloader.Downloader
+import org.schabi.newpipe.extractor.downloader.Request
+import org.schabi.newpipe.extractor.downloader.Response
+import org.schabi.newpipe.extractor.stream.StreamInfo
+import java.net.HttpURLConnection
+import java.net.URL
+import java.util.concurrent.ConcurrentHashMap
+import kotlin.math.abs
+
+/**
+ * Fast YouTube format extraction through NewPipe, following YTDLnis's NewPipe data path.
+ * Adaptive DASH tracks are handed to Maglev's existing stream downloader and MediaMuxer.
+ */
+object NewPipeYoutube {
+    private const val CACHE_MS = 180_000L
+    const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:140.0) Gecko/20100101 Firefox/140.0"
+    private val lock = Any()
+    @Volatile private var initialized = false
+    private val cache = ConcurrentHashMap<String, Pair<Long, StreamInfo>>()
+
+    private class HttpDownloader : Downloader() {
+        override fun execute(request: Request): Response {
+            val connection = URL(request.url()).openConnection() as HttpURLConnection
+            connection.connectTimeout = 15_000
+            connection.readTimeout = 25_000
+            connection.requestMethod = request.httpMethod()
+            connection.setRequestProperty("User-Agent", USER_AGENT)
+            request.headers().forEach { (name, values) -> values.forEach { connection.setRequestProperty(name, it) } }
+            try {
+                val data = request.dataToSend()
+                if (data != null) {
+                    connection.doOutput = true
+                    connection.outputStream.use { it.write(data) }
+                }
+                val code = connection.responseCode
+                val stream = if (code >= 400) connection.errorStream else connection.inputStream
+                val body = stream?.bufferedReader(Charsets.UTF_8)?.use { it.readText() }.orEmpty()
+                val headers = connection.headerFields.filterKeys { it != null }
+                    .mapKeys { it.key!! }.mapValues { it.value.filterNotNull() }
+                return Response(code, connection.responseMessage ?: "", headers, body, connection.url.toString())
+            } finally {
+                connection.disconnect()
+            }
+        }
+    }
+
+    private fun init() {
+        if (initialized) return
+        synchronized(lock) {
+            if (initialized) return
+            NewPipe.init(HttpDownloader())
+            initialized = true
+        }
+    }
+
+    fun get(url: String): StreamInfo {
+        init()
+        val now = System.currentTimeMillis()
+        cache[url]?.takeIf { now - it.first < CACHE_MS }?.let { return it.second }
+        val info = StreamInfo.getInfo(url)
+        cache[url] = now to info
+        return info
+    }
+
+    fun formats(info: StreamInfo): List<Map<String, Any?>> {
+        val duration = info.duration.toDouble().takeIf { it > 0 && it.isFinite() }
+        val audio = info.audioStreams
+            .filter { it.content.isNotBlank() && it.bitrate > 0 && it.itagItem != null }
+            .filterNot { it.itagItem!!.itag == 599 || it.itagItem!!.itag == 600 }
+            .sortedByDescending { it.bitrate }
+        val bestAudioKbps = audio.firstOrNull()?.bitrate?.div(1000.0) ?: 128.0
+        val videos = (info.videoStreams + if (info.dashMpdUrl.isNotBlank()) info.videoOnlyStreams else emptyList())
+            .filter { it.content.isNotBlank() && it.height > 0 && it.width > 0 && it.bitrate > 0 && it.itagItem != null }
+        val out = mutableListOf<Map<String, Any?>>()
+        for ((height, candidates) in videos.groupBy { it.height }.toSortedMap(compareByDescending { it })) {
+            val selected = candidates.maxByOrNull { it.bitrate } ?: continue
+            val combinedKbps = selected.bitrate / 1000.0 + bestAudioKbps
+            val bytes = duration?.let { (combinedKbps * 1000.0 / 8.0 * it).toLong().takeIf { size -> size > 0 } }
+            out += linkedMapOf(
+                "formatId" to ("npv" + height),
+                "playerClient" to "newpipe",
+                "kind" to "video",
+                "ext" to "mp4",
+                "height" to height,
+                "width" to selected.width,
+                "fps" to selected.fps,
+                "tbr" to combinedKbps,
+                "abr" to 0,
+                "size" to bytes,
+                "sizeEstimated" to true,
+                "format" to ("DASH · " + selected.codec),
+            )
+        }
+        for (stream in audio) {
+            val itag = stream.itagItem!!.itag
+            val kbps = stream.bitrate / 1000.0
+            val bytes = stream.itagItem!!.contentLength.takeIf { it > 0 }
+                ?: duration?.let { (stream.bitrate.toDouble() / 8.0 * it).toLong().takeIf { size -> size > 0 } }
+            val mediaName = stream.format?.name.orEmpty().uppercase()
+            val ext = if (mediaName.contains("WEBM")) "webm" else "m4a"
+            val trackName = stream.audioTrackName?.takeIf { it.isNotBlank() }
+                ?: stream.audioLocale?.displayName?.takeIf { it.isNotBlank() }
+                ?: "원본 오디오"
+            out += linkedMapOf(
+                "formatId" to ("npa" + itag),
+                "playerClient" to "newpipe",
+                "kind" to "audio",
+                "ext" to ext,
+                "height" to 0,
+                "width" to 0,
+                "fps" to 0,
+                "tbr" to kbps,
+                "abr" to kbps,
+                "size" to bytes,
+                "sizeEstimated" to (stream.itagItem!!.contentLength <= 0),
+                "format" to (trackName + " · " + stream.codec),
+            )
+        }
+        return out
+    }
+
+    fun add(context: Context, url: String, formatId: String): Map<String, Any?>? {
+        if (!formatId.startsWith("npv") && !formatId.startsWith("npa")) return null
+        val info = get(url)
+        if (formatId.startsWith("npa")) {
+            val itag = formatId.removePrefix("npa").toIntOrNull()
+                ?: return failure("INVALID_ARGUMENT", "오디오 형식 ID가 올바르지 않습니다.")
+            val stream = info.audioStreams.firstOrNull { it.itagItem?.itag == itag && it.content.isNotBlank() }
+                ?: return failure("YOUTUBE_AUDIO_URL_MISSING", "선택한 오디오 형식의 주소를 갱신하지 못했습니다.")
+            val ext = if (stream.format?.name.orEmpty().contains("WEBM", true)) "webm" else "m4a"
+            return EngineHost.addDownload(stream.content, mapOf(
+                "name" to (safeName(info.name) + "." + ext),
+                "headers" to mapOf("User-Agent" to USER_AGENT, "Referer" to url),
+                "pageUrl" to url,
+            ))
+        }
+
+        val height = formatId.removePrefix("npv").toIntOrNull()
+            ?: return failure("INVALID_ARGUMENT", "동영상 화질 ID가 올바르지 않습니다.")
+        val dash = info.dashMpdUrl.takeIf { it.isNotBlank() }
+        if (dash != null) {
+            val headers = mapOf("User-Agent" to USER_AGENT, "Referer" to url)
+            val probe = EngineHost.probeStream(dash, mapOf("headers" to headers), 25_000L)
+            if ((probe["ok"] as? Boolean) != true) {
+                return failure("YOUTUBE_STREAM_PROBE_FAILED", "YouTube DASH 화질 정보를 읽지 못했습니다.")
+            }
+            val kind = probe["kind"] as? String
+                ?: return failure("YOUTUBE_STREAM_UNSUPPORTED", "DASH 스트림 유형을 확인하지 못했습니다.")
+            val variants = (probe["variants"] as? List<*>)?.mapNotNull { it as? Map<*, *> }.orEmpty()
+            val variant = variants.filter { (it["audio"] as? String) != "none" }
+                .minByOrNull { abs(((it["height"] as? Number)?.toInt() ?: 0) - height) }
+                ?: return failure("YOUTUBE_STREAM_UNSUPPORTED", "선택한 화질의 영상 트랙을 찾지 못했습니다.")
+            val variantId = variant["id"] as? String
+                ?: return failure("YOUTUBE_STREAM_UNSUPPORTED", "영상 트랙 ID가 없습니다.")
+            val audioTracks = (probe["audioTracks"] as? List<*>)?.mapNotNull { it as? Map<*, *> }.orEmpty()
+            val audioId = audioTracks.firstOrNull()?.get("id") as? String
+            val selection = linkedMapOf<String, Any?>("kind" to kind, "variantId" to variantId)
+            if ((variant["audio"] as? String) == "separate") {
+                if (audioId.isNullOrBlank()) return failure("YOUTUBE_STREAM_UNSUPPORTED", "오디오 트랙을 찾지 못했습니다.")
+                selection["audioId"] = audioId
+            }
+            return EngineHost.addDownload(dash, mapOf(
+                "name" to (safeName(info.name) + "_" + height + "p.mp4"),
+                "headers" to headers,
+                "pageUrl" to url,
+                "stream" to selection,
+            ))
+        }
+
+        val progressive = info.videoStreams
+            .filter { it.height == height && it.content.isNotBlank() && !it.isVideoOnly }
+            .maxByOrNull { it.bitrate }
+            ?: return failure("YOUTUBE_STREAM_UNSUPPORTED", "이 영상은 " + height + "p 화질의 오디오 포함 스트림을 제공하지 않습니다.")
+        return EngineHost.addDownload(progressive.content, mapOf(
+            "name" to (safeName(info.name) + "_" + height + "p.mp4"),
+            "headers" to mapOf("User-Agent" to USER_AGENT, "Referer" to url),
+            "pageUrl" to url,
+        ))
+    }
+
+    private fun failure(code: String, message: String) = mapOf("ok" to false, "code" to code, "message" to message)
+
+    private fun safeName(raw: String): String = raw
+        .replace(Regex("[/\\\\:*?\"<>|]"), "_")
+        .replace(Regex("\\s+"), " ")
+        .trim(' ', '.')
+        .take(150)
+        .ifEmpty { "YouTube video" }
+}
