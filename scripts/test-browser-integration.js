@@ -37,8 +37,8 @@ check('screen: only a video hit for the active tab opens the media menu', /onMed
 check('screen: MediaMenu is wired to save, stream, tab, copy, share, files and link options', /<MediaMenu[\s\S]*?onSave=[\s\S]*?onStream=\{streamFromHit\}[\s\S]*?onOpenNewTab=[\s\S]*?onCopy=[\s\S]*?onShare=[\s\S]*?Share\.share[\s\S]*?onShowFound=\{\(\) => setTrayOpen\(true\)\}[\s\S]*?onLinkOptions=/.test(scr));
 check('screen: Back closes the media menu', /if \(mediaHit\) \{\s*setMediaHit\(null\);\s*return true;/.test(scr));
 check('screen: page menu offers explicit yt-dlp analysis', /yt-dlp로 페이지 분석/.test(scr) && /pathname: '\/youtube-download'/.test(scr));
-check('screen: DRM/blob detection opens MPMux guidance', /setMpmuxHelp\(e\.note === 'drm' \? 'drm' : 'buffer'\)/.test(scr) && /MPMux 사용 안내/.test(scr));
-check('screen: MPMux guidance refuses DRM decryption', /MPMux도 DRM을 복호화하거나 보호를 우회하지 못합니다/.test(scr));
+check('screen: DRM/blob detection shows the shared unsupported notices, not a PC-only MPMux popup', /notices\.browser\.drm/.test(scr) && /notices\.browser\.mseCaptureUnavailable/.test(scr) && !/MPMux 사용 안내|Chrome 확장 프로그램|setMpmuxHelp/.test(scr));
+check('screen: protected and browser-buffer streams are explicitly marked unsupported without DRM bypass', /DRM 복호화·보호 우회는 수행하지 않습니다/.test(read('components/browser/StreamSheet.tsx')) && /DRM 보호 영상은 저장할 수 없습니다/.test(copy));
 check('Kotlin: onMediaHit is registered in the view events and as a dispatcher', /"onFindResult", "onMediaHit"\)/.test(mod) && /private val onMediaHit by EventDispatcher/.test(kt));
 check('Kotlin: the long press asks the page for __maglevMediaHit and emits the decoded payload', /evaluateJavascript\("window\.__maglevMediaHit && window\.__maglevMediaHit\(\)"\)/.test(kt) && /JSONTokener\(value\)\.nextValue\(\) as\? String/.test(kt) && /optString\("type"\) != "maglev-media-hit"/.test(kt) && /onMediaHit\(mapOf\("json" to payload\)\)/.test(kt));
 check('Kotlin: text selection is kept (the listener returns false for a non-image, non-link hit)', /askMediaHit\(w\)\s*return false/.test(kt));
