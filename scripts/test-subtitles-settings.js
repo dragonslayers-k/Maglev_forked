@@ -39,7 +39,7 @@ function check(name, cond, extra) {
   const tab = read('app/(tabs)/settings.tsx');
   check('설정 탭의 콘텐츠 찾기 그룹에 자막이 표시됨', tab.includes('const findRows: RowSpec[]') && /title: '자막', value: subtitles\.enabled[^}]*route: 'subtitles'/.test(tab) && /icon: 'subtitles'/.test(tab));
   check('the subtitles icon exists', read('components/icons.generated.ts').includes('"subtitles":') && /subtitles: 'badge-captions'/.test(read('scripts/gen-icons.js')));
-  check('every new row and screen is in the search index (rule 7)', ['subtitles-enabled', 'subtitles-languages', 'subtitles-hearing', 'subtitles-sources', 'subtitles-privacy', 'subtitle-languages-yours', 'subtitle-sources-list', 'updates-lists-auto', 'updates-ad-list', 'updates-sources'].every((id) => SETTINGS_INDEX.some((x) => x.id === id)));
+  check('every new row and screen is in the search index (rule 7)', ['subtitles-enabled', 'subtitles-languages', 'subtitles-hearing', 'subtitles-sources', 'subtitles-privacy', 'subtitle-languages-yours', 'subtitle-sources-list', 'about-highlights', 'updates-lists-auto', 'updates-ad-list', 'updates-sources'].every((id) => SETTINGS_INDEX.some((x) => x.id === id)));
   const kw = (id) => (SETTINGS_INDEX.find((x) => x.id === id) || { keywords: [] }).keywords.join(' ');
   check('search keywords cover captions, srt, cc, sdh, opensubtitles, providers, language', /captions/.test(kw('subtitles-enabled')) && /srt/.test(kw('subtitles-enabled')) && /\bcc\b/.test(kw('subtitles-enabled')) && /sdh/.test(kw('subtitles-hearing')) && /opensubtitles/.test(kw('subtitles-sources')) && /providers/.test(kw('subtitles-sources')) && /language/.test(kw('subtitles-languages')));
 

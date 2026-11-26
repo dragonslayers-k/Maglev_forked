@@ -646,6 +646,7 @@ const KO_UI: Record<string, string> = {
   "The downloader restarted.": "다운로더가 다시 시작되었습니다.",
   "No file chosen": "선택한 파일이 없습니다",
   "1 rule": "규칙 1개",
+  "You can turn these off in Settings → About": "설정 → 앱 정보에서 이 기능을 끌 수 있습니다.",
 };
 
 export function koUiText(value: string | null | undefined): string {

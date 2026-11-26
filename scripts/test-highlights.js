@@ -58,17 +58,17 @@ function check(name, cond, extra) {
   const prefs = await import('../utils/prefs/update.ts');
   check('showHighlights defaults on; only false turns it off', prefs.defaultUpdatePrefs().showHighlights === true && prefs.normalizeUpdatePrefs({ showHighlights: false }).showHighlights === false && prefs.normalizeUpdatePrefs({ showHighlights: 0 }).showHighlights === true);
   check('UI only: toNativeConfig never reads it', !/showHighlights|highlights/i.test(read('modules/maglev-engine/src/toNativeConfig.ts')));
-  const updates = read('app/settings/updates.tsx');
-  check('Settings > Updates has "Show new features after updates"', /highlightCopy\.settingTitle/.test(updates) && /prefs\.showHighlights/.test(updates) && /settingTitle: 'Show new features after updates'/.test(read('constants/copy.ts')));
+  const about = read('app/settings/about.tsx');
+  check('About has the release-highlight preference', /highlightCopy\.settingTitle/.test(about) && /prefs\.showHighlights/.test(about) && /settingTitle: 'Show new features after updates'/.test(read('constants/copy.ts')));
   const { SETTINGS_INDEX } = await import('../utils/settingsIndex.ts');
-  check('the setting is in the search index under Updates', SETTINGS_INDEX.some((x) => x.title === 'Show new features after updates' && x.page === 'updates'));
+  check('the setting is indexed under About', SETTINGS_INDEX.some((x) => x.id === 'about-highlights' && x.title === 'Show new features after updates' && x.page === 'about'));
   const kv = await import('../utils/prefs/highlights.ts');
   check('lastSeenVersion starts unset, then round-trips through kv', kv.getLastSeenVersion() === null && (kv.setLastSeenVersion('0.28'), kv.getLastSeenVersion() === '0.28'));
 
   console.log('[sheet]');
   const sheet = read('components/HighlightSheet.tsx');
   const copy = await import('../constants/copy.ts');
-  check('sheet copy is the contract text', copy.highlightCopy.notNow === 'Not now' && copy.highlightCopy.allNotes === 'All release notes' && copy.highlightCopy.footer === 'You can turn these off in Settings → Updates');
+  check('sheet copy is the contract text', copy.highlightCopy.notNow === 'Not now' && copy.highlightCopy.allNotes === 'All release notes' && copy.highlightCopy.footer === 'You can turn these off in Settings → About');
   check('the sheet shows icon, title, body, the try button, Not now, All release notes and the footer', /highlight\.icon/.test(sheet) && /title=\{highlight\.title\}/.test(sheet) && /highlight\.body/.test(sheet) && /highlight\.tryLabel/.test(sheet) && /highlightCopy\.notNow/.test(sheet) && /highlightCopy\.allNotes/.test(sheet) && /highlightCopy\.footer/.test(sheet));
   check('it reuses the Dialog from components/ui (a centred modal, not a bottom sheet), closed with Not now', /Dialog\b[^;]*from '\.\/ui'/.test(sheet) && /<Dialog\b/.test(sheet) && !/\bSheet\b(?!\.|')/.test(sheet.replace(/HighlightSheet|highlight-sheet/g, '').replace(/\/\*[\s\S]*?\*\//g, '')) && /onClose=\{onNotNow\}/.test(sheet) && /testID="highlight-sheet"/.test(sheet));
   const dialog = read('components/ui/Dialog.tsx');

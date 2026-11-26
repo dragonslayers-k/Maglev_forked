@@ -879,7 +879,7 @@ export const subtitleSettingsCopy = {
 export const highlightCopy = {
   notNow: 'Not now',
   allNotes: 'All release notes',
-  footer: 'You can turn these off in Settings → Updates',
+  footer: 'You can turn these off in Settings → About',
   settingTitle: 'Show new features after updates',
   settingSubtitle: 'A short card after an update, when it has a headline feature.',
 } as const;

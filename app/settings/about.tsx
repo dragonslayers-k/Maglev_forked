@@ -5,16 +5,17 @@ import Constants from 'expo-constants';
 import { maglevEngine } from 'maglev-engine';
 import { ThemeColors, spacing, touch, type } from '../../constants/theme';
 import { useTheme } from '../../context/ThemeContext';
-import { Button, Dialog, ListRow } from '../../components/ui';
+import { Button, Dialog, ListRow, Toggle } from '../../components/ui';
 import { useMaglevEngine } from '../../context/EngineContext';
 import { Card, SettingsPage } from '../../components/settings/SettingsParts';
 import { Wordmark } from '../../components/settings/Wordmark';
 import { MaglevMark } from '../../components/brand/MaglevMark';
-import { errorScreenCopy } from '../../constants/copy';
+import { errorScreenCopy, highlightCopy } from '../../constants/copy';
 import { clearCrashLog, copyCrashReport, getCrashLog } from '../../utils/crashLog';
 import { REPO_URL, StarTicket } from '../../components/settings/StarTicket';
 import { aboutExtrasCopy } from '../../constants/aboutCopy';
 import { buildIssueUrl, deviceLabel } from '../../utils/update/check';
+import { useUpdatePrefs } from '../../utils/prefs/update';
 
 type Extra = { homepage?: string; privacyUrl?: string };
 
@@ -31,6 +32,7 @@ export default function AboutSettings() {
   const s = useMemo(() => makeStyles(colors), [colors]);
   const [crashCount, setCrashCount] = useState(() => getCrashLog().length);
   const [engine, setEngine] = useState<string>('—');
+  const [prefs, setPrefs] = useUpdatePrefs();
   const appVersion = Constants.expoConfig?.version ?? '—';
   const extra = (Constants.expoConfig?.extra ?? {}) as Extra;
 
@@ -112,6 +114,11 @@ export default function AboutSettings() {
           value={appVersion}
           icon="clock"
           onPress={() => router.push('/settings/whats-new' as Href)}
+        />
+        <ListRow
+          title={highlightCopy.settingTitle}
+          subtitle={highlightCopy.settingSubtitle}
+          accessory={<Toggle value={prefs.showHighlights} onValueChange={(showHighlights) => setPrefs({ showHighlights })} accessibilityLabel={highlightCopy.settingTitle} />}
         />
         {links.map((l) => (
           <ListRow key={l.url} title={l.title} onPress={() => void Linking.openURL(l.url)} />

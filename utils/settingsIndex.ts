@@ -49,6 +49,13 @@ export const SETTINGS_INDEX: SettingEntry[] = [
   ],
   ),
   e(
+    "about-highlights",
+    "Show new features after updates",
+    "about",
+    "앱 정보",
+    ["highlights", "release notes", "new features", "updates", "what's new", "version"],
+  ),
+  e(
     "about-export-debug-log",
     "Export debug log",
     "about",
