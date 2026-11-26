@@ -170,7 +170,6 @@ function AppNavigation() {
           <Stack.Screen name="browser-bookmarks" />
           <Stack.Screen name="free-space" />
           <Stack.Screen name="settings/about" />
-          <Stack.Screen name="settings/assistant" />
           <Stack.Screen name="settings/backup" />
           <Stack.Screen name="settings/browser" />
           <Stack.Screen name="settings/downloads" />
