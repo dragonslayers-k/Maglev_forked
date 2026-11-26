@@ -2,10 +2,8 @@ package com.maglev.engine
 
 import android.Manifest
 import android.app.Activity
-import android.app.PictureInPictureParams
 import android.content.Context
 import android.util.Log
-import android.util.Rational
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
@@ -248,24 +246,6 @@ class MaglevEngineModule : Module() {
             else io(promise) { WireGuardController.setEnabled(c, enabled) }
         }
         // YouTube (yt-dlp): extract metadata and add a selected progressive format to the existing transfer engine.
-        AsyncFunction("enterBrowserPictureInPicture") { promise: Promise ->
-            val activity = appContext.currentActivity
-            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
-                promise.resolve(Json.failure("PIP_UNSUPPORTED", "Picture-in-picture requires Android 8.0 or later."))
-            } else if (activity == null) {
-                promise.resolve(Json.failure("ACTIVITY_UNAVAILABLE", "The app screen is not available."))
-            } else {
-                try {
-                    val params = PictureInPictureParams.Builder()
-                        .setAspectRatio(Rational(16, 9))
-                        .build()
-                    val entered = activity.enterPictureInPictureMode(params)
-                    promise.resolve(mapOf("ok" to entered))
-                } catch (_: Throwable) {
-                    promise.resolve(Json.failure("PIP_FAILED", "Android could not start picture-in-picture."))
-                }
-            }
-        }
         AsyncFunction("getYouTubeInfo") { url: String, promise: Promise ->
             val c = context
             if (c == null) promise.resolve(Json.failure("ENGINE_UNAVAILABLE", "Module is not attached"))

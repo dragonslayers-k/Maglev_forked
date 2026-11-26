@@ -1,9 +1,14 @@
 package com.maglev.engine.watch
 
 import android.content.Context
+import android.app.PictureInPictureParams
+import android.app.Activity
+import android.os.Build
+import android.util.Rational
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import com.maglev.engine.EngineHost
+import expo.modules.kotlin.Promise
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 
@@ -17,6 +22,24 @@ class MaglevWatchModule : Module() {
 
     override fun definition() = ModuleDefinition {
         Name("MaglevWatch")
+
+        AsyncFunction("enterBrowserPictureInPicture") { promise: Promise ->
+            val activity = appContext.currentActivity
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+                promise.resolve(mapOf("ok" to false, "code" to "PIP_UNSUPPORTED", "message" to "Picture-in-picture requires Android 8.0 or later."))
+            } else if (activity == null) {
+                promise.resolve(mapOf("ok" to false, "code" to "ACTIVITY_UNAVAILABLE", "message" to "The app screen is not available."))
+            } else {
+                try {
+                    val params = PictureInPictureParams.Builder()
+                        .setAspectRatio(Rational(16, 9))
+                        .build()
+                    promise.resolve(mapOf("ok" to activity.enterPictureInPictureMode(params)))
+                } catch (_: Throwable) {
+                    promise.resolve(mapOf("ok" to false, "code" to "PIP_FAILED", "message" to "Android could not start picture-in-picture."))
+                }
+            }
+        }
 
         Function("getNetwork") {
             val c = context

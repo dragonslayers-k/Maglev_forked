@@ -84,6 +84,15 @@ try {
   NativeModule = null;
 }
 
+// PiP is hosted by the small MaglevWatch module to keep the large engine ModuleDefinition
+// below the JVM method-size limit. This module is registered independently in expo-module.config.
+let PictureInPictureModule: any = null;
+try {
+  PictureInPictureModule = Platform.OS === 'android' ? requireOptionalNativeModule('MaglevWatch') : null;
+} catch {
+  PictureInPictureModule = null;
+}
+
 const unavailable = (message: string, code: EngineErrorCode = 'ENGINE_UNAVAILABLE'): EngineResult<any> => ({
   ok: false,
   code,
@@ -640,8 +649,15 @@ export class MaglevEngineBridge implements MaglevEngineApi {
   public addYouTubeDownload(url: string, formatId: string, playerClient: string, formatKind: 'video' | 'audio', audioBitrateKbps?: number | null, outputContainer = 'original'): Promise<EngineResult<{ id: string }>> {
     return this.route('addYouTubeDownload', url, formatId, playerClient, formatKind, audioBitrateKbps ?? null, outputContainer);
   }
-  public enterBrowserPictureInPicture(): Promise<EngineResult> {
-    return this.route('enterBrowserPictureInPicture');
+  public async enterBrowserPictureInPicture(): Promise<EngineResult> {
+    if (Platform.OS !== 'android' || !PictureInPictureModule?.enterBrowserPictureInPicture) {
+      return { ok: false, code: 'UNSUPPORTED', message: 'Picture-in-picture is available on Android only.' };
+    }
+    try {
+      return await PictureInPictureModule.enterBrowserPictureInPicture();
+    } catch (e: any) {
+      return { ok: false, code: 'PIP_FAILED', message: String(e?.message ?? e) };
+    }
   }
   public getAppWireGuardStatus(): Promise<EngineResult<{ enabled: boolean; hasProfile: boolean; running: boolean }>> {
     return this.route('getAppWireGuardStatus');
