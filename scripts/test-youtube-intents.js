@@ -44,6 +44,7 @@ async function main() {
   assert.match(browser, /pathname: '\/youtube-download'/, 'browser paste must open the dedicated downloader screen');
 
   const youtubeAdapter = fs.readFileSync(path.join(root, 'modules/maglev-engine/android/src/main/java/com/maglev/engine/youtube/YoutubeDownload.kt'), 'utf8');
+  const youtubeScreen = fs.readFileSync(path.join(root, 'app/youtube-download.tsx'), 'utf8');
   const nativeModule = fs.readFileSync(path.join(root, 'modules/maglev-engine/android/src/main/java/com/maglev/engine/MaglevEngineModule.kt'), 'utf8');
   const newPipe = fs.readFileSync(path.join(root, 'modules/maglev-engine/android/src/main/java/com/maglev/engine/youtube/NewPipeYoutube.kt'), 'utf8');
   const ytdlGradle = fs.readFileSync(path.join(root, 'modules/maglev-engine/android/build.gradle'), 'utf8');
