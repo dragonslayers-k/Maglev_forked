@@ -130,15 +130,16 @@ export default function AboutSettings() {
       <SectionHeader title="통합 구성 · 참고 원천" />
       <Card>
         <ListRow title="MAGLEV 원본 기반" subtitle="토렌트·직접 링크·브라우저·HLS/DASH·RSS·자막·공통 전송 목록을 기반으로 유지합니다." icon="github" onPress={() => void Linking.openURL('https://github.com/Kaos599/Maglev')} />
-        <ListRow title="YTDLnis · yt-dlp" subtitle="YouTube 형식 선택과 추가 화질 조회를 참고해 일부 적용했습니다. 재생목록·후처리·MP3 변환 등 전체 기능 이식은 완료되지 않았습니다." icon="github" onPress={() => void Linking.openURL('https://github.com/deniscerri/ytdlnis')} />
-        <ListRow title="NewPipe Extractor" subtitle="빠른 YouTube 메타데이터·원본 오디오/영상 형식 조회 경로에 사용합니다." icon="github" onPress={() => void Linking.openURL('https://github.com/TeamNewPipe/NewPipeExtractor')} />
-        <ListRow title="LJ Downloader 참고" subtitle="WebView·요청·DOM 기반 미디어 감지 일부를 반영했습니다. 사이트별 플러그인과 전체 헤더 복원은 미완성입니다." />
-        <ListRow title="MPMux Video Downloader · Chrome 확장" subtitle="MP4/WEBM 감지, HLS 및 라이브 녹화, 분할 요청을 참고합니다. 확장 기능 전체를 Android로 이식한 것은 아닙니다." icon="external" onPress={() => void Linking.openURL('https://chromewebstore.google.com/detail/video-downloader-mpmux/mbflpfaamifmmmkdjkcmpofpccfmlmap?hl=ko')} />
-        <ListRow title="MPMux 정적 다운로더" subtitle="Range 기반 병렬 세그먼트 다운로드 참고. 현재 앱의 Range 경로와 차이를 추가 검증합니다." icon="external" onPress={() => void Linking.openURL('https://mpmux.com/ko/staticdownloader')} />
-        <ListRow title="MPMux 버퍼 멀티플렉서" subtitle="MSE/SourceBuffer 버퍼 녹화 및 mux 참고. 실제 버퍼 캡처·라이브 mux는 아직 구현·검증되지 않았습니다." icon="external" onPress={() => void Linking.openURL('https://mpmux.com/buffermuxer')} />
-        <ListRow title="Morphe WireGuard 패치" subtitle="앱 내부 터널/프록시 구조를 조사 중입니다. 현재 앱에는 WireGuard .conf 가져오기나 WireGuard 터널이 통합되어 있지 않습니다." icon="github" onPress={() => void Linking.openURL('https://github.com/seo-rii/morphe-wireguard-patches')} />
-        <ListRow title="FFmpeg · 오디오 후처리" subtitle="실행 가능한 안전한 변환 엔진을 포함하지 않아 MP3 변환·코덱 변환은 지원 완료 상태가 아닙니다." />
-        <ListRow title="구현 상태 문서" subtitle="원천별 실제 반영 코드, 미구현 범위와 검증 조건을 확인합니다." icon="file" onPress={() => void Linking.openURL('https://github.com/dragonslayers-k/Maglev_forked/blob/feature/p1-video-detection-observer/docs/FINAL_SOURCE_IMPLEMENTATION_MATRIX_KO.md')} />
+        <ListRow title="YTDLnis · yt-dlp" subtitle="형식·추가 화질 조회와 다운로드 경로를 일부 적용했습니다. 선택 컨테이너 변환 코드는 있으나 Galaxy 저장·재생 검증에서 실패 보고가 있어 미완료입니다." icon="github" onPress={() => void Linking.openURL('https://github.com/deniscerri/ytdlnis')} />
+        <ListRow title="NewPipe Extractor" subtitle="빠른 YouTube 메타데이터와 원본 오디오/영상 형식 조회에 사용합니다. adaptive A/V 병합과 선택 형식 저장은 실기기 검증 대상입니다." icon="github" onPress={() => void Linking.openURL('https://github.com/TeamNewPipe/NewPipeExtractor')} />
+        <ListRow title="LJ Downloader 참고" subtitle="WebView 요청·DOM 미디어 감지를 일부 반영했습니다. 사이트별 플러그인, 세션 헤더 복원과 사이트별 추출은 미완성입니다." />
+        <ListRow title="MPMux Video Downloader · Chrome 확장" subtitle="MP4/WEBM·HLS 감지와 Range 요청을 참고합니다. Android 앱 자체 MSE/SourceBuffer 캡처·라이브 녹화는 아직 구현되지 않았습니다." icon="external" onPress={() => void Linking.openURL('https://chromewebstore.google.com/detail/video-downloader-mpmux/mbflpfaamifmmmkdjkcmpofpccfmlmap?hl=ko')} />
+        <ListRow title="MPMux 정적 다운로더" subtitle="Range/병렬 세그먼트 방식을 참고합니다. 기존 Range 경로는 있으나 이어받기·서버 206 검증·병렬 Part 병합은 실기기 수용 테스트가 필요합니다." icon="external" onPress={() => void Linking.openURL('https://mpmux.com/ko/staticdownloader')} />
+        <ListRow title="MPMux 버퍼 멀티플렉서" subtitle="MSE/SourceBuffer appendBuffer 캡처와 라이브 mux 참고. 실제 바이트 캡처·init/media segment 조립·파일 저장은 미구현입니다." icon="external" onPress={() => void Linking.openURL('https://mpmux.com/buffermuxer')} />
+        <ListRow title="Morphe WireGuard 패치" subtitle="userspace WireGuard·인증 로컬 프록시·.conf 암호화 저장 코드가 있습니다. 터널/다운로드 실패 보고가 있어 원격 handshake와 HTTP/HTTPS 실제 프록시 경로는 미검증입니다." icon="github" onPress={() => void Linking.openURL('https://github.com/seo-rii/morphe-wireguard-patches')} />
+        <ListRow title="FFmpeg · 오디오 후처리" subtitle="FFmpegKit 변환기와 완료 후처리 큐 코드가 있습니다. MP3·M4A·Opus 및 영상 컨테이너 변환은 저장 실패 보고가 있어 완료로 인정하지 않습니다." />
+        <ListRow title="Barrel 1.1.2 APK 분석·이식 범위" subtitle="정적 분석 원문과 기능별 clean-room 이식 계획입니다. APK 자체는 포함하지 않으며 기능 이식은 별도 검증합니다." icon="file" onPress={() => void Linking.openURL('https://github.com/dragonslayers-k/Maglev_forked/blob/feature/p1-video-detection-observer/docs/reference/Barrel_1.1.2_APK_%EC%8B%AC%EC%B8%B5_%EB%B6%84%EC%84%9D_%EB%8B%A4%EC%9A%B4%EB%A1%9C%EB%93%9C_%EA%B8%B0%EB%8A%A5_%EC%9D%B4%EC%8B%9D_%EC%84%A4%EA%B3%84%EC%84%9C.md')} />
+        <ListRow title="통합 기능 감사·이식 계획" subtitle="현재 코드 위치, 미구현 범위, 우선순위와 수용 테스트를 확인합니다." icon="file" onPress={() => void Linking.openURL('https://github.com/dragonslayers-k/Maglev_forked/blob/feature/p1-video-detection-observer/docs/INTEGRATED_FEATURE_AUDIT_AND_PORTING_PLAN_KO.md')} />
       </Card>
       <SectionHeader title="기본 기능" />
       <Card>
