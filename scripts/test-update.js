@@ -173,7 +173,7 @@ const release = (tag, over = {}) => ({
   console.log('\n[managed]');
   for (const by of ['accrescent', 'store']) check(`managed by ${by} is never due`, !m.autoCheckDue({ now: NOW, lastCheckAt: null, autoCheck: true, managedBy: by }));
   const copy = fs0.readFileSync(require('path').join(__dirname, '../constants/copy.ts'), 'utf8');
-  check('About copy for Accrescent and other stores', /'Updates come from Accrescent\.'/.test(copy) && /'Updates come from the app store you installed Maglev\\+ from\.'/.test(copy));
+  check('About copy for Accrescent and other stores', /'Updates come from Accrescent\.'/.test(copy) && /'Updates come from the app store you installed Maglev\+ from\.'/.test(copy));
   for (const by of ['fdroid', 'obtainium', 'play']) check(`Any -> Managed(${by})`, [m.initialState, run(found), run(ready), tapped].every((s) => { const x = m.reduce(s, { type: 'managed', by }); return x.kind === 'managed' && x.by === by; }));
   const managed = m.reduce(m.initialState, { type: 'managed', by: 'play' });
   check('Managed is final: no check, download or install', ['check', 'download', 'install', 'wifi'].every((t) => m.reduce(managed, { type: t }) === managed) && m.reduce(managed, { type: 'route', mode: 'auto', unmetered: true }) === managed);
