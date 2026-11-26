@@ -238,13 +238,22 @@ object YoutubeDownload {
                     (format.vcodec.isNullOrBlank() || format.vcodec == "none")
             }
             val requested = if (audioOnly) {
-                val capped = maxAudioKbps?.let { cap -> audioFormats.filter { it.abr <= cap } }.orEmpty()
-                (capped.ifEmpty { audioFormats }).maxByOrNull { it.abr }
+                // A bitrate preset is a ceiling, not a target that may silently exceed itself.
+                // If no stream is at or below the ceiling, fail visibly instead of mislabeling.
+                if (maxAudioKbps != null) {
+                    audioFormats.filter { it.abr <= maxAudioKbps }.maxByOrNull { it.abr }
+                } else {
+                    audioFormats.maxByOrNull { it.abr }
+                }
             } else availableFormats.firstOrNull { it.formatId == formatId }
             if (audioOnly && requested == null) {
                 return Json.failure(
-                    "YOUTUBE_AUDIO_FORMAT_UNRESOLVED",
-                    "오디오 전용 형식을 확인하지 못했습니다. 이 영상은 오디오만 저장할 수 있는 형식이 제공되지 않았습니다.",
+                    if (maxAudioKbps != null) "YOUTUBE_AUDIO_BITRATE_UNAVAILABLE" else "YOUTUBE_AUDIO_FORMAT_UNRESOLVED",
+                    if (maxAudioKbps != null) {
+                        "선택한 최대 음질 " + maxAudioKbps.toInt() + " kbps 이하의 원본 오디오 형식이 없습니다. 더 낮은 음질을 선택하거나 최고 음질을 선택하세요."
+                    } else {
+                        "오디오 전용 형식을 확인하지 못했습니다. 이 영상은 오디오만 저장할 수 있는 형식이 제공되지 않았습니다."
+                    },
                 )
             }
             // bestaudio must resolve to the requested audio-only format. Never fall back to
