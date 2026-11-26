@@ -119,10 +119,25 @@ export default function YouTubeDownloadScreen() {
   // Keep provider identity in the key: yt-dlp and NewPipe can reuse IDs for different
   // streams. Collapsing by formatId alone can silently discard the selected provider.
   const uniqueFormats = Array.from(new Map(formats.map((format) => [formatKey(format), format])).values());
-  const videos = uniqueFormats.filter((format) => format.kind === 'video')
-    .sort((a, b) => b.height - a.height || b.tbr - a.tbr);
-  const audios = uniqueFormats.filter((format) => format.kind === 'audio')
-    .sort((a, b) => b.abr - a.abr);
+  const bestByDisplay = (items: YouTubeFormat[], keyOf: (f: YouTubeFormat) => string, score: (f: YouTubeFormat) => number) => {
+    const map = new Map<string, YouTubeFormat>();
+    for (const item of items) {
+      const key = keyOf(item);
+      const prior = map.get(key);
+      if (!prior || score(item) > score(prior)) map.set(key, item);
+    }
+    return [...map.values()];
+  };
+  const videos = bestByDisplay(
+    uniqueFormats.filter((format) => format.kind === 'video'),
+    (f) => f.height + '|' + f.ext + '|' + codecName(f).toLowerCase() + '|' + String(f.hasAudio),
+    (f) => f.tbr,
+  ).sort((a, b) => b.height - a.height || b.tbr - a.tbr);
+  const audios = bestByDisplay(
+    uniqueFormats.filter((format) => format.kind === 'audio'),
+    (f) => f.ext + '|' + codecName(f).toLowerCase() + '|' + Math.round(f.abr) + '|' + (f.format || '').split('·')[0].trim(),
+    (f) => f.abr,
+  ).sort((a, b) => b.abr - a.abr);
   // Always offer yt-dlp's bestaudio selector even when the selected player client
   // does not expose audio-only formats in its metadata response.
   const audioFallbacks: YouTubeFormat[] = [
