@@ -36,6 +36,7 @@ import com.maglev.engine.storage.MediaScanPaths
 import com.maglev.engine.storage.StorageManager
 import com.maglev.engine.storage.StreamMuxer
 import com.maglev.engine.util.Json
+import com.maglev.engine.wireguard.WireGuardController
 import com.maglev.engine.util.TorrentFetcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExecutorCoroutineDispatcher
@@ -2031,6 +2032,16 @@ object EngineHost {
 
     fun addDownload(url: String, options: Map<String, Any?>): Map<String, Any?> {
         val c = requireCtx()
+        if (c != null && WireGuardController.isEnabled(c)) {
+            val prepared = WireGuardController.prepareDownload(c)
+            if (prepared["ok"] != true) return prepared
+            val proxy = prepared["proxy_url"] as? String
+                ?: return Json.failure("APP_WIREGUARD_PROXY_FAILED", "앱 내부 WireGuard 프록시를 준비하지 못했습니다.")
+            val applied = setAppWireGuardProxy(proxy)
+            if (!isOk(applied)) return Json.failure(
+                "APP_WIREGUARD_PROXY_FAILED",
+                "앱 내부 WireGuard 프록시를 다운로드 엔진에 적용하지 못했습니다. 직접 연결로 우회하지 않았습니다.")
+        }
         val postProcess = options["postprocess"] as? Map<*, *>
         val cleanOptions = LinkedHashMap(options)
         cleanOptions.remove("postprocess") // Kotlin-only metadata; never pass it to Rust's strict download options.
