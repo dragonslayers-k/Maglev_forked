@@ -10,16 +10,20 @@ import { Button, Screen } from '../components/ui';
 import { parseYouTubeLink } from '../utils/browser/youtube';
 
 const formatKey = (format: YouTubeFormat) => format.playerClient + ':' + format.formatId;
+const codecName = (format: YouTubeFormat) => (format.format || '').split(/[·,|]/).map((s) => s.trim()).filter(Boolean).slice(-1)[0] || '';
 const formatLabel = (format: YouTubeFormat) => {
-  const quality = format.formatId === 'bestaudio'
-    ? '오디오만 · 최고 음질'
-    : format.kind === 'audio'
-      ? (format.abr > 0 ? `${Math.round(format.abr)} kbps` : '오디오')
-    : (format.height > 0 ? `${format.height}p` : '동영상');
-  const rawSize = format.size && format.size > 0 ? formatBytes(format.size) : '용량 미상';
-  const size = format.sizeEstimated ? `약 ${rawSize}` : rawSize;
-  const codec = format.format ? ` · ${format.format}` : '';
-  return `${quality} · ${format.ext.toUpperCase()}${codec} · ${size}`;
+  const quality = format.kind === 'audio'
+    ? (format.formatId === 'bestaudio' ? '오디오만 · 원본 최고 음질' : (format.abr > 0 ? Math.round(format.abr) + ' kbps 오디오' : '오디오'))
+    : (format.height > 0 ? format.height + 'p' + (format.height >= 2160 ? ' · 4K' : format.height >= 1440 ? ' · QHD' : format.height >= 1080 ? ' · FHD' : format.height >= 720 ? ' · HD' : '') : '동영상');
+  const rawSize = format.size && format.size > 0 ? formatBytes(format.size) : '용량 확인 필요';
+  const size = format.sizeEstimated ? '예상 ' + rawSize : rawSize;
+  const codec = codecName(format);
+  const rate = format.kind === 'audio'
+    ? (format.abr > 0 ? Math.round(format.abr) + ' kbps' : '')
+    : (format.tbr > 0 ? (format.tbr >= 1000 ? (format.tbr / 1000).toFixed(1) + ' Mbps' : Math.round(format.tbr) + ' kbps') : '');
+  const audio = format.kind === 'video' ? (format.hasAudio === true ? '오디오 포함' : format.hasAudio === false ? '영상 전용 · 오디오 병합 필요' : '') : '';
+  const details = [format.ext.toUpperCase(), codec, format.kind === 'video' && format.fps > 0 ? Math.round(format.fps) + ' fps' : '', rate, audio].filter(Boolean).join(' · ');
+  return quality + '\n' + details + '\n' + size;
 };
 
 export default function YouTubeDownloadScreen() {
@@ -141,7 +145,7 @@ export default function YouTubeDownloadScreen() {
               .filter(Boolean).join(' · ')}
           </Text>
           <View style={styles.section}>
-            <Text style={styles.heading}>동영상</Text>
+            <Text style={styles.heading}>동영상 형식 · 화질, 코덱, 오디오 구성 및 용량</Text>
             {videos.map((format) => (
               <Button key={formatKey(format)} fullWidth size="md" disabled={busy}
                 label={formatLabel(format)} onPress={() => void start(format)} />
@@ -154,7 +158,7 @@ export default function YouTubeDownloadScreen() {
             ) : null}
           </View>
           <View style={styles.section}>
-            <Text style={styles.heading}>오디오</Text>
+            <Text style={styles.heading}>오디오 형식 · 음질, 코덱 및 용량</Text>
             {(audios.length > 0 ? audios : audioFallbacks).map((format, index) => (
               <Button key={formatKey(format)} fullWidth size="md" variant="secondary" disabled={busy}
                 label={index === 0 ? '추천 · ' + formatLabel(format) : formatLabel(format)} onPress={() => void start(format)} />
