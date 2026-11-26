@@ -11,7 +11,8 @@ const output = babel.transformSync(
     configFile: false,
     babelrc: false,
     filename: path.join(root, 'app', 'korean-transform-fixture.tsx'),
-    plugins: [require('@babel/plugin-syntax-jsx'), plugin],
+    parserOpts: { plugins: ['jsx'] },
+    plugins: [plugin],
   },
 ).code;
 
