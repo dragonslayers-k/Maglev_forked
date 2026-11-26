@@ -16,11 +16,11 @@ const read = (p) => fs.readFileSync(path.join(root, p), 'utf8');
 const t = require(path.join(root, 'components/tabs/tabPrefs.ts'));
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 
-// Defaults reproduce today's bar: Transfers, Search, Feeds, Settings, Assistant; Browser off.
+// Defaults reproduce the reduced bar: Transfers, Search, Feeds, Settings; Browser off and Assistant removed.
 const d = t.defaultTabPrefs();
-check('default order is today\'s bar, Browser last', same(d.order, ['index', 'search', 'feeds', 'settings', 'assistant', 'browse']));
+check('default order is today\'s bar, Browser last', same(d.order, ['index', 'search', 'feeds', 'settings', 'browse']));
 check('default hides only Browser', same(d.hidden, ['browse']));
-check('default visible matches today (assistant on)', same(t.visibleTabs(d, { assistantEnabled: true }), ['index', 'search', 'feeds', 'settings', 'assistant']));
+check('default visible matches today (assistant on)', same(t.visibleTabs(d, { assistantEnabled: true }), ['index', 'search', 'feeds', 'settings']));
 check('assistant setting off removes the assistant tab', same(t.visibleTabs(d, { assistantEnabled: false }), ['index', 'search', 'feeds', 'settings']));
 
 // normalize
@@ -28,10 +28,10 @@ check('normalize(null) is defaults', same(t.normalizeTabPrefs(null), d));
 check('normalize({}) is defaults', same(t.normalizeTabPrefs({}), d));
 check('normalize(garbage) is defaults', same(t.normalizeTabPrefs('x'), d));
 const old = t.normalizeTabPrefs({ order: ['settings', 'index'], hidden: [] });
-check('missing ids are appended in default order', same(old.order, ['settings', 'index', 'search', 'feeds', 'assistant', 'browse']));
+check('missing ids are appended in default order', same(old.order, ['settings', 'index', 'search', 'feeds', 'browse']));
 check('a new id (browse) is hidden by default when absent from stored order', old.hidden.includes('browse'));
 check('unknown ids are dropped', same(t.normalizeTabPrefs({ order: ['nope', 'index', 'index', 'search'] }).order.slice(0, 2), ['index', 'search']));
-check('duplicates are dropped', t.normalizeTabPrefs({ order: ['index', 'index'] }).order.length === 6);
+check('duplicates are dropped', t.normalizeTabPrefs({ order: ['index', 'index'] }).order.length === 5);
 const locked = t.normalizeTabPrefs({ order: d.order, hidden: ['index', 'settings', 'feeds', 'bogus'] });
 check('Transfers and Settings cannot be hidden', !locked.hidden.includes('index') && !locked.hidden.includes('settings'));
 check('other tabs can be hidden', locked.hidden.includes('feeds'));
@@ -48,13 +48,13 @@ check('move down swaps with the next', same(t.moveTab(d, 'index', 'down').order.
 check('move up swaps with the previous', same(t.moveTab(d, 'search', 'up').order.slice(0, 2), ['search', 'index']));
 check('move up at the top is a no-op', same(t.moveTab(d, 'index', 'up'), d));
 check('move down at the bottom is a no-op', same(t.moveTab(d, 'browse', 'down'), d));
-check('move skips rows that are not listed', same(t.moveTab(d, 'settings', 'down', ['index', 'search', 'feeds', 'settings', 'browse']).order, ['index', 'search', 'feeds', 'browse', 'assistant', 'settings']));
+check('move skips rows that are not listed', same(t.moveTab(d, 'settings', 'down', ['index', 'search', 'feeds', 'settings', 'browse']).order, ['index', 'search', 'feeds', 'browse', 'settings']));
 check('move does not change which tabs are hidden', same(t.moveTab(d, 'feeds', 'up').hidden, d.hidden));
 check('move does not mutate its input', (() => { const c = t.defaultTabPrefs(); t.moveTab(c, 'index', 'down'); return same(c, d); })());
 
 // visibleTabs follows order
 const moved = t.setTabShown(t.moveTab(t.moveTab(d, 'settings', 'up'), 'settings', 'up'), 'browse', true);
-check('visibleTabs follows saved order and shown flags', same(t.visibleTabs(moved, { assistantEnabled: true }), ['index', 'settings', 'search', 'feeds', 'assistant', 'browse']));
+check('visibleTabs follows saved order and shown flags', same(t.visibleTabs(moved, { assistantEnabled: true }), ['index', 'settings', 'search', 'feeds', 'browse']));
 check('visibleTabs never returns an empty bar', t.visibleTabs({ order: [], hidden: [] }, { assistantEnabled: false }).length >= 2);
 
 // Static wiring
@@ -72,7 +72,7 @@ check('interface screen shows the Tabs section', /TabsSection/.test(iface));
 // 0.15: arrow buttons became hold-and-drag; Move up / Move down stay as accessibility actions on the grip.
 check('section reorders by drag and keeps Move up / Move down for TalkBack', /GestureDetector/.test(section) && /위로 이동/.test(section) && /아래로 이동/.test(section) && /accessibilityActions/.test(section));
 check('section captions locked tabs "Always shown"', /alwaysShown/.test(section) && /항상 표시/.test(read('constants/copy.ts')));
-check('section hides the Assistant row when the assistant is off', /assistant\.enabled/.test(section));
+check('section no longer offers an Assistant tab row', !/assistant\.enabled/.test(section) && !section.includes("'assistant'"));
 check('section uses a 44px target', /touch\./.test(section) || /44/.test(section));
 check('section uses no raw hex colours', !/#[0-9a-fA-F]{3,8}\b/.test(section));
 
