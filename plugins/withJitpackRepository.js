@@ -35,8 +35,13 @@ function findMatchingBrace(source, openAt) {
 
 function addJitpackRepository(source) {
   if (source.includes(MARKER)) return source;
-  const dmr = /dependencyResolutionManagement\s*\{/m.exec(source);
-  if (!dmr) throw new Error('withJitpackRepository: dependencyResolutionManagement block not found');
+  const dmr = /dependencyResolutionManagement\s*\\{/m.exec(source);
+  if (!dmr) {
+    // Some Expo/RN settings.gradle templates no longer declare this block.
+    // Add settings-level repositories explicitly instead of aborting prebuild.
+    const newBlock = '\\ndependencyResolutionManagement {\\n    repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)\\n    repositories {\\n        google()\\n        mavenCentral()\\n        // ' + MARKER + '\\n        maven { url = uri("https://www.jitpack.io") }\\n    }\\n}\\n';
+    return source.trimEnd() + newBlock;
+  }
   const dmrOpen = source.indexOf('{', dmr.index);
   const dmrClose = findMatchingBrace(source, dmrOpen);
   if (dmrClose < 0) throw new Error('withJitpackRepository: malformed dependencyResolutionManagement block');

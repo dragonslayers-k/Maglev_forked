@@ -92,4 +92,21 @@ assert(applyKeepRules('').includes('com.maglev.engine'));
   assert.throws(() => applyReleaseSigning('dependencies {}'), /android \{/);
   assert(require('../app.json').expo.plugins.includes('./plugins/withReleaseSigning.js'), 'registered');
 }
+// --- JitPack repository settings plugin: current Expo templates and idempotency ---
+{
+  const { addJitpackRepository, MARKER } = require('../plugins/withJitpackRepository');
+  const modernTemplate = 'pluginManagement {\\n    repositories { google(); mavenCentral() }\\n}\\nrootProject.name = "Maglev"\\ninclude(":app")\\n';
+  const modern = addJitpackRepository(modernTemplate);
+  assert(modern.includes('dependencyResolutionManagement'), 'creates missing settings repository management');
+  assert(modern.includes('RepositoriesMode.PREFER_SETTINGS'), 'prefers settings repositories to avoid project repo shadowing');
+  assert(modern.includes('https://www.jitpack.io'), 'adds JitPack to new settings block');
+  assert.strictEqual(addJitpackRepository(modern), modern, 'new settings block patch is idempotent');
+  const existingDmr = 'dependencyResolutionManagement {\\n    repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)\\n}\\n';
+  const withRepos = addJitpackRepository(existingDmr);
+  assert(withRepos.includes('google()') && withRepos.includes('mavenCentral()'), 'adds default repositories when repositories block is absent');
+  assert.strictEqual(addJitpackRepository(withRepos), withRepos, 'existing DMR patch is idempotent');
+  const existingRepos = 'dependencyResolutionManagement {\\n    repositories { google(); mavenCentral() }\\n}\\n';
+  const withJitpack = addJitpackRepository(existingRepos);
+  assert(withJitpack.includes(MARKER) && withJitpack.includes('jitpack.io'), 'adds JitPack to existing repository block');
+}
 console.log('test-plugins: all assertions passed');
