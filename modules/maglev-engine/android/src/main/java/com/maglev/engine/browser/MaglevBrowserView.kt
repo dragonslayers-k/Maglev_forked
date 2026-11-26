@@ -196,7 +196,9 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
         BlocklistStore.warm(context)
         // Require a deliberate downward pull and avoid stealing upward page-scroll gestures.
         val refreshDensity = context.resources.displayMetrics.density
-        refresh.setDistanceToTriggerSync((refreshDensity * 104).toInt())
+        // setDistanceToTriggerSync takes dp (not px); multiplying by density made the pull threshold
+        // excessively large on high-density Galaxy screens and caused awkward scroll interception.
+        refresh.setDistanceToTriggerSync(104)
         refresh.setSlingshotDistance((refreshDensity * 112).toInt())
         refresh.setOnRefreshListener {
             pullLoading = false
