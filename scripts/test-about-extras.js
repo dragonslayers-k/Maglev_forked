@@ -26,6 +26,9 @@ const exists = (p) => fs.existsSync(path.join(root, p));
   check('LICENSE at repo root is GPL v3', /GNU GENERAL PUBLIC LICENSE\s+Version 3/.test(licenceFile));
 
   const about = read('app/settings/about.tsx');
+  const ticket = read('components/settings/StarTicket.tsx');
+  check('About ticket describes integration status, not a star request', ticket.includes('기능 통합·검증 현황') && !ticket.includes('Give it a star') && !ticket.includes('updateStarState'));
+  check('About wordmark displays Maglev+ plus mark', read('components/settings/Wordmark.tsx').includes('Circle cx={300}') && read('components/settings/Wordmark.tsx').includes('accessibilityLabel="Maglev plus"'));
   const layout = read('app/_layout.tsx');
   check('About has an Open-source licence row valued GPL-3.0', /Open-source licence/.test(about + read('constants/aboutCopy.ts')) && /GPL-3\.0/.test(about + read('constants/aboutCopy.ts')));
   check('licence row opens /settings/licenses', about.includes("/settings/licenses"));
