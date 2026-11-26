@@ -1,38 +1,28 @@
 #!/usr/bin/env node
-// About is calm; every update and list control lives on the Updates page.
+// App self-updater UI/runtime is removed; list-data updates remain separate.
 const fs = require('fs');
 const path = require('path');
 const read = (p) => fs.readFileSync(path.join(__dirname, '..', p), 'utf8');
 let failed = 0;
 function check(name, cond) {
   if (cond) console.log(`  ok   ${name}`);
-  else {
-    failed++;
-    console.error(`  FAIL ${name}`);
-  }
+  else { failed++; console.error(`  FAIL ${name}`); }
 }
 const about = read('app/settings/about.tsx');
 const up = read('app/settings/updates.tsx');
 const layout = read('app/_layout.tsx');
+const settings = read('app/(tabs)/settings.tsx');
 
-for (const w of ['useUpdatePrefs', 'RadioCard', 'checkListsNow', 'useListPrefs', 'Toggle']) {
-  check(`about does not reference ${w}`, !about.includes(w));
-}
-check('about keeps StarTicket', about.includes('StarTicket'));
-check('about keeps Report a bug via updateCopy.report', about.includes('updateCopy.report'));
-check('about keeps REPO_URL', about.includes('REPO_URL'));
-check('about keeps the crash log', about.includes('copyCrashReport') && about.includes('clearCrashLog'));
-check('about links to /settings/updates', about.includes("'/settings/updates'"));
-check('about has a version footer with a11y label', /Opens Updates/.test(about));
+check('About has no app updater state or controls', !/useHasUpdate|updateCopy\.available|openUpdates|checkNow|installNow|downloadNow/.test(about));
+check('About keeps Report a bug', about.includes('오류 신고') && about.includes('reportBug'));
+check('About keeps StarTicket and REPO_URL', about.includes('StarTicket') && about.includes('REPO_URL'));
+check('About keeps crash log controls', about.includes('copyCrashReport') && about.includes('clearCrashLog'));
+check('About version footer is informational, not an update action', /<View style=\{s\.footer\}>/.test(about) && !/Opens Updates/.test(about));
 
-check('updates declares checkNow', up.includes('checkNow'));
-check('updates declares useUpdatePrefs', up.includes('useUpdatePrefs'));
-check('updates declares checkListsNow', up.includes('checkListsNow'));
-check("updates has 'When an update is found'", up.includes('When an update is found'));
-check("updates has SectionHeader 'App'", /<SectionHeader title="App"/.test(up));
-check("updates has SectionHeader 'Lists'", /<SectionHeader title="Lists"/.test(up));
-check('updates has UpdateCard', up.includes('function UpdateCard'));
-check('updates title is Updates', up.includes('<SettingsPage title="Updates">'));
+check('Settings exposes list-data updates, not app updates', settings.includes("title: '목록 업데이트'") && /route: 'updates'/.test(settings) && !/title: '업데이트'/.test(settings));
+check('Updates page is list-only', up.includes('<SettingsPage title="목록 업데이트">') && up.includes('checkListsNow') && up.includes('useListPrefs'));
+check('Updates page has no app version/check/download/install controls', !/useHasUpdate|checkNow\(\{|downloadNow|installNow|UpdateCard|SectionHeader title="App"/.test(up));
+check('Root starts list updates independently', layout.includes('startListUpdates') && !layout.includes('startUpdates'));
+check('Root no longer registers app updater route', !layout.includes('settings/updates'));
 
-check('layout declares settings/updates', layout.includes('<Stack.Screen name="settings/updates" />'));
 process.exit(failed ? 1 : 0);
