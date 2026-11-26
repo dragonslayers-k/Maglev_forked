@@ -670,7 +670,7 @@ export const quickShareCopy = {
   savesTo: '저장 위치',
   download: '다운로드',
   downloadAnyway: '그래도 다운로드',
-  openInMaglev+: 'Maglev+에서 열기',
+  openInMaglev: 'Maglev+에서 열기',
   freeUpSpace: '저장 공간 확보',
   findVideos: '이 페이지의 동영상 찾기',
   close: '닫기',
