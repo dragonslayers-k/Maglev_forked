@@ -135,7 +135,7 @@ async function main() {
 
   // ---- copy (same voice rules as scripts/test-copy-voice.js, which also lints these strings)
   const c = copy.fontStyleCopy;
-  check('copy: section label is Font', c.label === 'Font');
+  check('copy: section label is Korean', c.label === '글꼴');
   check('copy: options are Korean Clean, Retro, Mono labels', JSON.stringify(c.options.map((o) => o.title)) === JSON.stringify(['깔끔하게', '레트로', '고정폭']));
   check('copy: one option per style', c.options.map((o) => o.value).join() === FS.FONT_STYLES.join());
   const bad = [];
