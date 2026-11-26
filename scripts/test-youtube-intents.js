@@ -95,6 +95,8 @@ async function main() {
   assert.ok(youtubeAdapter.includes('val completeSet = hasVideo && hasAudio && maxVideoHeight >= 720') && youtubeAdapter.includes('maxVideoHeight >= 1080 || client == PLAYER_CLIENTS.last()'), 'explicit refresh aggregates clients until a useful video/audio format set is available');
   assert.ok(screen.includes('maglevEngine.getYouTubeInfo'), 'YouTube screen must use the existing native extractor');
   assert.ok(screen.includes('maglevEngine.addYouTubeDownload'), 'selected formats must enter the shared native transfer queue');
+  assert.ok(screen.includes('setSelectedVideo(formatKey(format))') && screen.includes('setSelectedAudio(formatKey(format))'), 'formats must be selected before adding a download');
+  assert.ok(screen.includes('선택한 동영상 다운로드') && screen.includes('선택한 오디오 다운로드'), 'separate start actions must confirm the selected video or audio format');
 
   assert.ok(screen.includes('format.playerClient'), 'the selected extractor client must be preserved');
   assert.ok(screen.includes("formatId: 'bestaudio'"), 'a bestaudio fallback remains available only when no real audio formats were extracted');
