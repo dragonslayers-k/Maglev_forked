@@ -14,6 +14,8 @@ module.exports = function koreanTextPlugin({ types: t }) {
             const kept = [];
             for (const specifier of declaration.node.specifiers) {
               if (t.isImportSpecifier(specifier) &&
+                  specifier.importKind !== 'type' &&
+                  declaration.node.importKind !== 'type' &&
                   (t.isIdentifier(specifier.imported) ? specifier.imported.name : specifier.imported.value) === 'Text') {
                 localNames.push(specifier.local.name);
               } else {
