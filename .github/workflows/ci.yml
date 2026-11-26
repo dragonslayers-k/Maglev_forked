@@ -16,8 +16,8 @@ permissions:
   contents: read
 
 concurrency:
-  # v2 separates this recovery run from a stale PR merge-ref run that remained in progress.
-  group: ci-${{ github.ref }}-v2
+  # v3 separates the final validation from stale pending runs left by earlier recovery attempts.
+  group: ci-${{ github.ref }}-v3
   cancel-in-progress: true
 
 jobs:
