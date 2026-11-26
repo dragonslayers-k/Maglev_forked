@@ -84,8 +84,11 @@ async function main() {
   check('every index entry points at an existing page', SETTINGS_INDEX.every((e) => exists(`app/settings/${e.page}.tsx`)), SETTINGS_INDEX.filter((e) => !exists(`app/settings/${e.page}.tsx`)).map((e) => e.id).join());
   const needSection = SETTINGS_INDEX.filter((e) => ['speed', 'downloads'].includes(e.page) && !(e.section && e.section.length));
   check('every speed and downloads entry has a section', needSection.length === 0, needSection.map((e) => e.id).join());
+  const { koUiText } = await import('../constants/korean.ts');
   const pageSrc = (p) => [`app/settings/${p}.tsx`, 'components/settings/SpeedSection.tsx', 'components/settings/QueueSection.tsx', 'components/settings/PartsSection.tsx', 'components/settings/RetrySection.tsx'].filter(exists).map(read).join('\n');
-  const orphan = SETTINGS_INDEX.filter((e) => ['speed', 'downloads', 'storage', 'network', 'feeds', 'scheduling', 'search-providers'].includes(e.page) && e.section && !pageSrc(e.page).includes(e.section));
+  // Index sections are user-visible labels and are localized in the page. Validate
+  // either the source label or its Korean display label, not stale English copy.
+  const orphan = SETTINGS_INDEX.filter((e) => ['speed', 'downloads', 'storage', 'network', 'feeds', 'scheduling', 'search-providers'].includes(e.page) && e.section && !pageSrc(e.page).includes(e.section) && !pageSrc(e.page).includes(koUiText(e.section)));
   check('every section on pages with literal headers appears in that page', orphan.length === 0, orphan.map((e) => `${e.id}:${e.section}`).join());
   const moved = {
     'storage-add-without-asking': 'Adding downloads',
