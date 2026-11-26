@@ -1,5 +1,7 @@
 package com.maglev.engine.youtube.potoken
 
+// Adapted from YTDLnis by Denis Çerri, GPL-3.0; upstream source commit 461f7faf31d4783862e82effc972c4c8dbe520bf.
+
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
