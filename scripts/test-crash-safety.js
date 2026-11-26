@@ -61,9 +61,10 @@ const check = (name, ok) => {
   log.clearCrashLog();
 
   // source checks
-  for (const f of ['_layout', 'assistant', 'browse', 'feeds', 'index', 'search', 'settings']) {
+  for (const f of ['_layout', 'browse', 'feeds', 'index', 'search', 'settings']) {
     check(`tabs/${f} exports ErrorBoundary`, /export \{ ErrorBoundary \} from '\.\.\/\.\.\/components\/ErrorScreen'/.test(read(`app/(tabs)/${f}.tsx`)));
   }
+  check('removed Assistant route is not present', !fs.existsSync(path.join(root, 'app/(tabs)/assistant.tsx')));
   const rootLayout = read('app/_layout.tsx');
   check('root layout exports ErrorBoundary and installs the handler', /export \{ ErrorBoundary \}/.test(rootLayout) && /installGlobalHandler\(\)/.test(rootLayout));
   const es = read('components/ErrorScreen.tsx');
