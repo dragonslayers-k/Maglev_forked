@@ -65,8 +65,8 @@ assert(/base \* 10 \+ abiCodes\.get\(abiFilter\?\.identifier, 0\)/.test(once), '
 
 // A failed validation must never leave a downloadable APK artifact.
 const ci = require('node:fs').readFileSync(require('node:path').join(__dirname, '../.github/workflows/ci.yml'), 'utf8');
-const apkStart = ci.indexOf('\\n  apk:');
-const contractsStart = ci.indexOf('\\n  contracts:', apkStart);
+const apkStart = ci.indexOf('\n  apk:');
+const contractsStart = ci.indexOf('\n  contracts:', apkStart);
 const apkJob = ci.slice(apkStart, contractsStart);
 assert(apkStart >= 0 && contractsStart > apkStart, 'APK job block must exist');
 assert(apkJob.includes('needs: [rust-android, rust-test, js, contracts]'), 'APK build must wait for all required validation jobs');
