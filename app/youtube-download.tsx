@@ -6,24 +6,29 @@ import { useTheme } from '../context/ThemeContext';
 import { ThemeColors, spacing, type } from '../constants/theme';
 import { formatBytes } from '../constants/format';
 import { haptic } from '../constants/haptics';
-import { Button, Screen } from '../components/ui';
+import { Button, ListRow, Screen, SectionHeader } from '../components/ui';
+import { Card } from '../components/settings/SettingsParts;
 import { parseYouTubeLink } from '../utils/browser/youtube';
 
 const formatKey = (format: YouTubeFormat) => format.playerClient + ':' + format.formatId;
 const codecName = (format: YouTubeFormat) => (format.format || '').split(/[·,|]/).map((s) => s.trim()).filter(Boolean).slice(-1)[0] || '';
-const formatLabel = (format: YouTubeFormat) => {
+const formatTitle = (format: YouTubeFormat, recommended = false) => {
   const quality = format.kind === 'audio'
-    ? (format.formatId === 'bestaudio' ? '오디오만 · 최고 음질' : (format.abr > 0 ? Math.round(format.abr) + ' kbps 오디오' : '오디오'))
+    ? (format.formatId === 'bestaudio' ? '오디오만 · 최고 음질' : (format.abr > 0 ? '오디오 · ' + Math.round(format.abr) + ' kbps' : '오디오'))
     : (format.height > 0 ? format.height + 'p' + (format.height >= 2160 ? ' · 4K' : format.height >= 1440 ? ' · QHD' : format.height >= 1080 ? ' · FHD' : format.height >= 720 ? ' · HD' : '') : '동영상');
-  const rawSize = format.size && format.size > 0 ? formatBytes(format.size) : '용량 확인 필요';
-  const size = format.sizeEstimated ? '예상 ' + rawSize : rawSize;
+  return recommended ? '추천 · ' + quality : quality;
+};
+const formatSubtitle = (format: YouTubeFormat) => {
   const codec = codecName(format);
   const rate = format.kind === 'audio'
     ? (format.abr > 0 ? Math.round(format.abr) + ' kbps' : '')
     : (format.tbr > 0 ? (format.tbr >= 1000 ? (format.tbr / 1000).toFixed(1) + ' Mbps' : Math.round(format.tbr) + ' kbps') : '');
   const audio = format.kind === 'video' ? (format.hasAudio === true ? '오디오 포함' : format.hasAudio === false ? '영상 전용 · 오디오 병합 필요' : '') : '';
-  const details = [format.ext.toUpperCase(), codec, format.kind === 'video' && format.fps > 0 ? Math.round(format.fps) + ' fps' : '', rate, audio].filter(Boolean).join(' · ');
-  return quality + '\n' + details + '\n' + size;
+  return [format.ext.toUpperCase(), codec, format.kind === 'video' && format.fps > 0 ? Math.round(format.fps) + ' fps' : '', rate, audio].filter(Boolean).join(' · ') || '세부 형식 정보 없음';
+};
+const formatSize = (format: YouTubeFormat) => {
+  const raw = format.size && format.size > 0 ? formatBytes(format.size) : '용량 확인 필요';
+  return format.sizeEstimated ? '예상 ' + raw : raw;
 };
 
 export default function YouTubeDownloadScreen() {
@@ -141,7 +146,7 @@ export default function YouTubeDownloadScreen() {
   // Always offer yt-dlp's bestaudio selector even when the selected player client
   // does not expose audio-only formats in its metadata response.
   const audioFallbacks: YouTubeFormat[] = [
-    { formatId: 'bestaudio', playerClient: 'android_vr', kind: 'audio', ext: '원본', height: 0, width: 0, fps: 0, tbr: 0, abr: 0, size: null, format: '원본 최고 음질' },
+    { formatId: 'bestaudio', playerClient: 'android_vr', kind: 'audio', ext: '원본', height: 0, width: 0, fps: 0, tbr: 0, abr: 0, size: null, format: '오디오만 · 최고 음질' },
     ...[320, 256, 192, 128].map((kbps) => ({
       formatId: `bestaudio_${kbps}`, playerClient: 'android_vr', kind: 'audio' as const,
       ext: '원본', height: 0, width: 0, fps: 0, tbr: 0, abr: 0, size: null, format: `최대 ${kbps} kbps`,
@@ -160,12 +165,15 @@ export default function YouTubeDownloadScreen() {
               .filter(Boolean).join(' · ')}
           </Text>
           <View style={styles.section}>
-            <Text style={styles.heading}>동영상 형식 · 화질, 코덱, 오디오 구성 및 용량</Text>
-            {videos.map((format) => (
-              <Button key={formatKey(format)} fullWidth size="md" disabled={busy}
-                label={formatLabel(format)} onPress={() => void start(format)} />
-            ))}
-            {videos.length === 0 ? <Text style={styles.muted}>다운로드 가능한 동영상 형식이 없습니다.</Text> : null}
+            <SectionHeader title="동영상 형식 · 화질" />
+            <Card>
+              {videos.map((format) => (
+                <ListRow key={formatKey(format)} icon="download" title={formatTitle(format)}
+                  subtitle={formatSubtitle(format)} value={formatSize(format)} disabled={busy}
+                  onPress={() => void start(format)} />
+              ))}
+              {videos.length === 0 ? <Text style={styles.muted}>다운로드 가능한 동영상 형식이 없습니다.</Text> : null}
+            </Card>
             {isYouTube ? (
               <Button fullWidth size="md" variant="secondary" disabled={busy || loadingMoreFormats}
                 loading={loadingMoreFormats} label={loadingMoreFormats ? '추가 형식 조회 중…' : '추가 화질·오디오 형식 조회'}
@@ -173,11 +181,14 @@ export default function YouTubeDownloadScreen() {
             ) : null}
           </View>
           <View style={styles.section}>
-            <Text style={styles.heading}>오디오 형식 · 음질, 코덱 및 용량</Text>
-            {(audios.length > 0 ? audios : audioFallbacks).map((format, index) => (
-              <Button key={formatKey(format)} fullWidth size="md" variant="secondary" disabled={busy}
-                label={index === 0 ? '추천 · ' + formatLabel(format) : formatLabel(format)} onPress={() => void start(format)} />
-            ))}
+            <SectionHeader title="오디오 형식 · 음질" />
+            <Card>
+              {(audios.length > 0 ? audios : audioFallbacks).map((format, index) => (
+                <ListRow key={formatKey(format)} icon="download" title={formatTitle(format, index === 0)}
+                  subtitle={formatSubtitle(format)} value={formatSize(format)} disabled={busy}
+                  onPress={() => void start(format)} />
+              ))}
+            </Card>
           </View>
         </>
       ) : null}

@@ -15,12 +15,12 @@ export default function AssistantSettings() {
   const p = useAssistantPrefs();
   const used = p.tokensUsed.input + p.tokensUsed.output;
   return (
-    <SettingsPage title="도우미">
+    <SettingsPage title="도우미 설정">
       <Stack.Screen options={{ headerShown: false }} />
       <Card>
         <ListRow
           title="도우미"
-          subtitle="Adds an Assistant tab. When off, the tab is gone and nothing is sent anywhere."
+          subtitle="도우미 탭을 추가합니다. 끄면 탭이 사라지고 외부로 전송되는 내용이 없습니다."
           accessory={
             <Toggle
               value={p.enabled}
@@ -31,24 +31,24 @@ export default function AssistantSettings() {
         />
         {used > 0 ? (
           <ListRow
-            title="Tokens used"
+            title="사용 토큰"
             value={fmt(used)}
-            subtitle={`${fmt(p.tokensUsed.input)} sent · ${fmt(p.tokensUsed.output)} received`}
+            subtitle={`${fmt(p.tokensUsed.input)} 전송 · ${fmt(p.tokensUsed.output)} 수신`}
           />
         ) : null}
         {p.warningAcceptedAt ? (
           <ListRow
-            title="Show the usage notice again"
-            subtitle="You'll see it next time you open the Assistant tab."
+            title="사용 안내 다시 보기"
+            subtitle="다음에 도우미 탭을 열 때 안내가 표시됩니다."
             onPress={() => assistantPrefs.update({ warningAcceptedAt: null })}
           />
         ) : null}
       </Card>
       <View style={{ gap: spacing.sm }}>
         <ExperimentalTag />
-        <Caption>Experimental. It can be wrong, and features may change.</Caption>
+        <Caption>실험 기능입니다. 답변이 틀릴 수 있고 기능이 변경될 수 있습니다.</Caption>
       </View>
-      <SectionHeader title="Provider" />
+      <SectionHeader title="AI 제공자" />
       <ProviderSection />
     </SettingsPage>
   );

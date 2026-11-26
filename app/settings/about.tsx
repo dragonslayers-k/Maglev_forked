@@ -5,7 +5,7 @@ import Constants from 'expo-constants';
 import { maglevEngine } from 'maglev-engine';
 import { ThemeColors, spacing, touch, type } from '../../constants/theme';
 import { useTheme } from '../../context/ThemeContext';
-import { Button, Dialog, ListRow, Toggle } from '../../components/ui';
+import { Button, Dialog, ListRow, SectionHeader, Toggle } from '../../components/ui';
 import { useMaglevEngine } from '../../context/EngineContext';
 import { Card, SettingsPage } from '../../components/settings/SettingsParts';
 import { Wordmark } from '../../components/settings/Wordmark';
@@ -123,6 +123,27 @@ export default function AboutSettings() {
         {links.map((l) => (
           <ListRow key={l.url} title={l.title} onPress={() => void Linking.openURL(l.url)} />
         ))}
+      </Card>
+      <SectionHeader title="통합 구성" />
+      <Card>
+        <ListRow
+          title="MAGLEV 기반 기능"
+          subtitle="토렌트·링크 다운로드, 브라우저, 검색, RSS, 자막 및 전송 관리를 유지합니다."
+        />
+        <ListRow
+          title="YouTube 추출 엔진"
+          subtitle="NewPipe Extractor를 우선 사용하고 yt-dlp로 추가 형식 분석을 제공합니다."
+          icon="github"
+          onPress={() => void Linking.openURL('https://github.com/yt-dlp/yt-dlp')}
+        />
+        <ListRow
+          title="광고 차단"
+          subtitle="MAGLEV의 내장 차단 목록과 브라우저 광고 차단 기능을 유지합니다."
+        />
+        <ListRow
+          title="업데이트 방식"
+          subtitle="APK 릴리스와 광고 차단·검색 목록 업데이트는 별도로 관리됩니다."
+        />
       </Card>
       {crashCount > 0 ? (
         <Card>

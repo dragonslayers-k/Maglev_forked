@@ -190,14 +190,14 @@ export default function SearchProvidersSettings() {
 
       {checkList.length > 0 ? (
         <View style={styles.section}>
-          <SectionHeader title="Needs a quick check" />
+          <SectionHeader title="확인이 필요한 사이트" />
           <Card>
             {checkList.map((p, i) => (
               <ProviderRow
                 key={p.id}
                 provider={p}
                 enabled
-                note="Tap ? to open the site once"
+                note="?를 눌러 사이트를 한 번 열어 확인하세요."
                 noteTone="accent"
                 first={i === 0}
                 onOpen={() => setOpenId(p.id)}
@@ -210,22 +210,22 @@ export default function SearchProvidersSettings() {
       ) : null}
 
       <View style={styles.section}>
-        <SectionHeader title="What sources to show" />
+        <SectionHeader title="표시할 검색 사이트" />
         <Card>
           <ListRow
-            title="Show adult sources"
-            subtitle={prefs.adult ? 'Adult sources are listed under Off' : 'Hidden until you turn this on'}
-            accessory={<Toggle value={prefs.adult} onValueChange={(adult) => update({ adult })} accessibilityLabel="Show adult sources" />}
+            title="성인 검색 사이트 표시"
+            subtitle={prefs.adult ? '성인 사이트는 사용 안 함 목록에 표시됩니다.' : '직접 켤 때까지 숨깁니다.'}
+            accessory={<Toggle value={prefs.adult} onValueChange={(adult) => update({ adult })} accessibilityLabel="성인 검색 사이트 표시" />}
           />
           <ListRow
-            title="Warn about risky sources"
-            subtitle="Mark results from sources known for fake or harmful uploads."
-            accessory={<Toggle value={prefs.warnUnsafe} onValueChange={(warnUnsafe) => update({ warnUnsafe })} accessibilityLabel="Warn about risky sources" />}
+            title="위험한 검색 사이트 경고"
+            subtitle="가짜 파일이나 유해한 업로드가 알려진 사이트의 결과에 표시합니다."
+            accessory={<Toggle value={prefs.warnUnsafe} onValueChange={(warnUnsafe) => update({ warnUnsafe })} accessibilityLabel="위험한 검색 사이트 경고" />}
           />
           {prefs.clearances.length > 0 ? (
             <ListRow
               icon="trash"
-              title="Clear site checks"
+              title="사이트 확인 기록 지우기"
               subtitle={`Forget the checks you passed on ${prefs.clearances.length} ${prefs.clearances.length === 1 ? 'site' : 'sites'}. You'll be asked again.`}
               onPress={() => {
                 const hosts = clearSiteChecks();
@@ -237,15 +237,15 @@ export default function SearchProvidersSettings() {
       </View>
 
       <View style={styles.section}>
-        <SectionHeader title="How search behaves" />
+        <SectionHeader title="검색 동작" />
         <Card>
           <ChipGroup
-            label="Wait for slow sources"
+            label="느린 사이트 대기 시간"
             options={WAITS}
             value={prefs.waitSeconds}
             onChange={(waitSeconds) => update({ waitSeconds })}
           />
-          <ChipGroup label="Results per source" options={LIMITS} value={prefs.limit} onChange={(limit) => update({ limit })} />
+          <ChipGroup label="사이트별 결과 수" options={LIMITS} value={prefs.limit} onChange={(limit) => update({ limit })} />
           <ListRow
             title="Hide dead torrents"
             subtitle="Results no one is sharing"
@@ -306,7 +306,7 @@ export default function SearchProvidersSettings() {
 
       {shownOff.length > 0 ? (
         <View style={styles.section}>
-          <SectionHeader title="Off" />
+          <SectionHeader title="사용 안 함" />
           <Card>
             {shownOff.map((p, i) => {
               const n = note(p);
@@ -329,18 +329,18 @@ export default function SearchProvidersSettings() {
       ) : null}
 
       <View style={styles.section}>
-        <SectionHeader title="Your own indexer" />
+        <SectionHeader title="사용자 지정 검색 서버" />
         <Card>
           <ListRow
             icon="plus"
-            title="Connect Jackett or Prowlarr"
-            subtitle="Search any tracker your server supports, including private ones"
+            title="Jackett 또는 Prowlarr 연결"
+            subtitle="서버에서 지원하는 공개·비공개 트래커를 검색합니다."
             onPress={() => setTorznabOpen(true)}
           />
         </Card>
       </View>
 
-      <Caption>Maglev doesn't host or index anything. Sources are third-party websites; you're responsible for what you download.</Caption>
+      <Caption>MAGLEV는 파일을 호스팅하거나 검색 색인을 직접 운영하지 않습니다. 검색 사이트는 제3자이며 다운로드한 콘텐츠의 책임은 사용자에게 있습니다.</Caption>
 
       <ProviderSheet
         provider={open}
