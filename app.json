@@ -194,6 +194,7 @@
         }
       ],
       "./plugins/withAbiSplits.js",
+      "./plugins/withJitpackRepository.js",
       "./plugins/withSizeReduction.js",
       "./plugins/withShareIntents.js",
       "./plugins/withAppIcons.js",
