@@ -61,7 +61,7 @@ export const SETTINGS_INDEX: SettingEntry[] = [
     "about",
     "앱 정보",
     ["adblock", "block ads", "blocklist", "browser", "filters"],
-    "통합 구성",
+    "기본 기능",
   ),
   e(
     "about-highlights",
