@@ -10,9 +10,9 @@ import android.webkit.WebView
 import androidx.annotation.MainThread
 
 import com.maglev.engine.youtube.potoken.JavascriptUtil.parseChallengeData
-import com.deniscerri.ytdl.util.extractors.newpipe.potoken.JavascriptUtil.parseIntegrityTokenData
-import com.deniscerri.ytdl.util.extractors.newpipe.potoken.JavascriptUtil.stringToU8
-import com.deniscerri.ytdl.util.extractors.newpipe.potoken.JavascriptUtil.u8ToBase64
+import com.maglev.engine.youtube.potoken.JavascriptUtil.parseIntegrityTokenData
+import com.maglev.engine.youtube.potoken.JavascriptUtil.stringToU8
+import com.maglev.engine.youtube.potoken.JavascriptUtil.u8ToBase64
 import com.google.gson.Gson
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
@@ -94,7 +94,7 @@ class PoTokenWebView private constructor(
      */
     @JavascriptInterface
     fun downloadAndRunBotguard() {
-        if (BuildConfig.DEBUG) {
+        if (false) {
             Log.d(TAG, "downloadAndRunBotguard() called")
         }
 
@@ -129,7 +129,7 @@ class PoTokenWebView private constructor(
      */
     @JavascriptInterface
     fun onJsInitializationError(error: String) {
-        if (BuildConfig.DEBUG) {
+        if (false) {
             Log.e(TAG, "Initialization error from JavaScript: $error")
         }
         onInitializationError(Exception(error))
@@ -155,7 +155,7 @@ class PoTokenWebView private constructor(
                 webView.evaluateJavascript(
                     "this.integrityToken = $integrityToken"
                 ) {
-                    if (BuildConfig.DEBUG) {
+                    if (false) {
                         Log.d(TAG, "initialization finished, expiration=${expirationTimeInSeconds}s")
                     }
                     generatorContinuation.resume(this@PoTokenWebView)
@@ -167,7 +167,7 @@ class PoTokenWebView private constructor(
 
     //region Obtaining poTokens
     suspend fun generatePoToken(identifier: String): String {
-        if (BuildConfig.DEBUG) {
+        if (false) {
             Log.d(TAG, "generatePoToken() called with identifier $identifier")
         }
         return suspendCancellableCoroutine { continuation ->
@@ -200,7 +200,7 @@ class PoTokenWebView private constructor(
      */
     @JavascriptInterface
     fun onObtainPoTokenError(identifier: String, error: String) {
-        if (BuildConfig.DEBUG) {
+        if (false) {
             Log.e(TAG, "obtainPoToken error from JavaScript: $error")
         }
         poTokenContinuations.remove(identifier)?.resumeWithException(Exception(error))
@@ -212,7 +212,7 @@ class PoTokenWebView private constructor(
      */
     @JavascriptInterface
     fun onObtainPoTokenResult(identifier: String, poTokenU8: String) {
-        if (BuildConfig.DEBUG) {
+        if (false) {
             Log.d(TAG, "Generated poToken (before decoding): identifier=$identifier poTokenU8=$poTokenU8")
         }
         val poToken = try {
@@ -222,7 +222,7 @@ class PoTokenWebView private constructor(
             return
         }
 
-        if (BuildConfig.DEBUG) {
+        if (false) {
             Log.d(TAG, "Generated poToken: identifier=$identifier poToken=$poToken")
         }
         poTokenContinuations.remove(identifier)?.resume(poToken)
