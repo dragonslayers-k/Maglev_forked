@@ -48,7 +48,7 @@ for (const id of ['app.accrescent.client']) check(`${id} is accrescent`, src.inc
 for (const id of ['com.aurora.store', 'com.sec.android.app.samsungapps', 'com.amazon.venezia', 'com.xiaomi.market', 'com.huawei.appmarket', 'com.heytap.market', 'com.oppo.market']) check(`${id} is store`, src.includes(`"${id}"`));
 check('store installers map to "store"', /installer in STORES -> "store"/.test(src));
 check('a sideload installer (system installer, browser, shell, Maglev) stays unmanaged', !/"com\.android\.packageinstaller"|"com\.android\.shell"|"com\.maglev"/.test(src) && /else -> null/.test(src));
-check('the bridge type and the copy know accrescent and store', /'accrescent' \| 'store'/.test(read('modules/maglev-engine/src/MaglevEngine.types.ts')) && /Updates come from Accrescent\./.test(read('constants/copy.ts')) && /the app store you installed Maglev from/.test(read('constants/copy.ts')));
+check('the bridge type and the copy know accrescent and store', /'accrescent' \| 'store'/.test(read('modules/maglev-engine/src/MaglevEngine.types.ts')) && /Updates come from Accrescent\./.test(read('constants/copy.ts')) && /the app store you installed Maglev\\+ from/.test(read('constants/copy.ts')));
 
 console.log('\n[no updater code when managed]');
 check('download refuses with MANAGED first', /fun download\([^)]*\)[^{]*\{\s*managed\(context\)\?\.let \{ return it \}/.test(upd));
