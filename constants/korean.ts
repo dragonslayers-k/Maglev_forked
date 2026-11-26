@@ -336,6 +336,16 @@ const KO_UI: Record<string, string> = {
   'Follow a feed': '피드 구독',
   'Watch': '관심 등록',
   'Watch this search': '이 검색을 관심 등록',
+  'Download the copied link?': '복사한 링크를 다운로드할까요?',
+  'Not now': '나중에',
+  'Torrent from your clipboard': '클립보드의 토렌트',
+  'Offer to download copied links': '복사한 링크 다운로드 제안',
+  'Asks when you open Maglev with a link copied. Android shows a notice when it reads it.': '링크를 복사한 상태에서 Maglev를 열면 다운로드 여부를 묻습니다. Android에서 링크를 읽으면 알림이 표시됩니다.',
+  'Add a link or torrent': '링크 또는 토렌트 추가',
+  'Link, magnet or .torrent': '링크, 마그넷 또는 .torrent',
+  'Paste a link or magnet': '링크 또는 마그넷 붙여넣기',
+  'Save to': '저장 위치',
+  'Download the copied link': '복사한 링크 다운로드',
 };
 
 export function koUiText(value: string | null | undefined): string {
