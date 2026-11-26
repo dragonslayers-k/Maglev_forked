@@ -63,4 +63,20 @@ assert(versionCodeFor(19, null) > versionCodeFor(18, 'arm64-v8a'), 'next release
 assert(!/abiFilter\s*!=\s*null/.test(once), 'versionCode must not be limited to ABI-filtered outputs');
 assert(/base \* 10 \+ abiCodes\.get\(abiFilter\?\.identifier, 0\)/.test(once), 'versionCode must be base*10 + digit (0 without an ABI)');
 
+// A failed validation must never leave a downloadable APK artifact.
+const ci = require('node:fs').readFileSync(require('node:path').join(__dirname, '../.github/workflows/ci.yml'), 'utf8');
+const apkStart = ci.indexOf('\\n  apk:');
+const contractsStart = ci.indexOf('\\n  contracts:', apkStart);
+const apkJob = ci.slice(apkStart, contractsStart);
+assert(apkStart >= 0 && contractsStart > apkStart, 'APK job block must exist');
+assert(apkJob.includes('needs: [rust-android, rust-test, js, contracts]'), 'APK build must wait for all required validation jobs');
+for (const job of ['needs.rust-android.result == \'success\'', 'needs.rust-test.result == \'success\'', 'needs.js.result == \'success\'', 'needs.contracts.result == \'success\'']) {
+  assert(apkJob.includes(job), `APK build gate missing ${job}`);
+}
+const kotlinTests = apkJob.indexOf('Kotlin unit tests (schedule, feed rules, restart policy)');
+const uploadApks = apkJob.indexOf('- name: Upload APKs');
+const uploadApkset = apkJob.indexOf('- name: Upload APK set');
+assert(kotlinTests >= 0 && uploadApks > kotlinTests, 'APK artifact must upload only after Kotlin unit tests');
+assert(kotlinTests >= 0 && uploadApkset > kotlinTests, 'APK set must upload only after Kotlin unit tests');
+
 console.log('test-abi-splits: all assertions passed');
