@@ -116,7 +116,7 @@ func TestHostnameEndpointIsResolvedBeforeUAPI(t *testing.T) {
 		return []netip.Addr{netip.MustParseAddr("8.8.8.8")}, nil
 	})
 	if err != nil { t.Fatal(err) }
-	if got := c.endpoint.String(); got != "8.8.8.8:51820" || !strings.Contains(c.uapi(), "endpoint=8.8.8.8:51820\\n") {
+	if got := c.endpoint.String(); got != "8.8.8.8:51820" || !strings.Contains(c.uapi(), "endpoint=8.8.8.8:51820\n") {
 		t.Fatalf("resolved endpoint not applied to UAPI: %q", got)
 	}
 }

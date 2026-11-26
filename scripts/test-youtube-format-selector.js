@@ -15,6 +15,7 @@ const checks = [
   ['audio and video conversion codecs are present', converter.includes('libmp3lame') && converter.includes('libx264') && converter.includes('libopus')],
   ['container conversion writes to a temporary file before replacing output', converter.includes('maglev-convert.tmp') && converter.includes('temp.renameTo(output)')],
   ['selected audio bitrate reaches FFmpeg postprocessing from both extractors', nativeAdapter.includes('audioBitrateKbps') && newPipeAdapter.includes('audioBitrateKbps') && engineHost.includes('spec["audioBitrateKbps"]') && converter.includes('audioRate')],
+  ['NewPipe refreshes signed stream URLs when the user adds a download, not from the 3-minute metadata cache', newPipeAdapter.includes('private fun getFresh(context: Context, url: String): StreamInfo') && newPipeAdapter.includes('val info = StreamInfo.getInfo(url)') && newPipeAdapter.includes('val info = getFresh(context, url)')],
 ];
 let failed = false;
 for (const [name, ok] of checks) {

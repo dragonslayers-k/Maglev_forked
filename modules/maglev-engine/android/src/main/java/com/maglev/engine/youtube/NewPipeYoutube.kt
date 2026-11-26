@@ -79,6 +79,14 @@ object NewPipeYoutube {
         return info
     }
 
+    /** Signed googlevideo URLs can expire while a user is choosing formats. Always refresh at add time. */
+    private fun getFresh(context: Context, url: String): StreamInfo {
+        init(context)
+        val info = StreamInfo.getInfo(url)
+        cache[url] = System.currentTimeMillis() to info
+        return info
+    }
+
     fun formats(info: StreamInfo): List<Map<String, Any?>> {
         val duration = info.duration.toDouble().takeIf { it > 0 && it.isFinite() }
         val audio = info.audioStreams
@@ -150,7 +158,9 @@ object NewPipeYoutube {
         val kind = if (formatId.startsWith("npa")) "audio" else "video"
         val allowed = if (kind == "audio") MediaContainerConverter.AUDIO_CONTAINERS else MediaContainerConverter.VIDEO_CONTAINERS
         if (outputContainer != "original" && outputContainer !in allowed) return failure("INVALID_ARGUMENT", "출력 컨테이너가 올바르지 않습니다.")
-        val info = get(context, url)
+        // Metadata cache is useful for fast UI, but its signed media URLs may expire.
+        // Refresh the stream URL immediately before adding the transfer.
+        val info = getFresh(context, url)
         if (formatId.startsWith("npa")) {
             val itag = formatId.removePrefix("npa").toIntOrNull()
                 ?: return failure("INVALID_ARGUMENT", "오디오 형식 ID가 올바르지 않습니다.")

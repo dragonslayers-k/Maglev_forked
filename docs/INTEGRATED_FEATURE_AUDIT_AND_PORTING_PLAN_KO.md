@@ -35,6 +35,7 @@
 5. 변환 후 output exists/size/signature/container/codec 검사, MediaStore scan, transfer filename/open/share path를 final outputName으로 갱신.
 6. 실패·cancel·process death 후 원본 보존, failure reason 명시. extension rename만으로 conversion 금지.
 7. expired/site-refused URL은 fresh URL 재조회, format/container selection은 보존.
+- NewPipe는 metadata를 180초 cache하지만 googlevideo signed URL은 그 전에 만료될 수 있다. add 시점에 `getFresh()`로 URL을 다시 추출해 stale URL을 transfer에 넣지 않는다. 이 변경 후에도 실제 YouTube 오디오 저장/변환은 Galaxy acceptance로 확인해야 한다.
 8. source != target test 필수; MP4 source→MP4 test만으로 conversion pass 금지.
 
 Acceptance:
@@ -122,4 +123,4 @@ Must state code presence and validation separately:
 P0 YouTube output postprocess state/file integrity → P0 WireGuard stage diagnostics and real tunnel request → P1 truthful About/source register → P1 Barrel Range/Resume/Parts → P1 HLS/DASH/subtitle gaps → P1 MSE/Blob recording → P2 site plugins/header reconstruction and full Korean sweep.
 
 ## Handoff
-2026-11-26: user rejected candidate due selected extension not applying, WireGuard failure, Barrel feature gap, inaccurate/empty About reference section, and missing browser recording. Screen recording reviewed; final output extension is not exposed and a transfer reports Site refused. #532 CI passed but does not resolve user-reported runtime failures. Update this document only with actual test evidence.
+2026-11-26: user rejected candidate due selected extension not applying, WireGuard failure, Barrel feature gap, inaccurate/empty About reference section, and missing browser recording. Screen recording reviewed; final output extension is not exposed and a transfer reports Site refused. Source audit found NewPipe's 180 s metadata cache was reused at add time, risking expired signed googlevideo URLs; add now refreshes the stream URL. #532 CI passed but does not resolve user-reported runtime failures. Update this document only with actual test evidence.
