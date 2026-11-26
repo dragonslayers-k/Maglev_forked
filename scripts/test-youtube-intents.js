@@ -45,6 +45,15 @@ async function main() {
 
   const youtubeAdapter = fs.readFileSync(path.join(root, 'modules/maglev-engine/android/src/main/java/com/maglev/engine/youtube/YoutubeDownload.kt'), 'utf8');
   const nativeModule = fs.readFileSync(path.join(root, 'modules/maglev-engine/android/src/main/java/com/maglev/engine/MaglevEngineModule.kt'), 'utf8');
+  const newPipe = fs.readFileSync(path.join(root, 'modules/maglev-engine/android/src/main/java/com/maglev/engine/youtube/NewPipeYoutube.kt'), 'utf8');
+  const ytdlGradle = fs.readFileSync(path.join(root, 'modules/maglev-engine/android/build.gradle'), 'utf8');
+  const poToken = fs.readFileSync(path.join(root, 'modules/maglev-engine/android/src/main/java/com/maglev/engine/youtube/potoken/NewPipePoTokenGenerator.kt'), 'utf8');
+  assert.ok(newPipe.includes('info.dashMpdUrl'), 'NewPipe adaptive DASH manifest supplies selectable high-resolution formats');
+  assert.ok(newPipe.includes('EngineHost.probeStream') && newPipe.includes('"audioId"'), 'selected video quality must mux a separate audio track in the existing queue');
+  assert.ok(newPipe.includes('info.audioStreams'), 'audio-only choices must enumerate real NewPipe audio formats and bitrates');
+  assert.ok(ytdlGradle.includes('NewPipeExtractor:v0.26.5'), 'use the same NewPipe extractor version as YTDLnis');
+  assert.ok(poToken.includes('NewPipePoTokenGenerator') && poToken.includes('getWebClientPoToken'), 'generate Web PO tokens to avoid YouTube's 360p-only fallback');
+
   assert.ok(youtubeAdapter.includes('PLAYER_CLIENTS = listOf("newpipe", "android_vr", "web_safari")'), 'fast NewPipe extraction is primary with two yt-dlp fallbacks');
   assert.ok(youtubeAdapter.includes('playerClient != "generic"'), 'generic extraction does not force a YouTube player client');
   assert.ok(youtubeAdapter.includes('httpMediaUrl(rawUrl)'), 'generic extraction validates HTTP(S) page URLs');
