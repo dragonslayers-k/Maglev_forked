@@ -101,17 +101,17 @@ assert(applyKeepRules('').includes('com.maglev.engine'));
     '}',
     'rootProject.name = "Maglev"',
     'include(":app")',
-  ].join('\\n');
+  ].join(String.fromCharCode(10));
   const modern = addJitpackRepository(modernTemplate);
   assert(modern.includes('dependencyResolutionManagement'), 'creates missing settings repository management');
   assert(modern.includes('RepositoriesMode.PREFER_SETTINGS'), 'uses settings repository management');
   assert(modern.includes('https://www.jitpack.io'), 'adds JitPack to new settings block');
   assert.strictEqual(addJitpackRepository(modern), modern, 'new settings block patch is idempotent');
-  const existingDmr = ['dependencyResolutionManagement {', '    repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)', '}'].join('\\n');
+  const existingDmr = ['dependencyResolutionManagement {', '    repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)', '}'].join(String.fromCharCode(10));
   const withRepos = addJitpackRepository(existingDmr);
   assert(withRepos.includes('google()') && withRepos.includes('mavenCentral()'), 'adds defaults when repositories block is absent');
   assert.strictEqual(addJitpackRepository(withRepos), withRepos, 'existing DMR patch is idempotent');
-  const existingRepos = ['dependencyResolutionManagement {', '    repositories { google(); mavenCentral() }', '}'].join('\\n');
+  const existingRepos = ['dependencyResolutionManagement {', '    repositories { google(); mavenCentral() }', '}'].join(String.fromCharCode(10));
   const withJitpack = addJitpackRepository(existingRepos);
   assert(withJitpack.includes(MARKER) && withJitpack.includes('jitpack.io'), 'adds JitPack to existing repository block');
 }

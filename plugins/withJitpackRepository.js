@@ -51,7 +51,7 @@ function addJitpackRepository(source) {
       '    }',
       '}',
       '',
-    ].join('\\n');
+    ].join(String.fromCharCode(10));
     return source.trimEnd() + newBlock;
   }
   const dmrOpen = source.indexOf('{', dmr.index);
