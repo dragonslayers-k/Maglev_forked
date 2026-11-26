@@ -90,7 +90,7 @@ async function main() {
   assert.ok(nativeModuleSource.includes('root.message ?: root.javaClass.simpleName'), 'native IO failures must not collapse to generic Engine call failed');
   assert.ok(nativeModuleSource.includes('Regex("""https?://[^\\s]+""", RegexOption.IGNORE_CASE)'), 'native diagnostics must redact complete URLs including query tokens');
   const screen = fs.readFileSync(path.join(root, 'app/youtube-download.tsx'), 'utf8');
-  assert.ok(screen.includes('bestaudio_320') && screen.includes('bestaudio_256') && screen.includes('bestaudio_192') && screen.includes('bestaudio_128'), 'audio fallback must expose selectable source bitrate caps');
+  assert.ok(screen.includes('...[320, 256, 192, 128].map') && screen.includes('formatId: `bestaudio_${kbps}`'), 'audio fallback must expose selectable source bitrate caps');
   assert.ok(screen.includes('maglev_ytdlp=1') && screen.includes('추가 화질·오디오 형식 조회'), 'slow yt-dlp formats are fetched only on user request, after fast NewPipe results');
   assert.ok(youtubeAdapter.includes('if (hasVideo && !forceYtDlp) break'), 'explicit refresh aggregates multiple valid yt-dlp player clients');
   assert.ok(screen.includes('maglevEngine.getYouTubeInfo'), 'YouTube screen must use the existing native extractor');
