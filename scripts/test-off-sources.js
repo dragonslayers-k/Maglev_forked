@@ -40,7 +40,7 @@ function check(name, cond) {
   const none = C.empty.search.noResults('x');
   check('k = 0: body is unchanged', none.body === 'Nothing matches "x". Try fewer words or another category.' && C.empty.search.noResults('x', 0).body === none.body);
   check('k > 0: second sentence', C.empty.search.noResults('x', 3).body.endsWith(' 3 more sources are off.') && C.empty.search.noResults('x', 1).body.endsWith(' 1 more source is off.'));
-  check('button label', C.SEARCH_TURN_ON_MORE === 'Turn on more sources');
+  check('button label is Korean', C.SEARCH_TURN_ON_MORE === '검색 사이트 더 켜기');
   const search = read('app/(tabs)/search.tsx');
   check('search screen: count, button opens providers, re-run rides on searchKey', /countOffSources\(/.test(search) && /primary=\{offCount > 0 \? \{ label: SEARCH_TURN_ON_MORE, onPress: openProviders \}/.test(search) && /JSON\.stringify\(\[prefs\.enabled,/.test(search));
   check('"no source answered" block is unchanged', /empty\.search\.noAnswer\.title/.test(search));
