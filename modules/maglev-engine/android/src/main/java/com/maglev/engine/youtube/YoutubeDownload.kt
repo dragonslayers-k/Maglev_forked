@@ -144,7 +144,15 @@ object YoutubeDownload {
                     allFormats.addAll(found)
                     val hasVideo = found.any { it["kind"] == "video" }
                     val hasAudio = found.any { it["kind"] == "audio" }
-                    if (hasVideo && !forceYtDlp) break
+                    val maxVideoHeight = allFormats
+                        .filter { it["kind"] == "video" }
+                        .maxOfOrNull { (it["height"] as? Number)?.toInt() ?: 0 } ?: 0
+                    // The forced "more formats" pass used to wait for all three player clients
+                    // even after a client had exposed a complete 1080p+ video/audio set.
+                    // Keep scanning when only 360p is available; stop early once the requested
+                    // useful quality range and an audio-only stream are both present.
+                    val completeSet = hasVideo && hasAudio && maxVideoHeight >= 720
+                    if (completeSet && (!forceYtDlp || maxVideoHeight >= 1080 || client == PLAYER_CLIENTS.last())) break
                 } catch (e: Throwable) {
                     rethrowFatal(e)
                     // A broken runtime/class initializer is not an extractor-client failure.
