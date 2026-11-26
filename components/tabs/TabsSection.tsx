@@ -164,7 +164,7 @@ function DraggableRow({ id, index, count, name, locked, shown, drag, onReorder, 
 /** Settings > Interface > Tabs: which tabs show, and their order. Hold a row and drag to reorder. Applies live. */
 export function TabsSection() {
   const prefs = useTabPrefs();
-  const rows = prefs.order.filter((id) => id !== 'assistant');
+  const rows = prefs.order;
 
   const active = useSharedValue(-1);
   const target = useSharedValue(-1);
