@@ -7,7 +7,7 @@ module.exports = function koreanTextPlugin({ types: t }) {
       Program: {
         exit(programPath, state) {
           const filename = state.file && state.file.opts && state.file.opts.filename;
-          if (!filename || !path.isAbsolute(filename)) return;
+          if (!filename || !path.isAbsolute(filename) || filename.includes('/node_modules/')) return;
           const localNames = [];
           for (const declaration of programPath.get('body')) {
             if (!declaration.isImportDeclaration() || declaration.node.source.value !== 'react-native') continue;
