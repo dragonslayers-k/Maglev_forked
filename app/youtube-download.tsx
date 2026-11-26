@@ -181,6 +181,9 @@ export default function YouTubeDownloadScreen() {
               ))}
               {videos.length === 0 ? <Text style={styles.muted}>다운로드 가능한 동영상 형식이 없습니다.</Text> : null}
             </Card>
+            <Button fullWidth size="lg" disabled={busy || !videos.some((format) => formatKey(format) === selectedVideo)} loading={busy}
+              label={busy ? "다운로드 추가 중…" : "선택한 동영상 다운로드"}
+              onPress={() => { const chosen = videos.find((format) => formatKey(format) === selectedVideo); if (chosen) void start(chosen); }} />
             {isYouTube ? (
               <Button fullWidth size="md" variant="secondary" disabled={busy || loadingMoreFormats}
                 loading={loadingMoreFormats} label={loadingMoreFormats ? '추가 형식 조회 중…' : '추가 화질·오디오 형식 조회'}
