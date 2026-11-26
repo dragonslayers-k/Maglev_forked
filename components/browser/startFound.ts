@@ -4,7 +4,7 @@
  * The engine and the header builder are passed in so the function runs without React or native modules.
  */
 import type { DownloadOptions, EngineResult, UrlProbe } from '../../modules/maglev-engine/src/MaglevEngine.types';
-import { pageUrlOption } from './pageUrlOption';
+import { pageUrlOption } from './pageUrlOption.ts';
 import { parseNaverClipMediaId, resolveNaverClip } from '../../utils/browser/naverClip';
 
 export interface StartDeps {
