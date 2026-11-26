@@ -862,6 +862,13 @@ export const SETTINGS_INDEX: SettingEntry[] = [
   ],
   ),
   e(
+    "network-app-wireguard",
+    "앱 내부 WireGuard",
+    "network",
+    "네트워크",
+    ["wireguard", "app vpn", "download tunnel", "http proxy", "https proxy", "conf profile", "not system vpn"],
+  ),
+  e(
     "network-ssid-enable",
     "Only on these networks",
     "network",
