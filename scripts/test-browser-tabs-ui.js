@@ -125,7 +125,7 @@ check('the test is chained after test-browser-tabs.js', /node scripts\/test-brow
 
 const tabRoute = read('app/(tabs)/browse.tsx');
 check('in the tab bar the screen skips the bottom inset (the tab bar already pads for it)', /<BrowserScreen inTab \/>/.test(tabRoute) && /pipCompact \? \[\] : inTab \? \['top', 'left', 'right'\] : \['top', 'left', 'right', 'bottom'\]/.test(scr));
-check('PiP compact viewport hides browser chrome and found-file overlays', /viewportHeight < 260 \|\| viewportWidth < 280/.test(scr) && /!pipCompact && \(findOpen \?/.test(scr) && /!pipCompact && found\.length > 0/.test(scr));
+check('PiP compact viewport hides browser chrome and found-file overlays', /viewportHeight < 260 \|\| viewportWidth < 280/.test(scr) && /!pipCompact && \(findOpen \?/.test(scr) && /!pipCompact && hasPage \? \(/.test(scr));
 check('PiP request waits for sheet dismissal', /afterSheetCloses\(\(\) => \{\s*void maglevEngine\.enterBrowserPictureInPicture\(\)/.test(scr));
 
 // 24.11 history from a blank tab
