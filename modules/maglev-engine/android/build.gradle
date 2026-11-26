@@ -54,6 +54,7 @@ dependencies {
     // Maintained FFmpegKit fork: 16 KB page-aligned Android binaries; GPL variant matches this GPL-3.0 app.
     // Used for real post-download container conversion and audio extraction/re-encoding, not filename-only changes.
     implementation "dev.ffmpegkit-maintained:ffmpeg-kit-full-gpl:8.1.7"
+    implementation "com.arthenica:smart-exception-java:0.2.1"
     // NewPipe is the fast YouTube format source; DASH tracks are joined by Maglev MediaMuxer.
     implementation "com.github.TeamNewPipe:NewPipeExtractor:v0.26.5"
     // YTDLnis-compatible WebView PO-token generation for NewPipe's adaptive YouTube formats.
