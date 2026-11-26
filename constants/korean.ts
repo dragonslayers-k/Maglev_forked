@@ -417,6 +417,17 @@ const KO_UI: Record<string, string> = {
   "Analyzing": "분석 중",
   "Preparing download": "다운로드 준비 중",
   "Please wait…": "잠시 기다려 주세요…",
+  "Paste new link": "새 링크 붙여넣기",
+  "No app can open this file.": "이 파일을 열 수 있는 앱이 없습니다.",
+  "Removed": "삭제됨",
+  "Undo": "실행 취소",
+  "Not available": "사용할 수 없음",
+  "Charging only": "충전 중에만",
+  "Any network": "모든 네트워크",
+  "1 part": "1개 조각",
+  "More below": "아래에 더 있습니다",
+  "Parts": "파일 조각",
+  "App version": "앱 버전",
 };
 
 export function koUiText(value: string | null | undefined): string {
