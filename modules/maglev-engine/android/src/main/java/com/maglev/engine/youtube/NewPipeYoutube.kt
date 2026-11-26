@@ -7,9 +7,11 @@ import org.schabi.newpipe.extractor.downloader.Downloader
 import org.schabi.newpipe.extractor.downloader.Request
 import org.schabi.newpipe.extractor.downloader.Response
 import org.schabi.newpipe.extractor.stream.StreamInfo
-import java.net.HttpURLConnection
-import java.net.URL
+import okhttp3.OkHttpClient
+import okhttp3.RequestBody.Companion.toRequestBody
+import org.schabi.newpipe.extractor.exceptions.ReCaptchaException
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.TimeUnit
 import kotlin.math.abs
 
 /**
@@ -24,27 +26,32 @@ object NewPipeYoutube {
     private val cache = ConcurrentHashMap<String, Pair<Long, StreamInfo>>()
 
     private class HttpDownloader : Downloader() {
+        private val client = OkHttpClient.Builder().readTimeout(30, TimeUnit.SECONDS).build()
+
         override fun execute(request: Request): Response {
-            val connection = URL(request.url()).openConnection() as HttpURLConnection
-            connection.connectTimeout = 15_000
-            connection.readTimeout = 25_000
-            connection.requestMethod = request.httpMethod()
-            connection.setRequestProperty("User-Agent", USER_AGENT)
-            request.headers().forEach { (name, values) -> values.forEach { connection.setRequestProperty(name, it) } }
-            try {
-                val data = request.dataToSend()
-                if (data != null) {
-                    connection.doOutput = true
-                    connection.outputStream.use { it.write(data) }
+            val data = request.dataToSend()?.toRequestBody()
+            val builder = okhttp3.Request.Builder()
+                .url(request.url())
+                .method(request.httpMethod(), data)
+                .header("User-Agent", USER_AGENT)
+            request.headers().forEach { (name, values) ->
+                when (values.size) {
+                    0 -> Unit
+                    1 -> builder.header(name, values[0])
+                    else -> {
+                        builder.removeHeader(name)
+                        values.forEach { builder.addHeader(name, it) }
+                    }
                 }
-                val code = connection.responseCode
-                val stream = if (code >= 400) connection.errorStream else connection.inputStream
-                val body = stream?.bufferedReader(Charsets.UTF_8)?.use { it.readText() }.orEmpty()
-                val headers = connection.headerFields.filterKeys { it != null }
-                    .mapKeys { it.key!! }.mapValues { it.value.filterNotNull() }
-                return Response(code, connection.responseMessage ?: "", headers, body, connection.url.toString())
-            } finally {
-                connection.disconnect()
+            }
+            if (request.headers().keys.none { it.equals("Cookie", true) }) {
+                val cookies = runCatching { CookieManager.getInstance().getCookie(request.url()) }.getOrNull()
+                if (!cookies.isNullOrBlank()) builder.header("Cookie", cookies)
+            }
+            client.newCall(builder.build()).execute().use { response ->
+                if (response.code == 429) throw ReCaptchaException("YouTube requested a reCAPTCHA challenge", request.url())
+                val body = response.body.string()
+                return Response(response.code, response.message, response.headers.toMultimap(), body, response.request.url.toString())
             }
         }
     }
