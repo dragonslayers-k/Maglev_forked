@@ -1,5 +1,7 @@
 # Maglev+ 원천 프로그램별 구현 대조 및 최종화 게이트
 
+> **CURRENT STATUS OVERRIDE — 2026-11-26 (supersedes older status lines below):** Actions #535 PASS and APK artifact uploaded, but this is CI/build only. User's Galaxy test remains FAIL for YouTube target extension/output and WireGuard tunnel. FFmpegKit converter/postprocess code exists but target-file conversion is not accepted. WireGuard userspace/proxy/profile code exists; hostname Endpoint import/resolution is now supported, but peer handshake and tunneled HTTPS remain unverified/failed. Barrel 1.1.2 static-analysis report is stored; feature parity is not integrated. Android MSE/SourceBuffer byte capture and live recording are not implemented. Do not treat source registration, CI green, or UI selection as runtime completion. See [integrated audit and port plan](INTEGRATED_FEATURE_AUDIT_AND_PORTING_PLAN_KO.md).
+
 작성 기준: 2026-11-26  
 현재 개발 트랙: `feature/p1-video-detection-observer` / PR #1  
 현재 상태: **최종본 아님 — CI 및 Galaxy 실기기 E2E 미완료**

@@ -1,5 +1,7 @@
 # Maglev+ 통합 다운로더 원천 프로그램 등록부
 
+> **CURRENT STATUS OVERRIDE — 2026-11-26 (supersedes older status lines below):** Actions #535 PASS and APK artifact uploaded, but this is CI/build only. User's Galaxy test remains FAIL for YouTube target extension/output and WireGuard tunnel. FFmpegKit converter/postprocess code exists but target-file conversion is not accepted. WireGuard userspace/proxy/profile code exists; hostname Endpoint import/resolution is now supported, but peer handshake and tunneled HTTPS remain unverified/failed. Barrel 1.1.2 static-analysis report is stored; feature parity is not integrated. Android MSE/SourceBuffer byte capture and live recording are not implemented. Do not treat source registration, CI green, or UI selection as runtime completion. See [integrated audit and port plan](INTEGRATED_FEATURE_AUDIT_AND_PORTING_PLAN_KO.md).
+
 작성: 2026-11-26  
 목적: 원천별 기능을 무작정 복사하지 않고, 라이선스·기술 경로·실제 반영 코드·검증 상태를 구분해 통합 기준으로 사용한다.  
 주의: 이 문서는 소스 등록부이며, 등록되었다는 사실은 기능이 구현·검증되었다는 뜻이 아니다.

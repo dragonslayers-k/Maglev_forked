@@ -69,8 +69,8 @@ MPMux는 정적/HLS VOD에 최대 3개 요청을 사용하고, live는 실시간
 - Artifact arm64 APK SHA-256: `61362ab5611965194e661fe66926f07e9da1d6e9edccc1c7a2054fe94e5db3de`.
 - 사용자가 #163 APK를 Galaxy에 설치해 확인한 결과: **전체 한글화 실패, YouTube 실제 다운로드 실패**. CI success와 실제 기능 실패를 분리해 기록합니다. 이 artifact를 최종본으로 취급하지 않습니다.
 - 소스 재검토에서 확인한 제한: 기존 네이티브 adapter는 YouTube URL만 허용했고, 일반 사이트 페이지는 yt-dlp로 명시 분석할 진입점이 없었습니다. YouTube adapter는 `web_safari/android_vr/web_embedded`만 시도하고 PO Token Provider/최신 JS runtime 연결이 확인되지 않았습니다. HLS/DASH에서 분리 오디오가 필요한 경우 audio track ID 전달도 빠져 있었습니다.
-- 이번 코드 수정 초안: 일반 HTTP(S) URL을 사용자 동작으로 yt-dlp generic extraction에 전달; Add download의 NOT_A_FILE 상태와 브라우저 페이지 메뉴에 “yt-dlp로 페이지 분석” 추가; YouTube와 일반 페이지가 같은 기존 Maglev Transfers 큐를 사용; HLS/DASH 별도 오디오 track ID 전달; DRM/blob/STREAM_PROTECTED 거절 시 MPMux PC 안내 제공.
-- MPMux 안내의 범위: 비암호화 MSE/HLS buffer형 플레이어에 대한 PC Chrome/Edge 대안만 안내. DRM/Widevine/FairPlay 복호화·우회는 제공하지 않으며 MPMux도 이를 할 수 없다고 UI에서 명시합니다.
+- 현재 browser observer는 request/DOM media detection 일부만 수행합니다. MSE/SourceBuffer byte capture, live recording, native mux 및 Transfers 결과 연결은 아직 미구현이며, PC MPMux 안내 popup은 native recording이 아니어서 제거했습니다. 이를 실제 in-app recording pipeline으로 구현해야 합니다.
+- Browser recording is not yet available in Android. Do not show PC Chrome/Edge extension guidance as if it were a native feature. Implement actual SourceBuffer capture/mux first; refuse DRM/Widevine/FairPlay decrypt or bypass.
 - **이 수정 묶음은 아직 새 CI와 Galaxy 실기기 검증 전**입니다. 코드가 커밋되고 새 Actions가 통과하기 전까지 build-pass로 표기하지 않습니다.
 - 남은 필수 검증: youtubedl-android 0.18.1의 Python 3.8과 최신 yt-dlp의 Python 3.11+ 요구 차이, yt-dlp-ejs/JS runtime, PO Token Provider(BGUtils), YouTube 공개 영상 metadata/formats/download, muxed/A-V 합성 가능한 형식, HLS/DASH separate audio, 일반 yt-dlp 사이트별 지원, APK size/16 KB alignment, Galaxy saved-file playback.
 - 전체 UI 한국어화는 별도 전수 문자열 인벤토리와 Galaxy 화면 검수 전까지 FAIL/미완료 상태입니다.
