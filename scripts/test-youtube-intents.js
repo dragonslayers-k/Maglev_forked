@@ -45,7 +45,7 @@ async function main() {
 
   const youtubeAdapter = fs.readFileSync(path.join(root, 'modules/maglev-engine/android/src/main/java/com/maglev/engine/youtube/YoutubeDownload.kt'), 'utf8');
   const nativeModule = fs.readFileSync(path.join(root, 'modules/maglev-engine/android/src/main/java/com/maglev/engine/MaglevEngineModule.kt'), 'utf8');
-  assert.ok(youtubeAdapter.includes('PLAYER_CLIENTS = listOf("android_vr", "web_safari", "web_embedded")'), 'extractor tries the Android client first and keeps fallback clients');
+  assert.ok(youtubeAdapter.includes('PLAYER_CLIENTS = listOf("newpipe", "android_vr", "web_safari")'), 'fast NewPipe extraction is primary with two yt-dlp fallbacks');
   assert.ok(youtubeAdapter.includes('playerClient != "generic"'), 'generic extraction does not force a YouTube player client');
   assert.ok(youtubeAdapter.includes('httpMediaUrl(rawUrl)'), 'generic extraction validates HTTP(S) page URLs');
   assert.ok(youtubeAdapter.includes('playerClient == "generic"'), 'generic page formats are tagged separately from YouTube clients');
@@ -54,7 +54,11 @@ async function main() {
   assert.match(nativeModule, /formatId: String, playerClient: String/, 'native bridge must carry the selected extractor client');
   assert.match(youtubeAdapter, /private fun prepareYtDlp\(context: Context\)\s*\{\s*YoutubeDL\.getInstance\(\)\.init\(context\.applicationContext\)\s*\}/, 'interactive analysis must initialize the bundled yt-dlp without blocking on an update download');
   assert.ok(youtubeAdapter.includes('groupBy { it["formatId"].toString() }'), 'duplicate format IDs from different player clients must collapse to one row');
-  assert.ok(youtubeAdapter.includes('formatId == "bestaudio"'), 'bestaudio selector must bypass video stream selection');
+  assert.ok(youtubeAdapter.includes('formatId == "bestaudio"'), 'yt-dlp fallback still recognizes its bestaudio selector');
+  assert.ok(youtubeAdapter.includes('availableFormats.filter'), 'audio fallback selects an actual audio-only format from the extractor metadata');
+  assert.ok(youtubeAdapter.includes('NewPipeYoutube.get(sourceUrl)'), 'YouTube metadata uses the fast NewPipe extractor first');
+  assert.ok(youtubeAdapter.includes('NewPipeYoutube.add(app, sourceUrl, formatId)'), 'NewPipe format selection is handled by the native adapter');
+  assert.ok(youtubeAdapter.includes('--ffmpeg-location'), 'override the wrapper stale FFmpeg path when FFmpeg package is absent');
   assert.ok(youtubeAdapter.includes('YOUTUBE_AUDIO_FORMAT_UNRESOLVED'), 'audio-only must fail explicitly when yt-dlp did not resolve an audio-only requested format');
   assert.ok(youtubeAdapter.includes('YOUTUBE_AUDIO_URL_MISSING'), 'audio-only must not fall back to the default video URL');
   assert.ok(youtubeAdapter.includes('if (hasVideo) break'), 'metadata extraction must stop after a usable video client to avoid slow redundant client calls');
@@ -75,8 +79,9 @@ async function main() {
   assert.ok(screen.includes('maglevEngine.getYouTubeInfo'), 'YouTube screen must use the existing native extractor');
   assert.ok(screen.includes('maglevEngine.addYouTubeDownload'), 'selected formats must enter the shared native transfer queue');
   assert.ok(screen.includes('format.playerClient'), 'the selected extractor client must be preserved');
-  assert.ok(screen.includes("formatId: 'bestaudio'"), 'the screen must always expose an audio-only best-quality fallback');
-  assert.ok(screen.includes('오디오만 · 최고 음질'), 'audio-only fallback must be clearly labeled in Korean');
+  assert.ok(screen.includes("formatId: 'bestaudio'"), 'a bestaudio fallback remains available only when no real audio formats were extracted');
+  assert.ok(screen.includes('audios.length > 0 ? audios : [audioFallback]'), 'real audio bitrate/format choices replace the placeholder selector');
+  assert.ok(screen.includes('오디오만 · 최고 음질'), 'audio-only fallback label is Korean');
   assert.ok(!screen.includes('ytdlpEngine.download'), 'screen must not create a second standalone download queue');
   const packageJson = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
   assert.equal(packageJson.dependencies?.['ytdlp-engine'], undefined, 'do not install a second yt-dlp Expo module/queue');
