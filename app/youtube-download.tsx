@@ -184,7 +184,7 @@ export default function YouTubeDownloadScreen() {
             </Card>
             <Button fullWidth size="lg" disabled={busy || !videos.some((format) => formatKey(format) === selectedVideo)} loading={busy}
               label={busy ? "다운로드 추가 중…" : "선택한 동영상 다운로드"}
-              onPress={() => { const chosen = videos.find((format) => formatKey(format) === selectedVideo); if (chosen) void start(chosen, selectedAudioFormat?.abr > 0 ? selectedAudioFormat.abr : undefined); }} />
+              onPress={() => { const chosen = videos.find((format) => formatKey(format) === selectedVideo); if (chosen) void start(chosen, selectedAudioFormat && selectedAudioFormat.abr > 0 ? selectedAudioFormat.abr : undefined); }} />
             {isYouTube ? (
               <Button fullWidth size="md" variant="secondary" disabled={busy || loadingMoreFormats}
                 loading={loadingMoreFormats} label={loadingMoreFormats ? '추가 형식 조회 중…' : '추가 화질·오디오 형식 조회'}
