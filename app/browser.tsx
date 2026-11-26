@@ -762,14 +762,19 @@ export default function BrowserScreen({ inTab = false }: { inTab?: boolean }) {
     setMenuOpen(false);
   };
 
-  const enterPictureInPicture = useCallback(async () => {
+  const enterPictureInPicture = useCallback(() => {
     setMenuOpen(false);
-    const result = await maglevEngine.enterBrowserPictureInPicture();
-    if (result.ok) {
-      showNotice({ message: notices.browser.pipStarted }, 2500);
-    } else {
-      showNotice({ message: notices.browser.pipFailed }, 4000);
-    }
+    // The menu is a modal sheet. Wait for its close animation before asking Android to resize
+    // the Activity into PiP; otherwise the dim/scrim layer can be captured in the PiP window.
+    afterSheetCloses(() => {
+      void maglevEngine.enterBrowserPictureInPicture().then((result) => {
+        if (result.ok) {
+          showNotice({ message: notices.browser.pipStarted }, 2500);
+        } else {
+          showNotice({ message: notices.browser.pipFailed }, 4000);
+        }
+      });
+    });
   }, [showNotice]);
 
   return (
