@@ -227,10 +227,10 @@ class MaglevEngineModule : Module() {
             if (c == null) promise.resolve(Json.failure("ENGINE_UNAVAILABLE", "Module is not attached"))
             else io(promise) { YoutubeDownload.info(c, url) }
         }
-        AsyncFunction("addYouTubeDownload") { url: String, formatId: String, playerClient: String, promise: Promise ->
+        AsyncFunction("addYouTubeDownload") { url: String, formatId: String, playerClient: String, audioBitrateKbps: Double?, promise: Promise ->
             val c = context
             if (c == null) promise.resolve(Json.failure("ENGINE_UNAVAILABLE", "Module is not attached"))
-            else io(promise) { YoutubeDownload.add(c, url, formatId, playerClient) }
+            else io(promise) { YoutubeDownload.add(c, url, formatId, playerClient, audioBitrateKbps) }
         }
         AsyncFunction("pauseDownload") { id: String, promise: Promise ->
             engine(promise) { EngineHost.pauseDownload(id) }
