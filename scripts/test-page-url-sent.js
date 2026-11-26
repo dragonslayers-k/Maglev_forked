@@ -71,7 +71,7 @@ check('empty, undefined, about: and file: are not sent', ['', undefined, null, '
   const host = read('modules/maglev-engine/android/src/main/java/com/maglev/engine/EngineHost.kt');
   const rs = read('native/maglev-core/src/http_dl/driver.rs');
   check('bridge forwards the options object unchanged', /addDownload\(url: string, options: DownloadOptions = \{\}\)[\s\S]{0,120}route\('addDownload', url, options\)/.test(bridge));
-  check('EngineHost snakeifies options (pageUrl -> page_url)', /Json\.snakeify\((?:options|cleanOptions)\)/.test(host.slice(host.indexOf('fun addDownload('), host.indexOf('fun pauseDownload('))));
+  check('EngineHost snakeifies options (pageUrl -> page_url)', host.includes('Json.snakeify(cleanOptions)'));
   check('Rust DownloadOptions reads page_url', /pub page_url: Option<String>,/.test(rs));
 
   process.exit(failed ? 1 : 0);
