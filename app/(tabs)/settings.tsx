@@ -18,7 +18,6 @@ import { Card, formatLimit, friendlyPath } from '../../components/settings/Setti
 import { spacing } from '../../constants/theme';
 import { banners, watchCopy } from '../../constants/copy';
 import { useWatches } from '../../utils/watch/store';
-import { useUpdatePrefs } from '../../utils/prefs/update';
 import { useStatsPrefs } from '../../utils/stats/prefs';
 import { useLinkDownloadPrefs } from '../../utils/prefs/linkDownloads';
 import { useSubtitleSettings } from '../../components/subtitles-settings/useSubtitleSettings';
@@ -156,7 +155,6 @@ export default function SettingsIndex() {
   const assistant = useAssistantPrefs();
   const watches = useWatches();
   const [browserPrefs] = useBrowserPrefs();
-  const [updatePrefs] = useUpdatePrefs();
   const [linkPrefs] = useLinkDownloadPrefs();
   const [subtitles] = useSubtitleSettings();
   const [query, setQuery] = useState('');
@@ -213,7 +211,6 @@ export default function SettingsIndex() {
   ];
   const appRows: RowSpec[] = [
     { icon: 'about', title: '앱 정보', value: APP_VERSION, route: 'about' },
-    { icon: 'download', title: '업데이트', value: updatePrefs.updateAutoCheck ? '매일 확인' : '수동', route: 'updates' },
   ];
 
   // "More below": a fade over the bottom edge until the end is near, and a pill that stays until the end has been reached once (or it is tapped).
