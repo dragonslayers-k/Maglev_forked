@@ -2,6 +2,7 @@ package com.maglev.engine.youtube
 
 import android.content.Context
 import org.schabi.newpipe.extractor.NewPipe
+import org.schabi.newpipe.extractor.services.youtube.extractors.YoutubeStreamExtractor
 import org.schabi.newpipe.extractor.downloader.Downloader
 import org.schabi.newpipe.extractor.downloader.Request
 import org.schabi.newpipe.extractor.downloader.Response
@@ -48,17 +49,18 @@ object NewPipeYoutube {
         }
     }
 
-    private fun init() {
+    private fun init(context: Context) {
         if (initialized) return
         synchronized(lock) {
             if (initialized) return
             NewPipe.init(HttpDownloader())
+            YoutubeStreamExtractor.setPoTokenProvider(com.maglev.engine.youtube.potoken.NewPipePoTokenGenerator(context))
             initialized = true
         }
     }
 
-    fun get(url: String): StreamInfo {
-        init()
+    fun get(context: Context, url: String): StreamInfo {
+        init(context)
         val now = System.currentTimeMillis()
         cache[url]?.takeIf { now - it.first < CACHE_MS }?.let { return it.second }
         val info = StreamInfo.getInfo(url)
@@ -125,7 +127,7 @@ object NewPipeYoutube {
 
     fun add(context: Context, url: String, formatId: String): Map<String, Any?>? {
         if (!formatId.startsWith("npv") && !formatId.startsWith("npa")) return null
-        val info = get(url)
+        val info = get(context, url)
         if (formatId.startsWith("npa")) {
             val itag = formatId.removePrefix("npa").toIntOrNull()
                 ?: return failure("INVALID_ARGUMENT", "오디오 형식 ID가 올바르지 않습니다.")
