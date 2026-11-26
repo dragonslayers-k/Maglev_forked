@@ -35,11 +35,23 @@ function findMatchingBrace(source, openAt) {
 
 function addJitpackRepository(source) {
   if (source.includes(MARKER)) return source;
-  const dmr = /dependencyResolutionManagement\s*\\{/m.exec(source);
+  const dmr = /dependencyResolutionManagement\s*\{/m.exec(source);
   if (!dmr) {
-    // Some Expo/RN settings.gradle templates no longer declare this block.
-    // Add settings-level repositories explicitly instead of aborting prebuild.
-    const newBlock = '\\ndependencyResolutionManagement {\\n    repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)\\n    repositories {\\n        google()\\n        mavenCentral()\\n        // ' + MARKER + '\\n        maven { url = uri("https://www.jitpack.io") }\\n    }\\n}\\n';
+    // Some Expo/RN settings.gradle templates omit this block entirely.
+    // Add it rather than aborting Android prebuild.
+    const newBlock = [
+      '',
+      'dependencyResolutionManagement {',
+      '    repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)',
+      '    repositories {',
+      '        google()',
+      '        mavenCentral()',
+      '        // ' + MARKER,
+      '        maven { url = uri("https://www.jitpack.io") }',
+      '    }',
+      '}',
+      '',
+    ].join('\\n');
     return source.trimEnd() + newBlock;
   }
   const dmrOpen = source.indexOf('{', dmr.index);
