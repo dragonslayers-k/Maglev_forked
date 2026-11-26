@@ -213,9 +213,9 @@ export default function SearchProvidersSettings() {
         <SectionHeader title="표시할 검색 사이트" />
         <Card>
           <ListRow
-            title="성인 검색 사이트 표시"
-            subtitle={prefs.adult ? '성인 사이트는 사용 안 함 목록에 표시됩니다.' : '직접 켤 때까지 숨깁니다.'}
-            accessory={<Toggle value={prefs.adult} onValueChange={(adult) => update({ adult })} accessibilityLabel="성인 검색 사이트 표시" />}
+            title="성인 사이트를 목록에 표시"
+            subtitle={prefs.adult ? '성인 사이트가 “사용 안 함” 목록에 표시됩니다. 검색에는 사용되지 않습니다.' : '성인 사이트를 목록에서 숨깁니다. 켜면 “사용 안 함” 목록에서 확인할 수 있습니다.'}
+            accessory={<Toggle value={prefs.adult} onValueChange={(adult) => update({ adult })} accessibilityLabel="성인 사이트를 목록에 표시" />}
           />
           <ListRow
             title="위험한 검색 사이트 경고"
