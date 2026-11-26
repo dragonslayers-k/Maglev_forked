@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useId, useMemo, useRef, useState, useSyncExternalStore } from 'react';
-import { AppState, BackHandler, Keyboard, Linking, Share, StyleSheet, Text, View } from 'react-native';
+import { AppState, BackHandler, Keyboard, Linking, Share, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { useFocusEffect, useIsFocused, useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Clipboard from 'expo-clipboard';
@@ -89,6 +89,9 @@ let mountedScreens = 0;
 /** inTab: shown inside the tab bar, which already pads for the system navigation area, so the bottom inset is skipped. */
 export default function BrowserScreen({ inTab = false }: { inTab?: boolean }) {
   const { colors, dark } = useTheme();
+  const { width: viewportWidth, height: viewportHeight } = useWindowDimensions();
+  // Android resizes the activity to the PiP window. Hide browser chrome/overlays there so the video viewport is unobstructed.
+  const pipCompact = viewportHeight < 260 || viewportWidth < 280;
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const router = useRouter();
   const params = useLocalSearchParams<{ url?: string; prefill?: string; open?: string; newTab?: string }>();
@@ -770,8 +773,8 @@ export default function BrowserScreen({ inTab = false }: { inTab?: boolean }) {
   }, [showNotice]);
 
   return (
-    <SafeAreaView style={styles.root} edges={inTab ? ['top', 'left', 'right'] : ['top', 'left', 'right', 'bottom']}>
-      {findOpen ? (
+    <SafeAreaView style={styles.root} edges={pipCompact ? [] : inTab ? ['top', 'left', 'right'] : ['top', 'left', 'right', 'bottom']}>
+      {!pipCompact && (findOpen ? (
         <FindBar
           result={findResult}
           onSearch={(q) => {
@@ -894,8 +897,8 @@ export default function BrowserScreen({ inTab = false }: { inTab?: boolean }) {
         </PressableScale>
         <IconButton icon="more" accessibilityLabel="더보기" disabled={!ready} onPress={() => setMenuOpen(true)} />
       </View>
-      )}
-      <View style={styles.progress}>{loading ? <ProgressBar progress={(page?.progress ?? 0) / 100} indeterminate={!page || page.progress <= 0} /> : null}</View>
+      ))}
+      {!pipCompact ? <View style={styles.progress}>{loading ? <ProgressBar progress={(page?.progress ?? 0) / 100} indeterminate={!page || page.progress <= 0} /> : null}</View> : null}
 
       <View style={styles.body}>
         {tabsState && isOwner
@@ -1005,7 +1008,7 @@ export default function BrowserScreen({ inTab = false }: { inTab?: boolean }) {
             />
           </View>
         ) : null}
-        {hintShown ? (
+        {!pipCompact && hintShown ? (
           <View style={styles.hint} pointerEvents="none" accessibilityLiveRegion="polite">
             <Text style={styles.hintText}>{foundHintText(found.length)}</Text>
           </View>
