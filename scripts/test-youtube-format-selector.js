@@ -16,6 +16,9 @@ const checks = [
   ['container conversion writes to a temporary file before replacing output', converter.includes('maglev-convert.tmp') && converter.includes('temp.renameTo(output)')],
   ['selected audio bitrate reaches FFmpeg postprocessing from both extractors', nativeAdapter.includes('audioBitrateKbps') && newPipeAdapter.includes('audioBitrateKbps') && engineHost.includes('spec["audioBitrateKbps"]') && converter.includes('audioRate')],
   ['NewPipe refreshes signed stream URLs when the user adds a download, not from the 3-minute metadata cache', newPipeAdapter.includes('private fun getFresh(context: Context, url: String): StreamInfo') && newPipeAdapter.includes('val info = StreamInfo.getInfo(url)') && newPipeAdapter.includes('val info = getFresh(context, url)')],
+  ['YouTube extension filters are compact chips instead of stacked rows', source.includes('<Chip label="전체"') && source.includes('contentContainerStyle={styles.chips}') && !source.includes('title="모든 확장자"')],
+  ['video and audio quality lists are collapsed by default and expand on demand', source.includes('videoFormatsExpanded') && source.includes('audioFormatsExpanded') && source.includes('다른 화질 보기') && source.includes('다른 음질 보기')],
+  ['output container selection opens dedicated sheets, not inline expanding lists', source.includes('<Sheet visible={videoContainerSheet}') && source.includes('<Sheet visible={audioContainerSheet}') && !source.includes('videoContainerExpanded') && !source.includes('audioContainerExpanded')],
 ];
 let failed = false;
 for (const [name, ok] of checks) {
