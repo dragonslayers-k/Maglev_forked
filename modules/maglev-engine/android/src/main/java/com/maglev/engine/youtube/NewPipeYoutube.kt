@@ -143,7 +143,7 @@ object NewPipeYoutube {
         return out
     }
 
-    fun add(context: Context, url: String, formatId: String): Map<String, Any?>? {
+    fun add(context: Context, url: String, formatId: String, audioBitrateKbps: Double? = null): Map<String, Any?>? {
         if (!formatId.startsWith("npv") && !formatId.startsWith("npa")) return null
         val info = get(context, url)
         if (formatId.startsWith("npa")) {
@@ -181,10 +181,20 @@ object NewPipeYoutube {
             val variantId = variant["id"] as? String
                 ?: return failure("YOUTUBE_STREAM_UNSUPPORTED", "영상 트랙 ID가 없습니다.")
             val audioTracks = (probe["audioTracks"] as? List<*>)?.mapNotNull { it as? Map<*, *> }.orEmpty()
-            val audioId = audioTracks.firstOrNull()?.get("id") as? String
+            val targetAudioBps = audioBitrateKbps?.takeIf { it.isFinite() && it > 0 }?.times(1000.0)
+            val audioCandidates = if (targetAudioBps != null) {
+                audioTracks.filter { ((it["bandwidth"] as? Number)?.toDouble() ?: 0.0) <= targetAudioBps }
+            } else audioTracks
+            val chosenAudio = audioCandidates.maxByOrNull { (it["bandwidth"] as? Number)?.toDouble() ?: 0.0 }
+            val audioId = chosenAudio?.get("id") as? String
             val selection = linkedMapOf<String, Any?>("kind" to kind, "variantId" to variantId)
             if ((variant["audio"] as? String) == "separate") {
-                if (audioId.isNullOrBlank()) return failure("YOUTUBE_STREAM_UNSUPPORTED", "오디오 트랙을 찾지 못했습니다.")
+                if (audioId.isNullOrBlank()) {
+                    return failure(
+                        if (targetAudioBps != null) "YOUTUBE_AUDIO_BITRATE_UNAVAILABLE" else "YOUTUBE_STREAM_UNSUPPORTED",
+                        if (targetAudioBps != null) "선택한 음질 이하의 DASH 오디오 트랙이 없습니다." else "오디오 트랙을 찾지 못했습니다.",
+                    )
+                }
                 selection["audioId"] = audioId
             }
             return EngineHost.addDownload(dash, mapOf(
