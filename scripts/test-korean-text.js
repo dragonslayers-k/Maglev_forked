@@ -22,6 +22,10 @@ assert.match(output, /View/);
 assert.match(output, /Pressable/);
 assert.doesNotMatch(output, /import \{ Text,/);
 const wrapper = require('node:fs').readFileSync(path.join(root, 'components/ui/KoreanText.tsx'), 'utf8');
+const korean = require('node:fs').readFileSync(path.join(root, 'constants/korean.ts'), 'utf8');
+for (const label of ['Paste new link', 'No app can open this file.', 'Charging only', 'Any network', 'More below']) {
+  assert.ok(korean.includes(JSON.stringify(label)), `Korean dictionary must include ${label}`);
+}
 assert.match(wrapper, /koUiText/);
 assert.match(wrapper, /translateChildren/);
 const config = require('node:fs').readFileSync(path.join(root, 'babel.config.js'), 'utf8');
