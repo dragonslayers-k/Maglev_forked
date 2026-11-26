@@ -48,7 +48,7 @@ export const glossary = {
 export const ACRONYMS = ['VPN', 'URL', 'RSS', 'SD', 'DHT', 'IP', 'ID', 'USB', 'UI', 'OK', 'API', 'VLC', 'HTTP', 'HTTPS', 'UPnP', 'DRM', 'HLS', 'DASH', 'MIME', 'MP4', 'M3U8'] as const;
 
 /** Capitalised words that may appear mid-sentence. */
-export const PROPER_WORDS = ['Maglev', "Maglev's", 'Android', 'Transfers', 'Wi-Fi', 'Atom', 'Settings', 'Search', 'Feeds', 'Undo', 'Retry', 'Inter'] as const;
+export const PROPER_WORDS = ['Maglev+', "Maglev+'s", 'Android', 'Transfers', 'Wi-Fi', 'Atom', 'Settings', 'Search', 'Feeds', 'Undo', 'Retry', 'Inter'] as const;
 
 const toName = (s: string | number) => String(s);
 
@@ -230,7 +230,7 @@ export const empty = {
   transfers: {
     none: { title: '다운로드 중인 항목이 없습니다', body: '링크나 .torrent 파일을 추가하거나 검색해 보세요.' },
     /** Under the finder tiles: the Share route, which the screen's buttons don't cover. */
-    shareHint: '다른 앱에서 "공유"를 누른 다음 Maglev를 선택하세요.',
+    shareHint: '다른 앱에서 "공유"를 누른 다음 Maglev+를 선택하세요.',
     noMatch: { title: '일치하는 전송 항목이 없습니다', body: '다른 검색어를 입력해 보세요.' },
     noneInFilter: (filter: string | number) => ({
       title: `No ${toName(filter).toLowerCase()} transfers`,
@@ -259,7 +259,7 @@ export const empty = {
     noFiles: { title: '목록에 파일이 없습니다', body: '선택할 수 있는 파일이 없습니다.' },
     duplicate: { title: '이미 전송 목록에 있습니다', body: '이 토렌트는 이미 추가되어 있습니다.' },
     timedOut: { title: "토렌트 정보를 찾지 못했습니다" },
-    timedOutMagnet: 'No peers answered in time. Retry, or add it anyway and Maglev keeps looking.',
+    timedOutMagnet: 'No peers answered in time. Retry, or add it anyway and Maglev+ keeps looking.',
     timedOutFile: '제한 시간 내에 피어가 응답하지 않았습니다.',
     readFailed: { title: "토렌트를 읽지 못했습니다" },
   },
@@ -332,8 +332,8 @@ export const historyCopy = {
     saveSubtitle: '이 기기에 방문한 페이지를 저장합니다.',
     suggest: '방문 기록 추천',
     suggestSubtitle: '주소를 입력할 때 일치하는 페이지를 표시합니다.',
-    clearOnClose: 'Maglev 종료 시 방문 기록 삭제',
-    clearOnCloseSubtitle: 'Maglev를 닫을 때 방문 기록을 삭제하고 다음 실행 시에도 정리합니다.',
+    clearOnClose: 'Maglev+ 종료 시 방문 기록 삭제',
+    clearOnCloseSubtitle: 'Maglev+를 닫을 때 방문 기록을 삭제하고 다음 실행 시에도 정리합니다.',
     open: '방문 기록',
     clear: '방문 기록 삭제',
   },
@@ -472,7 +472,7 @@ export const streamSheet = {
 // ---------------------------------------------------------------------------------------------
 export const onboarding = {
   welcome: {
-    title: 'Maglev',
+    title: 'Maglev+',
     body: '토렌트, 웹 링크, 동영상을 한곳에서 관리하세요.',
     detail: '여러 사이트를 동시에 검색하고, 브라우저에서 동영상을 찾고, 피드로 새 항목을 받아보세요.',
   },
@@ -486,7 +486,7 @@ export const onboarding = {
   },
   background: {
     title: '백그라운드 실행 유지',
-    body: '배터리 절약을 위해 Android가 다운로드를 중단할 수 있습니다. Maglev의 실행을 허용할까요?',
+    body: '배터리 절약을 위해 Android가 다운로드를 중단할 수 있습니다. Maglev+의 실행을 허용할까요?',
   },
   mobileData: {
     title: '모바일 데이터로 다운로드할까요?',
@@ -554,7 +554,7 @@ export const tabsCopy = {
 /** Settings > Appearance > App icon. The hint is linted like a banner body: at most 16 words, ends with a period. */
 export const appIconCopy = {
   label: '앱 아이콘',
-  hint: 'Maglev를 나가면 변경됩니다. 홈 화면에 반영되기까지 잠시 걸릴 수 있습니다.',
+  hint: 'Maglev+를 나가면 변경됩니다. 홈 화면에 반영되기까지 잠시 걸릴 수 있습니다.',
   /** "Teal app icon, selected" */
   a11y: (name: string, selected: boolean) => `${name} 앱 아이콘${selected ? ', 선택됨' : ''}`,
 } as const;
@@ -649,7 +649,7 @@ export const backupCopy = {
   skipped: (n: number) => `${n} already here, skipped`,
   failed: (n: number) => `${n} couldn't be added`,
   defaultFolder: (n: number) => `${n} saved to the default folder, because the old folder isn't on this phone`,
-  restartNote: '일부 변경 사항은 Maglev를 다시 시작한 뒤 적용됩니다.',
+  restartNote: '일부 변경 사항은 Maglev+를 다시 시작한 뒤 적용됩니다.',
   startAll: '모두 시작',
   started: (n: number) => `Started ${n}`,
   done: '완료',
@@ -670,17 +670,17 @@ export const quickShareCopy = {
   savesTo: '저장 위치',
   download: '다운로드',
   downloadAnyway: '그래도 다운로드',
-  openInMaglev: 'Maglev에서 열기',
+  openInMaglev+: 'Maglev+에서 열기',
   freeUpSpace: '저장 공간 확보',
   findVideos: '이 페이지의 동영상 찾기',
   close: '닫기',
   webPage: '웹 페이지이며 파일이 아닙니다',
   noLink: '공유한 항목에서 링크를 찾지 못했습니다',
-  alreadyIn: '이미 Maglev에 있습니다',
-  added: 'Maglev에 추가했습니다',
-  addedServiceLater: 'Maglev에 추가했습니다. 앱을 열면 다운로드가 시작됩니다.',
+  alreadyIn: '이미 Maglev+에 있습니다',
+  added: 'Maglev+에 추가했습니다',
+  addedServiceLater: 'Maglev+에 추가했습니다. 앱을 열면 다운로드가 시작됩니다.',
   couldNotAdd: '추가하지 못했습니다. 다시 시도하세요.',
-  engineFailed: 'Maglev를 시작하지 못했습니다. 앱을 열고 다시 시도하세요.',
+  engineFailed: 'Maglev+를 시작하지 못했습니다. 앱을 열고 다시 시도하세요.',
 } as const;
 // endregion quick share
 
@@ -690,7 +690,7 @@ export const watchCopy = {
   title: '관심 항목',
   rowTitle: '관심 항목',
   rowValue: (n: number) => (n === 0 ? 'None' : n === 1 ? '1 title' : `${n} titles`),
-  intro: 'Maglev가 백그라운드에서 새 영상이나 파일을 확인하고 발견하면 알려 드립니다.',
+  intro: 'Maglev+가 백그라운드에서 새 영상이나 파일을 확인하고 발견하면 알려 드립니다.',
   empty: '아직 관심 항목이 없습니다. 제목을 검색하고 관심 등록을 누르세요.',
   watchButton: '관심 등록',
   watchHint: '이 검색을 관심 등록',
@@ -709,7 +709,7 @@ export const watchCopy = {
   lastNew: (name: string) => `Last new: ${name}`,
   noneNew: '새 항목이 없습니다',
   every: 'Check every',
-  backgroundNote: 'Android decides the exact time, so a check can come later than you chose. It does not run after you force-stop Maglev, until you open it again.',
+  backgroundNote: 'Android decides the exact time, so a check can come later than you chose. It does not run after you force-stop Maglev+, until you open it again.',
 } as const;
 // endregion watch
 
@@ -718,21 +718,21 @@ export const watchCopy = {
 export const updateCopy = {
   versionBadge: 'Update available',
   check: { title: 'Check for updates', checking: 'Checking…', upToDate: "You're up to date", failed: "Couldn't check. Try again." },
-  available: (version: string) => `Maglev ${version} is available`,
+  available: (version: string) => `Maglev+ ${version} is available`,
   managedBy: (by: 'fdroid' | 'obtainium' | 'play' | 'accrescent' | 'store') =>
     by === 'accrescent'
       ? 'Updates come from Accrescent.'
       : by === 'store'
-        ? 'Updates come from the app store you installed Maglev from.'
+        ? 'Updates come from the app store you installed Maglev+ from.'
         : `Updates come from ${by === 'fdroid' ? 'F-Droid' : by === 'obtainium' ? 'Obtainium' : 'Google Play'}.`,
-  updatesRow: { title: 'Updates', autoCheck: 'Check automatically', autoCheckHint: 'Once a day, Maglev asks GitHub for the latest version.' },
+  updatesRow: { title: 'Updates', autoCheck: 'Check automatically', autoCheckHint: 'Once a day, Maglev+ asks GitHub for the latest version.' },
   modes: [
     { value: 'ask', title: 'Tell me', description: 'Get a notification when a new version is out.' },
     { value: 'download', title: 'Download on Wi-Fi, then ask', description: 'The file downloads on Wi-Fi. You choose when to install.' },
     { value: 'auto', title: 'Install automatically', description: 'Downloads on Wi-Fi, then installs when nothing is transferring.' },
   ],
   card: {
-    title: (version: string) => `Maglev ${version}`,
+    title: (version: string) => `Maglev+ ${version}`,
     whatsNew: "What's new",
     noNotes: 'No release notes.',
     download: 'Download',
@@ -745,12 +745,12 @@ export const updateCopy = {
     waitingForWifi: 'Wi-Fi 연결 대기 중',
     installing: 'Installing',
     confirm: 'Confirm on the screen Android shows.',
-    ready: (version: string) => `Maglev ${version} is ready`,
+    ready: (version: string) => `Maglev+ ${version} is ready`,
   },
   notices: {
-    invalid: "This update didn't pass Maglev's checks, so it wasn't installed.",
-    needsPermission: 'To install updates, allow Maglev to install apps.',
-    restartWarning: 'Maglev restarts to finish. Downloads pick up where they left off.',
+    invalid: "This update didn't pass Maglev+'s checks, so it wasn't installed.",
+    needsPermission: 'To install updates, allow Maglev+ to install apps.',
+    restartWarning: 'Maglev+ restarts to finish. Downloads pick up where they left off.',
     downloadFailed: "Couldn't download the update. Try again.",
     blocked: 'Your network settings block this download right now.',
     storageFull: "There isn't enough space for the update.",
@@ -791,12 +791,12 @@ export const listsCopy = {
   /** Sentences shown under a row. */
   hints: {
     autoUpdateSubtitle: 'Ad block list, search sources and trackers, once a day.',
-    rejected: "The list didn't pass Maglev's checks, so it wasn't used.",
+    rejected: "The list didn't pass Maglev+'s checks, so it wasn't used.",
     blocked: 'Your network settings block this download right now.',
   },
   providers: {
-    turnedOff: 'Turned off by Maglev',
-    turnedOffWithNote: (note: string) => `Turned off by Maglev. ${note}`,
+    turnedOff: 'Turned off by Maglev+',
+    turnedOffWithNote: (note: string) => `Turned off by Maglev+. ${note}`,
   },
   browser: {
     upToDate: 'The block list is already up to date.',
@@ -832,7 +832,7 @@ export const textSizeCopy = {
 export const subtitleSettingsCopy = {
   languages: {
     title: 'Languages',
-    caption: 'Maglev looks for the first language on the list, then the next. Leave it empty to follow your phone.',
+    caption: 'Maglev+ looks for the first language on the list, then the next. Leave it empty to follow your phone.',
     yours: 'Your languages',
     all: 'All languages',
     search: 'Search languages',
@@ -849,13 +849,13 @@ export const subtitleSettingsCopy = {
   sources: {
     title: 'Subtitle sources',
     pageTitle: 'Subtitle sources',
-    caption: 'Maglev asks the sources you turn on when you tap Find subtitles.',
+    caption: 'Maglev+ asks the sources you turn on when you tap Find subtitles.',
     empty: '검색 사이트가 없습니다',
     emptyBody: 'Sources arrive with app and list updates.',
     on: (n: number) => `On · ${n}`,
     off: 'Off',
     nothingOn: 'Nothing is on. Turn on a source below.',
-    footer: "Maglev doesn't host any subtitles. Sources are third-party websites.",
+    footer: "Maglev+ doesn't host any subtitles. Sources are third-party websites.",
     listLine: (when: string) => `Source list: ${when}`,
     toggle: (name: string) => `Use ${name} for subtitles`,
     matchesBy: 'Finds subtitles',
