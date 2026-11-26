@@ -5,17 +5,16 @@ import Constants from 'expo-constants';
 import { maglevEngine } from 'maglev-engine';
 import { ThemeColors, spacing, touch, type } from '../../constants/theme';
 import { useTheme } from '../../context/ThemeContext';
-import { Button, Dialog, ListRow, PressableScale } from '../../components/ui';
+import { Button, Dialog, ListRow } from '../../components/ui';
 import { useMaglevEngine } from '../../context/EngineContext';
 import { Card, SettingsPage } from '../../components/settings/SettingsParts';
 import { Wordmark } from '../../components/settings/Wordmark';
 import { MaglevMark } from '../../components/brand/MaglevMark';
-import { errorScreenCopy, updateCopy } from '../../constants/copy';
+import { errorScreenCopy } from '../../constants/copy';
 import { clearCrashLog, copyCrashReport, getCrashLog } from '../../utils/crashLog';
 import { REPO_URL, StarTicket } from '../../components/settings/StarTicket';
 import { aboutExtrasCopy } from '../../constants/aboutCopy';
 import { buildIssueUrl, deviceLabel } from '../../utils/update/check';
-import { useHasUpdate } from '../../components/settings/updates/useHasUpdate';
 
 type Extra = { homepage?: string; privacyUrl?: string };
 
@@ -34,7 +33,6 @@ export default function AboutSettings() {
   const [engine, setEngine] = useState<string>('—');
   const appVersion = Constants.expoConfig?.version ?? '—';
   const extra = (Constants.expoConfig?.extra ?? {}) as Extra;
-  const { hasUpdate, version } = useHasUpdate();
 
   useEffect(() => {
     let alive = true;
@@ -59,7 +57,6 @@ export default function AboutSettings() {
     const { android, device } = phoneDetails();
     void Linking.openURL(buildIssueUrl({ version: appVersion, android, device }));
   };
-  const openUpdates = () => router.push('/settings/updates');
 
   const { showNotice } = useMaglevEngine();
   const [logWarning, setLogWarning] = useState(false);
@@ -89,9 +86,6 @@ export default function AboutSettings() {
       </View>
       <StarTicket />
       <Card>
-        {hasUpdate && version ? (
-          <ListRow title={updateCopy.available(version)} icon="download" onPress={openUpdates} />
-        ) : null}
         <ListRow title={updateCopy.report.title} subtitle={updateCopy.report.subtitle} icon="external" onPress={reportBug} />
         <ListRow
           title={aboutExtrasCopy.debugLog.title}
@@ -141,14 +135,9 @@ export default function AboutSettings() {
           />
         </Card>
       ) : null}
-      <PressableScale
-        onPress={openUpdates}
-        style={s.footer}
-        accessibilityRole="button"
-        accessibilityLabel={`Version ${appVersion}. Opens Updates`}
-      >
+      <View style={s.footer}>
         <Text style={s.footerText}>{`Version ${appVersion} · ${engine}`}</Text>
-      </PressableScale>
+      </View>
       <Dialog
         visible={logWarning}
         onClose={() => setLogWarning(false)}
