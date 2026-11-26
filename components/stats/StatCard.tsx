@@ -10,6 +10,7 @@ import { ThemeColors, radius, spacing, type } from '../../constants/theme';
 import { PixelIcon, type PixelIconName } from '../PixelIcon';
 import { PressableScale } from '../ui';
 import type { Parts } from '../../utils/stats/format';
+import { koUiText } from '../../constants/korean';
 
 export type ValueTone = 'normal' | 'dim' | 'danger';
 
@@ -64,7 +65,7 @@ export function StatCard({ title, onPress, value, pre, sub, picture, box = 'half
       <View style={s.titleRow}>
         {icon ? <PixelIcon name={icon} size={16} color={iconColor ?? colors.textMuted} /> : null}
         <Text style={s.title} numberOfLines={1}>
-          {title}
+          {koUiText(title)}
         </Text>
       </View>
       {onPress ? (
@@ -84,7 +85,7 @@ export function StatCard({ title, onPress, value, pre, sub, picture, box = 'half
         <View style={s.subRow}>
           {typeof sub === 'string' ? (
             <Text style={s.sub} numberOfLines={1}>
-              {sub}
+              {koUiText(sub)}
             </Text>
           ) : (
             sub
