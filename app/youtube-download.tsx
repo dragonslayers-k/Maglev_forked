@@ -213,7 +213,7 @@ export default function YouTubeDownloadScreen() {
                 <ListRow icon="check" title={formatTitle(selectedVideoFormat)} subtitle={[formatSubtitle(selectedVideoFormat), formatSize(selectedVideoFormat)].join(' · ')} value="선택됨" disabled={busy} onPress={() => setVideoFormatsExpanded((open) => !open)} />
               ) : <Text style={styles.muted}>선택 가능한 화질이 없습니다.</Text>}
               {visibleVideos.length > 1 ? (
-                <ListRow icon="list" title={videoFormatsExpanded ? "화질 목록 접기" : `다른 화질 보기 · ${visibleVideos.length}개`} value={videoFormatsExpanded ? "접기" : "보기"} disabled={busy} onPress={() => setVideoFormatsExpanded((open) => !open)} />
+                <ListRow icon="filter" title={videoFormatsExpanded ? "화질 목록 접기" : `다른 화질 보기 · ${visibleVideos.length}개`} value={videoFormatsExpanded ? "접기" : "보기"} disabled={busy} onPress={() => setVideoFormatsExpanded((open) => !open)} />
               ) : null}
               {videoFormatsExpanded ? visibleVideos.map((format) => (
                 <ListRow key={formatKey(format)} icon={selectedVideo === formatKey(format) ? "check" : "download"} title={formatTitle(format)}
@@ -250,7 +250,7 @@ export default function YouTubeDownloadScreen() {
                 <ListRow icon="check" title={formatTitle(selectedAudioFormat, audioChoices.indexOf(selectedAudioFormat) === 0)} subtitle={[formatSubtitle(selectedAudioFormat), formatSize(selectedAudioFormat)].join(' · ')} value="선택됨" disabled={busy} onPress={() => setAudioFormatsExpanded((open) => !open)} />
               ) : <Text style={styles.muted}>선택 가능한 오디오 형식이 없습니다.</Text>}
               {audioChoices.length > 1 ? (
-                <ListRow icon="list" title={audioFormatsExpanded ? "오디오 목록 접기" : `다른 음질 보기 · ${audioChoices.length}개`} value={audioFormatsExpanded ? "접기" : "보기"} disabled={busy} onPress={() => setAudioFormatsExpanded((open) => !open)} />
+                <ListRow icon="filter" title={audioFormatsExpanded ? "오디오 목록 접기" : `다른 음질 보기 · ${audioChoices.length}개`} value={audioFormatsExpanded ? "접기" : "보기"} disabled={busy} onPress={() => setAudioFormatsExpanded((open) => !open)} />
               ) : null}
               {audioFormatsExpanded ? audioChoices.map((format, index) => (
                 <ListRow key={formatKey(format)} icon={selectedAudio === formatKey(format) ? "check" : "download"} title={formatTitle(format, index === 0)}
