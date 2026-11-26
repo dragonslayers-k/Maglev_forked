@@ -260,7 +260,7 @@ export default function YouTubeDownloadScreen() {
             </Card>
             <Button fullWidth size="lg" disabled={busy || !((visibleAudios.length > 0 ? visibleAudios : selectedAudioExt === 'all' ? audioFallbacks : []).some((format) => formatKey(format) === selectedAudio))} loading={busy}
               label={busy ? "다운로드 추가 중…" : "선택한 오디오 다운로드"}
-              onPress={() => { const chosen = (visibleAudios.length > 0 ? visibleAudios : selectedAudioExt === 'all' ? audioFallbacks : []).find((format) => formatKey(format) === selectedAudio); if (chosen) void start(chosen, undefined, audioContainer); }} />
+              onPress={() => { const chosen = (visibleAudios.length > 0 ? visibleAudios : selectedAudioExt === 'all' ? audioFallbacks : []).find((format) => formatKey(format) === selectedAudio); if (chosen) void start(chosen, selectedAudioBitrateKbps, audioContainer); }} />
           </View>
         </>
       ) : null}
