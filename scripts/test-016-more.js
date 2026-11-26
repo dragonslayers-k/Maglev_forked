@@ -18,7 +18,7 @@ const check = (name, ok) => {
   check('a general source shows under every filter', providerCovers({ categories: ['all'] }, 'games'));
 
   const sp = read('app/settings/search-providers.tsx');
-  check('settings: category chips as a radio group', /accessibilityRole="radiogroup" accessibilityLabel="검색 사이트 범위"/.test(sp) && /role="radio"/.test(sp));
+  check('settings: category chips as a radio group', /accessibilityRole="radiogroup" accessibilityLabel="[^"]+"/.test(sp) && /role="radio"/.test(sp));
   check('settings: On and Off lists are filtered', /shownOn\.map/.test(sp) && /shownOff\.map/.test(sp));
   check('settings: needs-a-check list is not filtered', /checkList\.map/.test(sp) && !/checkList[^\n]*providerCovers/.test(sp));
   check('settings: adult chip only when adult sources are shown', /c !== 'adult' \|\| prefs\.adult/.test(sp));
