@@ -78,7 +78,7 @@ export const SETTINGS_INDEX: SettingEntry[] = [
   ),
   e(
     "about-crash-log",
-    "Clear crash log",
+    "충돌 기록 지우기",
     "about",
     "앱 정보",
     [
@@ -456,7 +456,7 @@ export const SETTINGS_INDEX: SettingEntry[] = [
   // Backup
   e(
     "backup-export",
-    "Export backup",
+    "백업 내보내기",
     "backup",
     "백업 및 복원",
     [
@@ -470,7 +470,7 @@ export const SETTINGS_INDEX: SettingEntry[] = [
   ),
   e(
     "backup-restore",
-    "Restore from backup",
+    "백업에서 복원",
     "backup",
     "백업 및 복원",
     [
@@ -499,7 +499,7 @@ export const SETTINGS_INDEX: SettingEntry[] = [
   ),
   e(
     "backup-part-feeds",
-    "Feeds and rules",
+    "피드 및 규칙",
     "backup",
     "백업 및 복원",
     ["restore", "rss", "auto-download", "rules"],
@@ -1681,7 +1681,7 @@ export const SETTINGS_INDEX: SettingEntry[] = [
   // Watches
   e(
     "watch-mobile-data",
-    "Use mobile data",
+    "모바일 데이터 사용",
     "watch",
     "Watches",
     [
@@ -1866,7 +1866,7 @@ export const SETTINGS_INDEX: SettingEntry[] = [
   ),
   e(
     "backup-include-stats",
-    "Include stats",
+    "통계 포함",
     "backup",
     "백업 및 복원",
     ["backup", "export", "stats", "statistics", "history", "downloaded", "names", "save"],
@@ -1881,7 +1881,7 @@ export const SETTINGS_INDEX: SettingEntry[] = [
   ),
   e(
     "about-copy-crash-report",
-    "Copy crash report",
+    "충돌 보고서 복사",
     "about",
     "앱 정보",
     ["crash", "error", "log", "report", "bug", "copy", "problem"],
