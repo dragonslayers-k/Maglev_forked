@@ -85,3 +85,4 @@ function withJitpackRepository(config) {
 }
 module.exports = withJitpackRepository;
 module.exports.addJitpackRepository = addJitpackRepository;
+module.exports.MARKER = MARKER;
