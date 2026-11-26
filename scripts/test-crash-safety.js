@@ -72,7 +72,7 @@ const check = (name, ok) => {
   const about = read('app/settings/about.tsx');
   check('About shows copy and clear only when the log has entries', /crashCount > 0/.test(about) && /clearCrashLog/.test(about) && /copyCrashReport/.test(about));
   const copy = read('constants/copy.ts');
-  check('copy: title and reload text', /Something went wrong/.test(copy) && /reload: 'Reload'/.test(copy));
+  check('copy: Korean title and reload text', /title: '문제가 발생했습니다'/.test(copy) && /reload: '다시 불러오기'/.test(copy));
   check('nothing is sent anywhere', !/fetch\(|XMLHttpRequest/.test(read('utils/crashLog.ts')));
 
   console.log(failed ? `\n${failed} failed` : '\ncrash safety: all passed');
