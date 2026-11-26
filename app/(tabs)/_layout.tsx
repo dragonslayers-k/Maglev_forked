@@ -11,11 +11,9 @@ import { visibleTabs, type TabId } from '../../components/tabs/tabPrefs';
 import { useTabPrefs } from '../../components/tabs/tabPrefsStore';
 import { PRESS_SINK, animateTo, useReduceMotion } from '../../components/motion';
 import { useTheme } from '../../context/ThemeContext';
-import { useAssistantPrefs } from '../../utils/prefs/assistantApp';
 import { ThemeColors, fontFamily, motion, spacing, type, withAlpha } from '../../constants/theme';
 import { badgeLabel, useFeedsNewCount } from '../../utils/feeds';
 import { startFeedsBadge } from '../../utils/feedsBadgeStart';
-import { useUnseenReply } from '../../utils/assistantApp/unseenReply';
 
 const PILL_W = 56;
 const PILL_H = 28;
@@ -135,10 +133,8 @@ function TabButton({
 export default function TabLayout() {
   const tabBarStyle = useTabBarStyle();
 
-  const assistant = useAssistantPrefs();
   const prefs = useTabPrefs();
   const feedsNew = useFeedsNewCount();
-  const unseenReply = useUnseenReply();
   // Count from stored data now, and again when the app returns to the foreground.
   useEffect(() => startFeedsBadge(), []);
 
@@ -161,15 +157,13 @@ export default function TabLayout() {
     />
   );
 
-  // One Tabs.Screen per tab, rendered in the saved order (the bar follows child order). A tab that
-  // is off, or the Assistant while Settings > Assistant is off, has href null and no button.
-  const shown = visibleTabs(prefs, { assistantEnabled: assistant.enabled });
+  // One Tabs.Screen per remaining tab, rendered in the saved order (the bar follows child order).
+  const shown = visibleTabs(prefs);
   const screens: Record<TabId, React.ReactElement> = {
     index: tab('index', '전송', 'tab-transfers', !shown.includes('index')),
     search: tab('search', '검색', 'tab-search', !shown.includes('search')),
     feeds: tab('feeds', '피드', 'tab-feeds', !shown.includes('feeds'), true, feedsNew),
     settings: tab('settings', '설정', 'tab-settings', !shown.includes('settings'), true),
-    assistant: tab('assistant', '도우미', 'tab-assistant', !shown.includes('assistant'), false, 0, unseenReply),
     browse: tab('browse', '브라우저', 'tab-browse', !shown.includes('browse')),
   };
 
