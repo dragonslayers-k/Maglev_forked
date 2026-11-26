@@ -183,6 +183,8 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
     // 24.10a: a text selection or the find bar is active, so a downward drag must not reload. Main thread.
     private var selectionHold = false
     private var findActive = false
+    private var touchStartX = 0f
+    private var touchStartY = 0f
     // The spinner stops once the reload it started has been seen loading and has finished. Main thread.
     private var pullLoading = false
     // 24.10a: the injected script that finds media under a long press (prop mediaHitScript), and the dark pages switch.
@@ -192,6 +194,10 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
 
     init {
         BlocklistStore.warm(context)
+        // Require a deliberate downward pull and avoid stealing upward page-scroll gestures.
+        val refreshDensity = context.resources.displayMetrics.density
+        refresh.setDistanceToTriggerSync((refreshDensity * 104).toInt())
+        refresh.setSlingshotDistance((refreshDensity * 112).toInt())
         refresh.setOnRefreshListener {
             pullLoading = false
             reload()
@@ -641,9 +647,29 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
         w.setOnLongClickListener { v -> onLongPressed(v as WebView) }
         // Let the page scroll inside React Native parents.
         w.setOnTouchListener { _, ev ->
-            requestDisallowInterceptTouchEvent(true)
-            // 24.10a: a new touch ends the hold a long press put on pull to reload (the selection is gone or being edited with handles).
-            if (ev.actionMasked == MotionEvent.ACTION_DOWN) selectionHold = false
+            val density = context.resources.displayMetrics.density
+            when (ev.actionMasked) {
+                MotionEvent.ACTION_DOWN -> {
+                    // A new touch ends the hold a long press put on pull-to-reload.
+                    selectionHold = false
+                    touchStartX = ev.x
+                    touchStartY = ev.y
+                    requestDisallowInterceptTouchEvent(true)
+                }
+                MotionEvent.ACTION_MOVE -> {
+                    val dx = ev.x - touchStartX
+                    val dy = ev.y - touchStartY
+                    val vertical = kotlin.math.abs(dy) > kotlin.math.abs(dx) * 1.2f
+                    val pullingDownAtTop = vertical && dy > 10f * density &&
+                        !webView.canScrollVertically(-1) && !selectionHold && !findActive
+                    // SwipeRefreshLayout may intercept only a downward gesture from the top.
+                    // Upward and horizontal gestures stay with the WebView.
+                    requestDisallowInterceptTouchEvent(!pullingDownAtTop)
+                }
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                    requestDisallowInterceptTouchEvent(false)
+                }
+            }
             noteTouch(ev.actionMasked)
             false
         }
