@@ -210,6 +210,7 @@ export default function SettingsIndex() {
     { icon: 'network', title: '브라우저', value: browserPrefs.adBlock ? '광고 차단 켜짐' : '광고 차단 꺼짐', route: 'browser' },
   ];
   const appRows: RowSpec[] = [
+    { icon: 'download', title: '목록 업데이트', value: '광고 차단·검색 사이트', route: 'updates' },
     { icon: 'about', title: '앱 정보', value: APP_VERSION, route: 'about' },
   ];
 
