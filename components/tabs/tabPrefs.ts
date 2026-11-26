@@ -5,7 +5,7 @@
  * assistant exists, this list only decides where its tab sits and whether it shows.
  */
 
-export type TabId = 'index' | 'search' | 'feeds' | 'settings' | 'browse';
+export type TabId = 'index' | 'search' | 'feeds' | 'settings' | 'assistant' | 'browse';
 
 /** Today's bar, then the optional Browser. */
 const TAB_IDS: readonly TabId[] = ['index', 'search', 'feeds', 'settings', 'browse'];
@@ -88,7 +88,7 @@ export function reorderTabs(prefs: TabPrefs, listed: readonly TabId[], from: num
 
 /** The tabs on the bar, in order. */
 export function visibleTabs(prefs: TabPrefs, _opts?: { assistantEnabled?: boolean }): TabId[] {
-  const shown = prefs.order.filter((id) => !prefs.hidden.includes(id));
+  const shown = prefs.order.filter((id) => id !== 'assistant' && !prefs.hidden.includes(id));
   // Never an empty bar.
   return LOCKED_TABS.reduce<TabId[]>((acc, id) => (acc.includes(id) ? acc : [...acc, id]), shown);
 }
