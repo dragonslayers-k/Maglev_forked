@@ -118,7 +118,9 @@ async function main() {
   assert.ok(addDownload.includes('yt-dlp로 페이지 분석'), 'NOT_A_FILE pages expose explicit yt-dlp analysis');
   const browserScreen = fs.readFileSync(path.join(root, 'app/browser.tsx'), 'utf8');
   assert.ok(browserScreen.includes('yt-dlp로 페이지 분석'), 'browser page menu exposes explicit generic site analysis');
-  assert.ok(browserScreen.includes('브라우저 녹화 기능이 아직 연결되지 않았습니다'), 'unsupported buffer recording is stated honestly in-app');
+  assert.ok(browserScreen.includes('notices.browser.mseCaptureUnavailable'), 'unsupported buffer recording is stated honestly in-app');
+  const copy = fs.readFileSync(path.join(root, 'constants/copy.ts'), 'utf8');
+  assert.ok(copy.includes('mseCaptureUnavailable:'), 'unsupported browser recording notice is localized in shared copy');
   assert.ok(!browserScreen.includes('MPMux 사용 안내') && !browserScreen.includes('Chrome 확장 프로그램'), 'Android browser does not show misleading external MPMux/Chrome extension popup links');
   const streamSheet = fs.readFileSync(path.join(root, 'components/browser/StreamSheet.tsx'), 'utf8');
   assert.ok(!streamSheet.includes('PC MPMux 안내') && !streamSheet.includes('mpmux.com/ko'), 'Android stream sheet does not offer a PC-only recorder as an app feature');
