@@ -5,7 +5,7 @@ import { maglevEngine } from 'maglev-engine';
 import { useTheme } from '../../context/ThemeContext';
 import { ThemeColors, spacing, touch, type } from '../../constants/theme';
 import { koUiText } from '../../constants/korean';
-import { APP_ICONS, DEFAULT_APP_ICON } from '../../constants/appIcons';
+import { APP_ICONS, APP_ICON_BADGE_CIRCLE, APP_ICON_BADGE_PLUS, DEFAULT_APP_ICON } from '../../constants/appIcons';
 import { appIconCopy } from '../../constants/copy';
 import { APP_ICON_PREVIEWS, APP_ICON_PREVIEW_VIEWBOX } from '../../assets/app-icons/previews';
 import { PressableScale } from '../ui';
@@ -24,8 +24,8 @@ function IconPreview({ id }: { id: string }) {
       {layers.map(([fill, d, evenOdd, transform], i) => (
         <Path key={i} d={d} fill={fill} fillRule={evenOdd ? 'evenodd' : undefined} transform={transform} />
       ))}
-      <Circle cx={84} cy={22} r={11} fill="#FFB000" />
-      <Path d="M82 16 H86 V20 H90 V24 H86 V28 H82 V24 H78 V20 H82 Z" fill="#05070A" />
+      <Circle cx={84} cy={22} r={11} fill={APP_ICON_BADGE_CIRCLE} />
+      <Path d="M82 16 H86 V20 H90 V24 H86 V28 H82 V24 H78 V20 H82 Z" fill={APP_ICON_BADGE_PLUS} />
     </Svg>
   );
 }

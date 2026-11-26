@@ -13,6 +13,10 @@ export interface AppIconInfo {
 
 export const DEFAULT_APP_ICON = 'teal';
 
+/** Shared launcher/preview badge colours: amber plus marker on the original artwork. */
+export const APP_ICON_BADGE_CIRCLE = '#FFB000';
+export const APP_ICON_BADGE_PLUS = '#05070A';
+
 export const APP_ICONS: readonly AppIconInfo[] = [
   { id: 'teal', name: 'Teal', group: 'train' },
   { id: 'all-dark', name: 'All Dark', group: 'train' },
