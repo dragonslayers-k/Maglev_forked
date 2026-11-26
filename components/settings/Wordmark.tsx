@@ -21,7 +21,7 @@ export function Wordmark({ width }: { width?: number }) {
       viewBox="0 0 320 56"
       accessible
       accessibilityRole="image"
-      accessibilityLabel="Maglev"
+      accessibilityLabel="Maglev plus"
       {...crisp}
     >
       <Path fill={fill} d={PATH} {...crisp} />
