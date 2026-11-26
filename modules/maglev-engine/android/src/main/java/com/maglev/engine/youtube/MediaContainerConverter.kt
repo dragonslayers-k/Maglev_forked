@@ -15,6 +15,12 @@ internal object MediaContainerConverter {
     val VIDEO_CONTAINERS = setOf("mp4", "webm", "mkv", "mov", "avi", "flv", "gif")
     val AUDIO_CONTAINERS = setOf("mp3", "m4a", "aac", "alac", "flac", "opus", "wav", "vorbis")
 
+    fun outputExtension(kind: String, selected: String): String = when {
+        kind == "audio" && selected == "alac" -> "m4a"
+        kind == "audio" && selected == "vorbis" -> "ogg"
+        else -> selected.lowercase()
+    }
+
     fun convert(source: File, output: File, kind: String, targetExt: String): String? {
         val ext = targetExt.lowercase()
         if (!source.isFile || source.length() <= 0L) return "원본 다운로드 파일이 없습니다."
@@ -95,5 +101,5 @@ internal object MediaContainerConverter {
     private fun command(input: File, output: File, options: String): String =
         "-y -hide_banner -loglevel error -i ${quote(input.absolutePath)} $options ${quote(output.absolutePath)}"
 
-    private fun quote(value: String): String = "'" + value.replace("'", "'\\''") + "'"
+    private fun quote(value: String): String = "\"" + value.replace("\\", "\\\\").replace("\"", "\\\"") + "\""
 }
