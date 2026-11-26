@@ -63,8 +63,10 @@ async function main() {
   assert.match(nativeModule, /formatId: String, playerClient: String/, 'native bridge must carry the selected extractor client');
   assert.ok(youtubeAdapter.includes('ytdlp.init(app)') && youtubeAdapter.includes('field.set(ytdlp, File(app.applicationInfo.nativeLibraryDir))'), 'initialize bundled yt-dlp and reset the wrapper ffmpeg path without downloading updates');
   assert.ok(youtubeAdapter.includes('groupBy { it["formatId"].toString() }'), 'duplicate format IDs from different player clients must collapse to one row');
-  assert.ok(youtubeAdapter.includes('formatId == "bestaudio"'), 'yt-dlp fallback still recognizes its bestaudio selector');
+  assert.ok(youtubeAdapter.includes('formatId.startsWith("bestaudio")'), 'yt-dlp fallback still recognizes its bestaudio selector');
   assert.ok(youtubeAdapter.includes('availableFormats.filter'), 'audio fallback selects an actual audio-only format from the extractor metadata');
+  assert.ok(youtubeAdapter.includes('maxAudioKbps') && youtubeAdapter.includes('capped.ifEmpty { audioFormats }'), 'audio bitrate choices must select an available source bitrate without claiming to re-encode');
+  assert.ok(screen.includes('bestaudio_320') && screen.includes('bestaudio_256') && screen.includes('bestaudio_192') && screen.includes('bestaudio_128'), 'audio fallback must expose selectable source bitrate caps');
   assert.ok(youtubeAdapter.includes('NewPipeYoutube.get(app, sourceUrl)'), 'YouTube metadata uses the fast NewPipe extractor first');
   assert.ok(youtubeAdapter.includes('getQueryParameter("maglev_ytdlp") == "1"') && youtubeAdapter.includes('link != null && !forceYtDlp'), 'on-demand format refresh must bypass NewPipe and force yt-dlp');
   assert.ok(youtubeAdapter.includes('fastFormats.any { it["kind"] == "audio" }'), 'only return NewPipe primary formats when real audio choices exist');
@@ -93,7 +95,7 @@ async function main() {
   assert.ok(screen.includes('format.playerClient'), 'the selected extractor client must be preserved');
   assert.ok(screen.includes("formatId: 'bestaudio'"), 'a bestaudio fallback remains available only when no real audio formats were extracted');
   assert.ok(screen.includes("formatId: 'bestaudio', playerClient: 'android_vr'"), 'the placeholder bestaudio must route to yt-dlp, not NewPipe format-ID parsing');
-  assert.ok(screen.includes('audios.length > 0 ? audios : [audioFallback]'), 'real audio bitrate/format choices replace the placeholder selector');
+  assert.ok(screen.includes('audios.length > 0 ? audios : audioFallbacks'), 'real audio bitrate/format choices replace the placeholder selector');
   assert.ok(screen.includes('오디오만 · 최고 음질'), 'audio-only fallback label is Korean');
   assert.ok(!screen.includes('ytdlpEngine.download'), 'screen must not create a second standalone download queue');
   const packageJson = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
