@@ -503,7 +503,41 @@ fn is_addr_in_use(raw: &str) -> bool {
     raw.to_ascii_lowercase().contains("address already in use")
 }
 
-/// The error shown when the session can't start.
+/// Redacts URL user-info before a native startup error is surfaced in the app.
+fn redact_url_userinfo(input: &str) -> String {
+    let mut out = String::with_capacity(input.len());
+    let mut cursor = 0usize;
+    while let Some(rel) = input[cursor..].find("://") {
+        let scheme_end = cursor + rel;
+        let auth_start = scheme_end + 3;
+        let boundary_rel = input[auth_start..]
+            .find(|c: char| c.is_whitespace() || matches!(c, '/' | '?' | '#' | ')' | ']' | ','))
+            .unwrap_or(input.len() - auth_start);
+        let boundary = auth_start + boundary_rel;
+        if let Some(at_rel) = input[auth_start..boundary].rfind('@') {
+            let at = auth_start + at_rel;
+            if input[auth_start..at].contains(':') {
+                out.push_str(&input[cursor..auth_start]);
+                out.push_str("[redacted]@");
+                cursor = at + 1;
+                continue;
+            }
+        }
+        out.push_str(&input[cursor..auth_start]);
+        cursor = auth_start;
+    }
+    out.push_str(&input[cursor..]);
+    out
+}
+
+/// Compact, bounded detail for the user's startup error. Credentials in proxy URLs are never returned.
+fn safe_start_detail(raw: &str) -> String {
+    let compact = raw.split_whitespace().collect::<Vec<_>>().join(" ");
+    let redacted = redact_url_userinfo(&compact);
+    redacted.chars().take(240).collect()
+}
+
+/// The startup error includes the underlying native cause instead of hiding every failure as one generic message.
 fn session_start_error(raw: &str) -> EngineError {
     if is_addr_in_use(raw) {
         EngineError::new(
@@ -513,7 +547,7 @@ fn session_start_error(raw: &str) -> EngineError {
     } else {
         EngineError::new(
             ErrorCode::EngineUnavailable,
-            "The download engine couldn't start",
+            format!("The download engine couldn't start: {}", safe_start_detail(raw)),
         )
     }
 }
@@ -659,10 +693,10 @@ impl MaglevEngine {
             .thread_name("maglev-rt")
             .enable_all()
             .build()
-            .map_err(|_| {
+            .map_err(|e| {
                 EngineError::new(
                     ErrorCode::EngineUnavailable,
-                    "The download engine couldn't start",
+                    format!("The download engine runtime couldn't start: {}", safe_start_detail(&e.to_string())),
                 )
             })?;
         let handle = runtime.handle().clone();
@@ -709,10 +743,10 @@ impl MaglevEngine {
 
         let stream = runtime
             .block_on(StreamServer::start(session.clone()))
-            .map_err(|_| {
+            .map_err(|e| {
                 EngineError::new(
                     ErrorCode::EngineUnavailable,
-                    "The video streaming helper couldn't start",
+                    format!("The video streaming helper couldn't start: {}", safe_start_detail(&e.to_string())),
                 )
             })?;
 
