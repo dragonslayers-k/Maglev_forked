@@ -329,7 +329,9 @@ object EngineHost {
             if (WireGuardController.isEnabled(c)) {
                 if (!WireGuardProfileStore.hasOriginalProxy(c)) {
                     try {
-                        WireGuardProfileStore.saveOriginalProxy(c, configMap["proxy_url"] as? String)
+                        val legacyHttpProxy = (configMap["proxy_url"] as? String)?.takeIf { it.startsWith("http://") && it.contains("@127.0.0.1:") }
+                        val originalHttpProxy = (configMap["http_download_proxy_url"] as? String) ?: legacyHttpProxy
+                        WireGuardProfileStore.saveOriginalProxy(c, originalHttpProxy)
                     } catch (t: Throwable) {
                         Log.e(TAG, "Could not preserve the original proxy while WireGuard is enabled", t)
                         return Json.failure(
@@ -337,8 +339,12 @@ object EngineHost {
                             "기존 다운로드 프록시를 안전하게 저장하지 못해 엔진 초기화를 중단했습니다.")
                     }
                 }
-                // Keep native startup fail-closed until the app-local tunnel is applied.
-                configMap["proxy_url"] = null
+                // Keep HTTP downloads fail-closed until the app-local tunnel is applied.
+                // Preserve any separately configured SOCKS5 proxy used by torrent peers.
+                configMap["http_download_proxy_url"] = WireGuardController.CLOSED_PROXY
+                if ((configMap["proxy_url"] as? String)?.startsWith("http://") == true) {
+                    configMap["proxy_url"] = null
+                }
             }
         }
         val configJson = Json.toJson(configMap)

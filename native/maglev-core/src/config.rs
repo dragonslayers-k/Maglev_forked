@@ -107,7 +107,20 @@ impl Default for NativeConfig {
 impl NativeConfig {
     /// Parses a config JSON. Missing fields take their defaults.
     pub fn from_json(json: &str) -> Result<Self, EngineError> {
-        let mut cfg: NativeConfig = serde_json::from_str(json).map_err(|_| {
+        // Migration: older builds stored the app-local HTTP proxy in the torrent proxy field.
+        // Move only authenticated loopback HTTP proxies; never pass them to librqbit.
+        let mut value: serde_json::Value = serde_json::from_str(json).map_err(|_| {
+            EngineError::new(ErrorCode::Internal, "The settings couldn't be read")
+        })?;
+        if value.get("http_download_proxy_url").is_none()
+            && value.get("proxy_url").and_then(serde_json::Value::as_str)
+                .is_some_and(|p| p.starts_with("http://") && p.contains("@127.0.0.1:"))
+        {
+            let legacy = value.get("proxy_url").cloned();
+            value["http_download_proxy_url"] = legacy.unwrap_or(serde_json::Value::Null);
+            value["proxy_url"] = serde_json::Value::Null;
+        }
+        let mut cfg: NativeConfig = serde_json::from_value(value).map_err(|_| {
             EngineError::new(ErrorCode::Internal, "The settings couldn't be read")
         })?;
         cfg.sanitize();
@@ -338,6 +351,9 @@ mod tests {
         assert!(NativeConfig::from_json(r#"{"proxy_url":"http://u:p@127.0.0.1:0"}"#).is_err());
         assert!(NativeConfig::from_json(r#"{"proxy_url":"http://maglev:token@127.0.0.1:12345"}"#).is_err());
         assert!(NativeConfig::from_json(r#"{"http_download_proxy_url":"http://maglev:token@127.0.0.1:12345"}"#).is_ok());
+        let legacy = NativeConfig::from_json(r#"{"proxy_url":"http://maglev:token@127.0.0.1:12345"}"#).unwrap();
+        assert_eq!(legacy.proxy_url, None);
+        assert_eq!(legacy.http_download_proxy_url.as_deref(), Some("http://maglev:token@127.0.0.1:12345"));
         assert!(NativeConfig::from_json(r#"{"proxy_url":"socks5://host"}"#).is_err());
         let cfg = NativeConfig::from_json(r#"{"seed_ratio_limit":-3,"proxy_url":"  "}"#).unwrap();
         assert_eq!(cfg.seed_ratio_limit, 0.0);
