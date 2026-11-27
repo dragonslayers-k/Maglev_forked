@@ -27,5 +27,5 @@ if (!testBlock.includes('ensureBrowserProxy(context)') || testBlock.includes('pr
 const initStart = host.indexOf('private fun initLocked(config: Map<String, Any?>)');
 const initEnd = host.indexOf('private fun prefs(', initStart);
 const initBlock = host.slice(initStart, initEnd);
-if (!initBlock.includes('WireGuardProfileStore.saveOriginalProxy(c, configMap["proxy_url"] as? String)') || !initBlock.includes('configMap["proxy_url"] = null')) throw new Error('Engine init does not preserve original proxy before fail-closed override');
+if (!initBlock.includes('WireGuardProfileStore.saveOriginalProxy(c, originalHttpProxy)') || !initBlock.includes('configMap["http_download_proxy_url"] = WireGuardController.CLOSED_PROXY')) throw new Error('Engine init does not preserve the HTTP proxy and hold downloads closed separately from torrent SOCKS');
 console.log('PASS: WireGuard toggle and browser tunnel are independent; download engine applies proxy fail-closed');
