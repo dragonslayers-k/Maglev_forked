@@ -231,8 +231,7 @@ class MaglevEngineModule : Module() {
             val c = context
             if (c == null) promise.resolve(Json.failure("ENGINE_UNAVAILABLE", "Module is not attached"))
             else io(promise) {
-                mapOf("ok" to true, "enabled" to WireGuardController.isEnabled(c),
-                    "has_profile" to WireGuardController.hasProfile(c), "running" to WireGuardController.isRunning())
+                WireGuardController.status(c)
             }
         }
     }
