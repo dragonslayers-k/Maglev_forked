@@ -61,6 +61,8 @@ const read = (rel) => fs.readFileSync(path.join(__dirname, '..', rel), 'utf8');
   check('data video is data', vc('data:video/mp4;base64,AAAA') === 'data');
   check('empty src with poster is none', M.parseMediaHit(payload({ kind: 'video', src: '', poster: '/p.jpg' }))?.videoClass === 'none');
 
+  check('MIME hints classify HLS, DASH and common containers', M.guessMediaMime('https://a.test/live.m3u8?q=1') === 'application/vnd.apple.mpegurl' && M.guessMediaMime('https://a.test/manifest.mpd') === 'application/dash+xml' && M.guessMediaMime('https://a.test/movie.mp4') === 'video/mp4' && M.guessMediaMime('https://a.test/file.webm') === 'video/webm' && M.guessMediaMime('https://a.test/unknown') === '');
+
   // ---- menus
   const imgMenu = M.buildMediaMenu(img);
   check('image rows', JSON.stringify(ids(imgMenu)) === JSON.stringify(['save-image', 'open-tab', 'copy', 'share']), ids(imgMenu));
@@ -68,11 +70,11 @@ const read = (rel) => fs.readFileSync(path.join(__dirname, '..', rel), 'utf8');
   check('image rows carry the address', imgMenu.items.every((i) => i.url === 'https://example.com/i/cat.jpg') && imgMenu.note === null);
 
   const mp4 = M.buildMediaMenu(M.parseMediaHit(payload({ kind: 'video', src: 'https://a.test/v.mp4' })));
-  check('direct video rows', JSON.stringify(ids(mp4)) === JSON.stringify(['download-video', 'open-tab', 'copy']), ids(mp4));
-  check('direct video titles', mp4.items.map((i) => i.title).join('|') === '동영상 다운로드|새 탭에서 동영상 열기|동영상 주소 복사');
+  check('direct video rows', JSON.stringify(ids(mp4)) === JSON.stringify(['play-video', 'download-video', 'open-tab', 'copy']), ids(mp4));
+  check('direct video titles', mp4.items.map((i) => i.title).join('|') === '앱에서 재생|동영상 다운로드|새 탭에서 동영상 열기|동영상 주소 복사');
 
   const hls = M.buildMediaMenu(M.parseMediaHit(payload({ kind: 'video', src: 'https://a.test/m.m3u8' })));
-  check('hls goes to the stream path', ids(hls)[0] === 'download-stream' && hls.items[0].title === '동영상 다운로드', ids(hls));
+  check('hls offers playback and the stream download path', ids(hls)[0] === 'play-video' && ids(hls).includes('download-stream') && hls.items[1].title === '동영상 다운로드', ids(hls));
 
   const blob = M.buildMediaMenu(M.parseMediaHit(payload({ kind: 'video', src: 'blob:https://example.com/u', poster: '/p.jpg' })));
   check('blob video: plain note, found tray, no download, no copy', !!blob.note && /직접 저장할 수 없는 방식/.test(blob.note) && ids(blob).includes('show-found') && !ids(blob).includes('download-video') && !ids(blob).includes('copy'), ids(blob));
