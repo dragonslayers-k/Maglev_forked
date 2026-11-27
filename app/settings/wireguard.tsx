@@ -91,11 +91,11 @@ export default function AppWireGuardSettings() {
           onPress={() => { if (!busy) void importProfile(); }}
         />
         <ListRow
-        <ListRow
           title={testing ? '실제 터널 연결 확인 중…' : '실제 터널 연결 테스트'}
           subtitle="외부 HTTPS 요청으로 출구 국가·IP와 원격 연결을 확인합니다."
           onPress={() => { void testConnection(); }}
         />
+        <ListRow
           title="HTTP/HTTPS 다운로드에 사용"
           subtitle={enabled ? (running ? '로컬 프록시 실행 중 · 원격 peer handshake 미확인' : '앱 내부 터널을 시작하는 중') : '꺼짐'}
           accessory={<Toggle value={enabled} onValueChange={(v) => void changeEnabled(v)} accessibilityLabel="앱 내부 WireGuard" />}
