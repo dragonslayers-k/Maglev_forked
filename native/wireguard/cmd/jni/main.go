@@ -13,6 +13,8 @@ import "C"
 
 import (
 	"errors"
+	"context"
+	"encoding/json"
 	"sync"
 	"strings"
 
@@ -58,6 +60,22 @@ func morphe_wg_stop() {
 		current.engine.Close()
 		current.engine = nil
 	}
+}
+
+//export morphe_wg_check
+func morphe_wg_check() *C.char {
+	current.Lock()
+	engine := current.engine
+	current.Unlock()
+	if engine == nil { return C.CString("{\"ok\":false,\"code\":\"not_running\"}") }
+	result, err := engine.CheckEgress(context.Background())
+	if err != nil {
+		payload, _ := json.Marshal(map[string]any{"ok": false, "code": "egress_failed", "message": err.Error()})
+		return C.CString(string(payload))
+	}
+	payload, err := json.Marshal(result)
+	if err != nil { return C.CString("{\"ok\":false,\"code\":\"invalid_result\"}") }
+	return C.CString(string(payload))
 }
 
 //export morphe_wg_validate
