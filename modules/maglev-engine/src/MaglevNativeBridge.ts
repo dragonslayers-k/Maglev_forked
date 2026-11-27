@@ -662,6 +662,9 @@ export class MaglevEngineBridge implements MaglevEngineApi {
   public getAppWireGuardStatus(): Promise<EngineResult<{ enabled: boolean; hasProfile: boolean; running: boolean }>> {
     return this.route('getAppWireGuardStatus');
   }
+  public testAppWireGuardConnection(): Promise<EngineResult<{ ip: string; country: string; country_code: string; message: string }>> {
+    return this.route('testAppWireGuardConnection');
+  }
   public importAppWireGuardProfile(uri: string): Promise<EngineResult<{ hasProfile: boolean }>> {
     return this.route('importAppWireGuardProfile', uri);
   }
