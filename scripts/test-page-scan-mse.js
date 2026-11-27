@@ -44,6 +44,16 @@ if (!browser.includes('v.getClientRects().length > 0') ||
     !pipNative.includes('MaglevBrowserView.requestFullscreenVideoForPip(requestedAspectRatio)')) {
   throw new Error('PiP does not validate visible video and pass ratio through native promotion');
 }
+if (!browser.includes('pipRequestResult: ((Boolean) -> Unit)? = null') ||
+    !browser.includes('resolvePipRequest(true)') ||
+    !browser.includes('resolvePipRequest(false)') ||
+    !browser.includes('Do not report success yet')) {
+  throw new Error('PiP reports success before WebChromeClient attaches a fullscreen surface or has no timeout failure');
+}
+if (!browser.includes('window.__mgYtAdObserverInstalled') ||
+    !browser.includes('if(window.__mgYtAdObserverInstalled)return')) {
+  throw new Error('YouTube ad observer can be injected repeatedly and accumulate observers/timers');
+}
 
 if (!pipUi.includes('videos.sort((a, b) => ((b.width ?? 0) * (b.height ?? 0))')) {
   throw new Error('PiP fallback does not select the largest known video');
