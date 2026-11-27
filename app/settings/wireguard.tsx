@@ -10,6 +10,9 @@ export default function AppWireGuardSettings() {
   const [enabled, setEnabled] = useState(false);
   const [hasProfile, setHasProfile] = useState(false);
   const [running, setRunning] = useState(false);
+  const [peerHandshake, setPeerHandshake] = useState(false);
+  const [peerRxBytes, setPeerRxBytes] = useState(0);
+  const [peerTxBytes, setPeerTxBytes] = useState(0);
   const [busy, setBusy] = useState(false);
   const [testing, setTesting] = useState(false);
 
@@ -19,10 +22,17 @@ export default function AppWireGuardSettings() {
       setEnabled(result.enabled);
       setHasProfile(result.hasProfile);
       setRunning(result.running);
+      setPeerHandshake(result.peerHandshake === true);
+      setPeerRxBytes(Number(result.peerRxBytes || 0));
+      setPeerTxBytes(Number(result.peerTxBytes || 0));
     }
   }, []);
 
-  useEffect(() => { void refresh(); }, [refresh]);
+  useEffect(() => {
+    void refresh();
+    const timer = setInterval(() => { void refresh(); }, 5000);
+    return () => clearInterval(timer);
+  }, [refresh]);
 
   const importProfile = useCallback(async () => {
     setBusy(true);
@@ -97,7 +107,7 @@ export default function AppWireGuardSettings() {
         />
         <ListRow
           title="HTTP/HTTPS 다운로드에 사용"
-          subtitle={enabled ? (running ? '로컬 프록시 실행 중 · 원격 peer handshake 미확인' : '앱 내부 터널을 시작하는 중') : '꺼짐'}
+          subtitle={enabled ? (running ? (peerHandshake ? `Peer handshake 확인 · RX ${peerRxBytes.toLocaleString()} B / TX ${peerTxBytes.toLocaleString()} B` : '로컬 프록시 실행 중 · 원격 peer handshake 대기') : '앱 내부 터널을 시작하는 중') : '꺼짐'}
           accessory={<Toggle value={enabled} onValueChange={(v) => void changeEnabled(v)} accessibilityLabel="앱 내부 WireGuard" />}
         />
       </Card>
@@ -110,7 +120,7 @@ export default function AppWireGuardSettings() {
       <Card>
         <ListRow
           title="로컬 프록시 상태"
-          subtitle={running ? '로컬 프록시 프로세스만 확인됨 · 원격 handshake는 아직 검증되지 않음' : '아직 시작되지 않음'}
+          subtitle={running ? (peerHandshake ? `실제 peer handshake 확인됨 · RX ${peerRxBytes.toLocaleString()} B / TX ${peerTxBytes.toLocaleString()} B` : '로컬 프록시 실행됨 · peer handshake 미확인') : '아직 시작되지 않음'}
         />
       </Card>
     </SettingsPage>
