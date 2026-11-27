@@ -324,7 +324,7 @@ object EngineHost {
         val configMap = LinkedHashMap<String, Any?>()
         snake.forEach { (key, value) -> if (key is String) configMap[key] = value }
         // If app-local WireGuard survived process death, boot fail-closed until its proxy is restored.
-        ctx?.let { c -> if (WireGuardController.isEnabled(c)) configMap["proxy_url"] = WireGuardController.CLOSED_PROXY }
+        ctx?.let { c -> if (WireGuardController.isEnabled(c)) configMap["proxy_url"] = null }
         val configJson = Json.toJson(configMap)
         captureGlobalLimits(configMap)
         // JS opened the app: a schedule hold from an earlier pause no longer applies once the schedule allows transfers.
@@ -343,6 +343,14 @@ object EngineHost {
             return out
         }
         return startEngine(configJson)
+    }
+
+    /** Releases startup hold after app-local WireGuard proxy setup succeeds. */
+    fun releaseAppWireGuardStartupHold(): Map<String, Any?> {
+        if (!initialized) return Json.failure("NOT_INITIALIZED", "다운로드 엔진이 아직 시작되지 않았습니다.")
+        val result = call { NativeCore.nativeSetTransfersAllowed(true, REASON_STARTUP) }
+        if (isOk(result)) pollNow()
+        return result
     }
 
     /** Starts the native session. [configJson] of "" makes Rust load its last persisted config. */
@@ -378,7 +386,8 @@ object EngineHost {
         scheduleIdleSince = 0L
         // Rust holds every restored transfer ("startup") until this pass has judged the rules; only then do they run.
         evaluateGovernance(force = true)
-        call { NativeCore.nativeSetTransfersAllowed(true, REASON_STARTUP) }
+        // Hold transfers until the app-local WireGuard proxy is restored.
+        if (ctx?.let { WireGuardController.isEnabled(it) } != true) call { NativeCore.nativeSetTransfersAllowed(true, REASON_STARTUP) }
         startPolling()
         pollNow()
         emitStorageStatus()
