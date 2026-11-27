@@ -1053,7 +1053,7 @@ export default function BrowserScreen({ inTab = false }: { inTab?: boolean }) {
             showNotice({ message: String((error as Error)?.message || '앱 내 미디어 플레이어를 열지 못했습니다.') });
           }
         }}
-        onOpenNewTab={(u) => openLinkInTab(u, false)
+        onOpenNewTab={(u) => openLinkInTab(u, false)}
         onCopy={(u) => void copy(u)}
         onShare={(u) => {
           Share.share({ message: u }).catch(() => {});
