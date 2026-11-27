@@ -162,6 +162,10 @@ object WireGuardController {
             if (!installBrowserProxy(proxyPort)) return@synchronized Json.failure(
                 "APP_WIREGUARD_BROWSER_PROXY_FAILED",
                 "앱 브라우저의 WireGuard 프록시를 적용하지 못했습니다. WebView 프록시 기능을 확인하세요.")
+            val released = EngineHost.releaseAppWireGuardStartupHold()
+            if (released["ok"] != true) return@synchronized Json.failure(
+                "APP_WIREGUARD_STARTUP_HOLD_RELEASE_FAILED",
+                "WireGuard 프록시는 적용됐지만 다운로드 시작 게이트를 해제하지 못했습니다.")
             return@synchronized mapOf("ok" to true, "proxy_url" to cachedProxy, "browser_proxy" to true)
         }
 
@@ -221,6 +225,10 @@ object WireGuardController {
                 "APP_WIREGUARD_BROWSER_PROXY_FAILED",
                 "앱 브라우저의 WireGuard 프록시를 적용하지 못했습니다. WebView 프록시 기능을 확인하세요.")
         }
+        val released = EngineHost.releaseAppWireGuardStartupHold()
+        if (released["ok"] != true) return@synchronized Json.failure(
+            "APP_WIREGUARD_STARTUP_HOLD_RELEASE_FAILED",
+            "WireGuard 프록시는 적용됐지만 다운로드 시작 게이트를 해제하지 못했습니다.")
         mapOf("ok" to true, "proxy_url" to url, "browser_proxy" to true)
     }
 
