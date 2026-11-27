@@ -40,9 +40,11 @@ if (!browser.includes('youtubeAdScript') || !browser.includes('ytp-ad-skip-butto
 if (!browser.includes('v.getClientRects().length > 0') ||
     !browser.includes("s.visibility !== 'hidden'") ||
     !browser.includes('setSeamlessResizeEnabled(true)') ||
-    !browser.includes('requestFullscreenVideoForPip(requestedAspectRatio)')) {
+    !browser.includes('requestFullscreenVideoForPipInternal(requestedAspectRatio, onResult)') ||
+    !pipNative.includes('MaglevBrowserView.requestFullscreenVideoForPip(requestedAspectRatio)')) {
   throw new Error('PiP does not validate visible video and pass ratio through native promotion');
 }
+
 if (!pipUi.includes('videos.sort((a, b) => ((b.width ?? 0) * (b.height ?? 0))')) {
   throw new Error('PiP fallback does not select the largest known video');
 }
