@@ -1662,9 +1662,25 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
             controller.hide(WindowInsetsCompat.Type.systemBars())
             if (pipPendingFromBrowserMenu) {
                 pipPendingFromBrowserMenu = false
-                // Wait for intrinsic video dimensions, then enter PiP on the isolated fullscreen surface.
-                updateFullscreenPipParams(activity, autoEnter = true) {
-                    enterFullscreenPictureInPicture(activity, pipButton)
+                // Do not enter PiP in the same frame as onShowCustomView. WebView's fullscreen
+                // video surface is attached/reparented here; entering immediately can snapshot
+                // the old SurfaceView geometry (black PiP with the video left at the bottom).
+                // Wait for layout + orientation changes to settle, then request a fresh layout
+                // and update the PiP aspect ratio from the active HTML video.
+                container.post {
+                    container.requestLayout()
+                    view.requestLayout()
+                    mainHandler.postDelayed({
+                        if (destroyed || customView !== container || !container.isAttachedToWindow) return@postDelayed
+                        container.requestLayout()
+                        view.requestLayout()
+                        updateFullscreenPipParams(activity, autoEnter = true) {
+                            mainHandler.postDelayed({
+                                if (destroyed || customView !== container || !container.isAttachedToWindow) return@postDelayed
+                                enterFullscreenPictureInPicture(activity, pipButton)
+                            }, 250L)
+                        }
+                    }, 350L)
                 }
             } else {
                 updateFullscreenPipParams(activity, autoEnter = true)
