@@ -924,7 +924,7 @@ export interface MaglevEngineApi {
   /** Requests Android's system picture-in-picture mode for the currently playing browser video. */
   enterBrowserPictureInPicture(): Promise<EngineResult>;
   /** App-local WireGuard profile status. This is not the Android system VPN state. */
-  getAppWireGuardStatus(): Promise<EngineResult<{ enabled: boolean; hasProfile: boolean; running: boolean; peerHandshake: boolean; peerRxBytes: number; peerTxBytes: number; lastHandshakeUnix: number; handshakeAgeSeconds?: number }>>;
+  getAppWireGuardStatus(): Promise<EngineResult<{ enabled: boolean; hasProfile: boolean; running: boolean; peerHandshake: boolean; peerRxBytes: number; peerTxBytes: number; browserProxyApplied: boolean; lastHandshakeUnix: number; handshakeAgeSeconds?: number }>>;
   /** Imports and validates a WireGuard .conf document; private key is stored encrypted at rest. */
   /** Performs a real HTTPS request through the app-local WireGuard tunnel and reports the observed exit. */
   testAppWireGuardConnection(): Promise<EngineResult<{ ip: string; country: string; country_code: string; message: string }>>;
