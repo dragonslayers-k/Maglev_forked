@@ -10,6 +10,7 @@ export default function AppWireGuardSettings() {
   const [enabled, setEnabled] = useState(false);
   const [hasProfile, setHasProfile] = useState(false);
   const [running, setRunning] = useState(false);
+  const [browserProxyApplied, setBrowserProxyApplied] = useState(false);
   const [peerHandshake, setPeerHandshake] = useState(false);
   const [peerRxBytes, setPeerRxBytes] = useState(0);
   const [peerTxBytes, setPeerTxBytes] = useState(0);
@@ -22,6 +23,7 @@ export default function AppWireGuardSettings() {
       setEnabled(result.enabled);
       setHasProfile(result.hasProfile);
       setRunning(result.running);
+      setBrowserProxyApplied(result.browserProxyApplied === true);
       setPeerHandshake(result.peerHandshake === true);
       setPeerRxBytes(Number(result.peerRxBytes || 0));
       setPeerTxBytes(Number(result.peerTxBytes || 0));
@@ -107,7 +109,7 @@ export default function AppWireGuardSettings() {
         />
         <ListRow
           title="앱 브라우저 + HTTP/HTTPS 다운로드"
-          subtitle={enabled ? (running ? (peerHandshake ? `Peer handshake 확인 · RX ${peerRxBytes.toLocaleString()} B / TX ${peerTxBytes.toLocaleString()} B` : '로컬 프록시 실행 중 · 원격 peer handshake 대기') : '앱 내부 터널을 시작하는 중') : '꺼짐'}
+          subtitle={enabled ? (running ? (browserProxyApplied ? (peerHandshake ? `Browser + Peer handshake · RX ${peerRxBytes.toLocaleString()} B / TX ${peerTxBytes.toLocaleString()} B` : '브라우저 프록시 적용 · 원격 peer handshake 대기') : '브라우저 프록시 적용 실패') : '앱 내부 터널을 시작하는 중') : '꺼짐'}
           accessory={<Toggle value={enabled} onValueChange={(v) => void changeEnabled(v)} accessibilityLabel="앱 내부 WireGuard" />}
         />
       </Card>
@@ -119,8 +121,8 @@ export default function AppWireGuardSettings() {
       </Caption>
       <Card>
         <ListRow
-          title="로컬 프록시 상태"
-          subtitle={running ? (peerHandshake ? `실제 peer handshake 확인됨 · RX ${peerRxBytes.toLocaleString()} B / TX ${peerTxBytes.toLocaleString()} B` : '로컬 프록시 실행됨 · peer handshake 미확인') : '아직 시작되지 않음'}
+          title="앱 브라우저 터널 상태"
+          subtitle={running ? (browserProxyApplied ? (peerHandshake ? `실제 peer handshake 확인 · RX ${peerRxBytes.toLocaleString()} B / TX ${peerTxBytes.toLocaleString()} B` : '브라우저 프록시 적용 · peer handshake 미확인') : '브라우저 프록시 미적용') : '아직 시작되지 않음'}
         />
       </Card>
     </SettingsPage>
