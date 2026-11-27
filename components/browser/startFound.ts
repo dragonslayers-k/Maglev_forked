@@ -27,15 +27,16 @@ export async function startFound(
   // Preserve it as the default output name instead of letting the engine fall back
   // to a URL/hash-derived filename. Always match the progressive MP4 container.
   const clipTitle = clip?.title?.trim() || (clip ? 'Naver-Clip-' + clip.mediaId : '');
-  const safeClipName = clip ? (clipTitle
+  const clipNameRaw = extra.name?.trim() || clipTitle;
+  const safeClipName = clip ? (clipNameRaw
     .normalize('NFKC')
-    .replace(/[\\\\/:*?"<>|\\u0000-\\u001f]/g, '_')
-    .replace(/\\s+/g, ' ')
+    .replace(/[\\/:*?"<>|\u0000-\u001f]/g, '_')
+    .replace(/\s+/g, ' ')
     .trim()
     .replace(/[. ]+$/g, '')
     .slice(0, 140) || 'Naver-Clip-' + clip.mediaId) : '';
-  const clipFileName = clip ? (safeClipName.replace(/\\.mp4$/i, '') + '.mp4') : undefined;
-  const outputName = extra.name?.trim() || clipFileName;
+  const clipFileName = clip ? (safeClipName.replace(/\.mp4$/i, '') + '.mp4') : undefined;
+  const outputName = clipFileName ?? extra.name;
   const headers = {
     ...(await deps.headersFor({ ...t, url: downloadUrl })),
     ...(naverClipPage ? { Referer: naverClipPage } : {}),
