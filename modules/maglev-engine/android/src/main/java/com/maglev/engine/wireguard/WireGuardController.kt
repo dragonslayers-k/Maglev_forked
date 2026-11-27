@@ -3,9 +3,15 @@ package com.maglev.engine.wireguard
 import android.content.Context
 import android.net.Uri
 import android.util.Base64
+import androidx.webkit.ProxyConfig
+import androidx.webkit.ProxyController
+import androidx.webkit.WebViewFeature
 import com.maglev.engine.EngineHost
 import com.maglev.engine.util.Json
 import java.security.SecureRandom
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.Executor
+import java.util.concurrent.TimeUnit
 import org.json.JSONObject
 
 /** App-local HTTP(S) download tunnel; no VpnService and no device route changes. */
@@ -17,6 +23,9 @@ object WireGuardController {
     private val lock = Any()
     @Volatile private var running = false
     @Volatile private var localProxy: String? = null
+    @Volatile private var proxyPort: Int = 0
+    @Volatile private var proxyUsername: String? = null
+    @Volatile private var proxyPassword: String? = null
 
     fun isEnabled(context: Context): Boolean =
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean(ENABLED, false)
@@ -76,9 +85,15 @@ object WireGuardController {
                     "기존 다운로드 프록시를 복원하지 못했습니다. 다운로드를 시작하지 마세요.")
             }
         }
+        if (!clearBrowserProxy()) return@synchronized Json.failure(
+            "APP_WIREGUARD_BROWSER_PROXY_CLEAR_FAILED",
+            "앱 브라우저 프록시를 안전하게 해제하지 못했습니다. 연결 상태를 유지했습니다.")
         runCatching { NativeTunnel.stop() }
         running = false
         localProxy = null
+        proxyPort = 0
+        proxyUsername = null
+        proxyPassword = null
         WireGuardProfileStore.clearOriginalProxy(context)
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putBoolean(ENABLED, false).apply()
         mapOf("ok" to true, "enabled" to false)
@@ -107,7 +122,10 @@ object WireGuardController {
             if (applied["ok"] != true) return@synchronized Json.failure(
                 "APP_WIREGUARD_PROXY_REAPPLY_FAILED",
                 "WireGuard 프록시를 다운로드 엔진에 다시 적용하지 못했습니다. 연결을 껐다가 다시 켜세요.")
-            return@synchronized mapOf("ok" to true, "proxy_url" to cachedProxy)
+            if (!installBrowserProxy(proxyPort)) return@synchronized Json.failure(
+                "APP_WIREGUARD_BROWSER_PROXY_FAILED",
+                "앱 브라우저의 WireGuard 프록시를 적용하지 못했습니다. WebView 프록시 기능을 확인하세요.")
+            return@synchronized mapOf("ok" to true, "proxy_url" to cachedProxy, "browser_proxy" to true)
         }
 
         val hasSaved = WireGuardProfileStore.hasOriginalProxy(context)
@@ -144,8 +162,75 @@ object WireGuardController {
             "APP_WIREGUARD_START_FAILED", "WireGuard 로컬 프록시를 시작하지 못했습니다. 직접 연결로 우회하지 않았습니다.")
         val url = "http://$USER:$password@127.0.0.1:$port"
         localProxy = url
+        proxyPort = port
+        proxyUsername = USER
+        proxyPassword = password
         running = true
-        mapOf("ok" to true, "proxy_url" to url)
+        if (!installBrowserProxy(port)) {
+            runCatching { NativeTunnel.stop() }
+            running = false
+            localProxy = null
+            proxyPort = 0
+            proxyUsername = null
+            proxyPassword = null
+            return@synchronized Json.failure(
+                "APP_WIREGUARD_BROWSER_PROXY_FAILED",
+                "앱 브라우저의 WireGuard 프록시를 적용하지 못했습니다. WebView 프록시 기능을 확인하세요.")
+        }
+        mapOf("ok" to true, "proxy_url" to url, "browser_proxy" to true)
+    }
+
+    /**
+     * WebView ProxyController is scoped to this app's WebView process, not Android's device
+     * routing table. It routes browser HTTP/HTTPS requests through the same authenticated
+     * loopback WireGuard proxy used by the downloader. No VpnService, APN, or other-app route.
+     */
+    private fun installBrowserProxy(port: Int): Boolean {
+        if (port !in 1..65535 || !WebViewFeature.isFeatureSupported(WebViewFeature.PROXY_OVERRIDE)) return false
+        return try {
+            val latch = CountDownLatch(1)
+            var applied = false
+            ProxyController.getInstance().setProxyOverride(
+                ProxyConfig.Builder().addProxyRule("127.0.0.1:$port").build(),
+                Executor { command -> command.run() },
+                Runnable { applied = true; latch.countDown() },
+            )
+            latch.await(5, TimeUnit.SECONDS) && applied
+        } catch (_: Throwable) {
+            false
+        }
+    }
+
+    private fun clearBrowserProxy(): Boolean {
+        if (!WebViewFeature.isFeatureSupported(WebViewFeature.PROXY_OVERRIDE)) return true
+        return try {
+            val latch = CountDownLatch(1)
+            var cleared = false
+            ProxyController.getInstance().clearProxyOverride(
+                Executor { command -> command.run() },
+                Runnable { cleared = true; latch.countDown() },
+            )
+            latch.await(5, TimeUnit.SECONDS) && cleared
+        } catch (_: Throwable) {
+            false
+        }
+    }
+
+    /** Credentials are returned only for this app's loopback proxy challenge. */
+    fun browserProxyCredentials(host: String, realm: String): Pair<String, String>? {
+        if (!running || !isEnabledFromProcess() || realm != "App WireGuard") return null
+        if (host != "127.0.0.1" && host != "localhost") return null
+        val user = proxyUsername ?: return null
+        val pass = proxyPassword ?: return null
+        return user to pass
+    }
+
+    private fun isEnabledFromProcess(): Boolean = running
+
+    /** Rehydrates the process-local tunnel/proxy after process death when the saved switch is on. */
+    fun ensureBrowserProxy(context: Context): Map<String, Any?> {
+        if (!isEnabled(context)) return mapOf("ok" to true, "browser_proxy" to false)
+        return prepareDownload(context)
     }
 
     /** Forces traffic through the userspace tunnel and reports the observed exit country/IP. */
@@ -173,6 +258,10 @@ object WireGuardController {
     }
 
     fun status(context: Context): Map<String, Any?> {
+        if (isEnabled(context) && (!running || proxyPort == 0)) {
+            val restored = ensureBrowserProxy(context)
+            if (restored["ok"] != true) return restored
+        }
         val result = linkedMapOf<String, Any?>(
             "ok" to true,
             "enabled" to isEnabled(context),
