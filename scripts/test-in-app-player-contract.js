@@ -48,7 +48,7 @@ check('PiP follows the actual player and video aspect ratio', () => {
 });
 check('app-local WireGuard playback route fails closed when enabled', () => {
   assert(activity.includes('WireGuardController.mediaPlaybackProxy'));
-  assert(activity.includes('builder.proxy(proxy)'));
+  assert(activity.includes('builder.proxy(Proxy(Proxy.Type.HTTP'));
   assert(activity.includes('Proxy-Authorization'));
   assert(activity.includes('127.0.0.1', 'closed proxy'));
   assert(watch.includes('playInAppMedia'));
