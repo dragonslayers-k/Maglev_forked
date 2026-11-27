@@ -297,7 +297,16 @@ object EngineHost {
         val config = nativeWireGuardConfig(result).toMutableMap()
         if (config.isEmpty()) return@synchronized Json.failure("INTERNAL", "다운로드 엔진 설정 응답이 비어 있습니다.")
         config["proxy_url"] = proxyUrl
-        call { NativeCore.nativeApplyConfig(Json.toJson(config)) }
+        val applied = call { NativeCore.nativeApplyConfig(Json.toJson(config)) }
+        if (!isOk(applied)) return@synchronized applied
+        if (applied["restart_required"] == true) {
+            val restarted = cycleSessionLocked()
+            if (!isOk(restarted)) return@synchronized Json.failure(
+                "APP_WIREGUARD_ENGINE_RESTART_FAILED",
+                restarted["message"]?.toString() ?: "다운로드 엔진을 새 프록시 설정으로 재시작하지 못했습니다.")
+            return@synchronized mapOf("ok" to true, "restart_required" to true, "restarted" to true)
+        }
+        applied
     }
 
     // endregion
@@ -312,8 +321,12 @@ object EngineHost {
 
     private fun initLocked(config: Map<String, Any?>): Map<String, Any?> {
         val snake = Json.snakeify(config) as Map<*, *>
-        val configJson = Json.toJson(snake)
-        captureGlobalLimits(snake)
+        val configMap = LinkedHashMap<String, Any?>()
+        snake.forEach { (key, value) -> if (key is String) configMap[key] = value }
+        // If app-local WireGuard survived process death, boot fail-closed until its proxy is restored.
+        ctx?.let { c -> if (WireGuardController.isEnabled(c)) configMap["proxy_url"] = WireGuardController.CLOSED_PROXY }
+        val configJson = Json.toJson(configMap)
+        captureGlobalLimits(configMap)
         // JS opened the app: a schedule hold from an earlier pause no longer applies once the schedule allows transfers.
         ctx?.let { if (!ScheduleManager.state(it).paused) ScheduleManager.setHeld(it, false) }
         if (initialized) {
@@ -1187,6 +1200,38 @@ object EngineHost {
         }
         pollNow()
         return mapOf("ok" to true, "paused" to paused)
+    }
+
+    /** Pauses active link downloads while the app-local WireGuard proxy is being switched. */
+    fun pauseDownloadsForAppWireGuard(): Map<String, Any?> {
+        if (!initialized) return mapOf("ok" to true, "paused_ids" to emptyList<String>())
+        val list = call { NativeCore.nativeListTorrents() }
+        if (!isOk(list)) return list
+        val pausedIds = mutableListOf<String>()
+        for (download in Json.list(list["downloads"])) {
+            val state = download["state"] as? String ?: continue
+            if (state !in setOf("downloading", "resolving")) continue
+            val pausedBy = download["paused_by"]
+            if (pausedBy != null && pausedBy != "user") continue
+            val id = download["id"] as? String ?: continue
+            val result = call { NativeCore.nativePauseDownload(id) }
+            if (!isOk(result)) return result
+            pausedIds += id
+        }
+        pollNow()
+        return mapOf("ok" to true, "paused_ids" to pausedIds)
+    }
+
+    /** Resume only link downloads paused by the WireGuard switch. */
+    fun resumeDownloadsAfterAppWireGuard(ids: List<String>): Map<String, Any?> {
+        if (!initialized) return Json.failure("NOT_INITIALIZED", "다운로드 엔진이 재시작되지 않았습니다.")
+        var resumed = 0
+        for (id in ids.distinct()) {
+            val result = call { NativeCore.nativeResumeDownload(id) }
+            if (isOk(result)) resumed++
+        }
+        pollNow()
+        return mapOf("ok" to true, "resumed" to resumed, "requested" to ids.distinct().size)
     }
 
     /** Resumes user-paused torrents. Governance-paused ones stay paused until their gate opens, and so do torrents held by a file health tag. */
