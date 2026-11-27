@@ -186,6 +186,22 @@ export default function YouTubeDownloadScreen() {
     ? selectedAudioFormat.abr
     : Number(/^bestaudio_(\d+)$/.exec(selectedAudioFormat?.formatId ?? '')?.[1]) || undefined;
 
+  // The extractor may return duplicate formats from multiple player clients. The display
+  // list intentionally collapses equivalent rows and can choose a different provider
+  // than the raw metadata's initial selection. Reconcile selection to the visible row
+  // so the quality/audio buttons never remain disabled with an invisible selection.
+  useEffect(() => {
+    if (selectedVideo && visibleVideos.some((format) => formatKey(format) === selectedVideo)) return;
+    const first = visibleVideos[0];
+    setSelectedVideo(first ? formatKey(first) : null);
+  }, [selectedVideo, visibleVideos]);
+
+  useEffect(() => {
+    if (selectedAudio && audioChoices.some((format) => formatKey(format) === selectedAudio)) return;
+    const first = audioChoices[0];
+    setSelectedAudio(first ? formatKey(first) : null);
+  }, [selectedAudio, audioChoices]);
+
   return (
     <Screen title={screenTitle} onBack={back} scroll contentStyle={styles.content}>
       {loading ? <Text style={styles.muted}>YouTube 형식과 오디오 음질을 확인하고 있습니다…</Text> : null}
