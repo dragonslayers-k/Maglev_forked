@@ -54,6 +54,13 @@ if (!browser.includes('window.__mgYtAdObserverInstalled') ||
     !browser.includes('if(window.__mgYtAdObserverInstalled)return')) {
   throw new Error('YouTube ad observer can be injected repeatedly and accumulate observers/timers');
 }
+const pipEnter = browser.indexOf('activity.enterPictureInPictureMode(buildPipParams(ratio, autoEnter = true))');
+const pipResolve = browser.indexOf('resolvePipRequest(true)', pipEnter);
+if (pipEnter < 0 || pipResolve < pipEnter ||
+    !browser.includes('resolvePipRequest(false)') ||
+    !browser.includes('if (pipRequestResult != null)')) {
+  throw new Error('Browser PiP must report success only after Android accepts PiP, and fail on timeout/rejection');
+}
 
 if (!pipUi.includes('videos.sort((a, b) => ((b.width ?? 0) * (b.height ?? 0))')) {
   throw new Error('PiP fallback does not select the largest known video');
