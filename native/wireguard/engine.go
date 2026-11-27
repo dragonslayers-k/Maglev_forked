@@ -213,7 +213,7 @@ func (e *Engine) PeerStatus() map[string]any {
 	}
 	var peerBlock bool
 	var handshakeSec, handshakeNsec, rxBytes, txBytes int64
-	for _, line := range strings.Split(uapi, "\\n") {
+	for _, line := range strings.Split(uapi, "\n") {
 		if line == "" {
 			continue
 		}
