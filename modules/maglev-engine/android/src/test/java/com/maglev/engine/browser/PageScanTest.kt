@@ -43,6 +43,28 @@ class PageScanTest {
         assertEquals("video", item!!.kind)
     }
 
+    @Test fun convertsLongPressVideoHitIntoFoundItem() {
+        val json = """{"n":"test-nonce","mediaHit":{"type":"maglev-media-hit","kind":"video","src":"https://cdn.example.com/watch?id=9","pageUrl":"https://site.example/watch"}}"""
+        val report = PageScan.parse(json, "test-nonce")!!
+        assertEquals(1, report.entries.size)
+        val item = PageScan.toItem(report.entries.single(), "https://site.example/watch", "Video")!!
+        assertEquals("video", item.kind)
+    }
+
+    @Test fun convertsUserSelectedLongPressImageWithoutBackgroundSizeThreshold() {
+        val json = """{"n":"test-nonce","mediaHit":{"type":"maglev-media-hit","kind":"image","src":"https://cdn.example.com/photo.jpg","pageUrl":"https://site.example/watch"}}"""
+        val report = PageScan.parse(json, "test-nonce")!!
+        val item = PageScan.toItem(report.entries.single(), "https://site.example/watch", "Page")!!
+        assertEquals("image", item.kind)
+    }
+
+    @Test fun blobLongPressHitIsReportedAsBlobInsteadOfSilentlyDropped() {
+        val json = """{"n":"test-nonce","mediaHit":{"type":"maglev-media-hit","kind":"video","src":"blob:https://site.example/abc","pageUrl":"https://site.example/watch"}}"""
+        val report = PageScan.parse(json, "test-nonce")!!
+        assertEquals(true, report.blob)
+        assertEquals(0, report.entries.size)
+    }
+
     @Test fun ignoresWrongNonceAndOversizedReports() {
         val json = """{"n":"wrong","items":[{"u":"https://cdn.example.com/a.mp4","t":"video"}]}"""
         assertNull(PageScan.parse(json, "test-nonce"))
