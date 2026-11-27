@@ -149,8 +149,11 @@ object WireGuardController {
     }
 
     /** Forces traffic through the userspace tunnel and reports the observed exit country/IP. */
-    fun testConnection(): Map<String, Any?> {
-        if (!running) return Json.failure("APP_WIREGUARD_NOT_RUNNING", "WireGuard 터널이 실행 중이 아닙니다.")
+    fun testConnection(context: Context): Map<String, Any?> {
+        if (!isEnabled(context)) return Json.failure("APP_WIREGUARD_NOT_ENABLED", "WireGuard를 먼저 켜세요.")
+        // Recreate the userspace tunnel after process death before attempting the probe.
+        val prepared = prepareDownload(context)
+        if (prepared["ok"] != true) return prepared
         return try {
             val raw = NativeTunnel.checkConnection()
             val result = JSONObject(raw)
