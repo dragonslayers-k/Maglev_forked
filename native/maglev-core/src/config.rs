@@ -349,7 +349,7 @@ mod tests {
         assert!(NativeConfig::from_json(r#"{"proxy_url":"http://x:1"}"#).is_err());
         assert!(NativeConfig::from_json(r#"{"proxy_url":"http://u:p@proxy.example:8080"}"#).is_err());
         assert!(NativeConfig::from_json(r#"{"proxy_url":"http://u:p@127.0.0.1:0"}"#).is_err());
-        assert!(NativeConfig::from_json(r#"{"proxy_url":"http://maglev:token@127.0.0.1:12345"}"#).is_err());
+        assert!(NativeConfig::from_json(r#"{"proxy_url":"http://maglev:token@127.0.0.1:12345"}"#).is_ok());
         assert!(NativeConfig::from_json(r#"{"http_download_proxy_url":"http://maglev:token@127.0.0.1:12345"}"#).is_ok());
         let legacy = NativeConfig::from_json(r#"{"proxy_url":"http://maglev:token@127.0.0.1:12345"}"#).unwrap();
         assert_eq!(legacy.proxy_url, None);
