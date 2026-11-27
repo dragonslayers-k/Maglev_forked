@@ -1069,6 +1069,7 @@ export default function BrowserScreen({ inTab = false }: { inTab?: boolean }) {
           Share.share({ message: u }).catch(() => {});
         }}
         onShowFound={() => setTrayOpen(true)}
+        onAnalyzePage={(pageUrl) => router.push({ pathname: '/youtube-download', params: { url: pageUrl } })}
         onLinkOptions={(href) => setLinkTarget({ kind: 'link', url: href, imageUrl: null, text: null })}
       />
       <PopupCard prompt={prompt} onOpen={popupOpen} onBlock={popupBlock} onAlwaysAllow={popupAlways} />
