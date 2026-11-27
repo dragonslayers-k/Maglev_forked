@@ -730,7 +730,7 @@ export default function BrowserScreen({ inTab = false }: { inTab?: boolean }) {
     setTrayOpen(false);
     setTarget({
       url: item.url,
-      name: item.name,
+      name: item.kind === 'video' ? (page?.title?.trim() || item.name) : item.name,
       size: item.size,
       pageUrl: item.pageUrl || page?.url || '',
       userAgent: page?.userAgent ?? '',
@@ -779,7 +779,11 @@ export default function BrowserScreen({ inTab = false }: { inTab?: boolean }) {
     // The menu is a modal sheet. Wait for its close animation before asking Android to resize
     // the Activity into PiP; otherwise the dim/scrim layer can be captured in the PiP window.
     afterSheetCloses(() => {
-      const video = found.find((item) => item.kind === 'video' && (item.width ?? 0) > 0 && (item.height ?? 0) > 0);
+      const videos = found.filter((item) => item.kind === 'video' && (item.width ?? 0) > 0 && (item.height ?? 0) > 0);
+      // First detected entries may be hidden previews or ads. Use the largest known
+      // frame as a fallback; native validates the visible playing element.
+      videos.sort((a, b) => ((b.width ?? 0) * (b.height ?? 0)) - ((a.width ?? 0) * (a.height ?? 0)));
+      const video = videos[0];
       const aspectRatio = video ? (video.width! / video.height!) : 16 / 9;
       void maglevEngine.enterBrowserPictureInPicture(aspectRatio).then((result) => {
         if (result.ok) {
