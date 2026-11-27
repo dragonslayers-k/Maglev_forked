@@ -77,11 +77,15 @@ object PageScan {
     var kind = kindFromMime(mime);
     var clean = cleanMime(mime);
     var path = String(u || '').split(/[?#]/)[0].toLowerCase();
-    // MSE-backed players often expose only opaque fetch/XHR segment URLs. Surface
-    // media-shaped requests as candidates while keeping arbitrary API calls out.
-    if (!kind && mseSeen && /^(fetch|xmlhttprequest)$/i.test(String(initiator || '')) &&
-        /(?:videoplayback|video|videos|media|stream|segment|chunk)/i.test(String(u || ''))) {
-      kind = /(?:^|[?&])(?:type|format|mime|content[_-]?type)=audio(?:%2f|\/)/i.test(String(u || '')) ? 'audio' : 'video';
+    // Opaque MSE/XHR URLs are not media evidence by themselves: tracking, QoE and
+    // telemetry endpoints often contain words such as "video" or "stream".
+    // Promote only explicit media MIME or explicit type/format query signals.
+    if (!kind && mseSeen && /^(fetch|xmlhttprequest)$/i.test(String(initiator || ''))) {
+      var rawUrl = String(u || '');
+      var explicitMime = /(?:[?&](?:mime|content[_-]?type|content-type)=)(video%2f|video\/|audio%2f|audio\/)/i.exec(rawUrl);
+      var explicitType = /(?:[?&](?:type|format)=)(video|audio)(?:[&#]|$)/i.exec(rawUrl);
+      if (explicitMime) kind = /^audio/i.test(explicitMime[1]) ? 'audio' : 'video';
+      else if (explicitType) kind = explicitType[1].toLowerCase();
     }
     if (/\.(m3u8|mpd)$/i.test(path) ||
         clean === 'application/vnd.apple.mpegurl' || clean === 'application/x-mpegurl' ||
