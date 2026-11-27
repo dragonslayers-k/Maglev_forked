@@ -92,7 +92,8 @@ export default function BrowserScreen({ inTab = false }: { inTab?: boolean }) {
   const { width: viewportWidth, height: viewportHeight } = useWindowDimensions();
   // Android resizes the activity to the PiP window. Hide browser chrome/overlays there so the video viewport is unobstructed.
   // PiP can be resized larger than the old 260dp cutoff on Samsung. Detect the landscape, compact Activity shape too.
-  const pipCompact = viewportWidth > viewportHeight * 1.35 && viewportHeight < 500;
+  // Android PiP can be expanded to a tall/large landscape window on Samsung; aspect ratio is the reliable signal.
+  const pipCompact = viewportWidth > viewportHeight * 1.35;
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const router = useRouter();
   const params = useLocalSearchParams<{ url?: string; prefill?: string; open?: string; newTab?: string }>();
