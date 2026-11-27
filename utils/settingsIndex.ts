@@ -108,6 +108,22 @@ export const SETTINGS_INDEX: SettingEntry[] = [
     "통합 구성",
   ),
   e(
+    "about-barrel-smart-connect",
+    "Barrel 1.1.2 · Smart Connect",
+    "about",
+    "앱 정보",
+    ["Barrel", "Smart Connect", "smart connect", "media detection", "playback priority", "MSE", "SourceBuffer", "video downloader"],
+    "통합 구성",
+  ),
+  e(
+    "about-laya-bitchord-wireguard",
+    "Laya · BitChord 앱 내부 WireGuard",
+    "about",
+    "앱 정보",
+    ["Laya", "BitChord", "WireGuard", "userspace", "gVisor", "app-local proxy", "tunnel", "peer handshake"],
+    "통합 구성",
+  ),
+  e(
     "about-crash-log",
     "충돌 기록 지우기",
     "about",

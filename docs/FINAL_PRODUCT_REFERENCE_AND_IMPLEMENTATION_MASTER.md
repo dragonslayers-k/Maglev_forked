@@ -148,12 +148,12 @@ For each entry show name, short role, source link, and optionally license/notice
 ## 6. Progress ledger
 - [x] #646 root cause recorded: IPv6 in-memory HTTP/TLS test hung in gVisor cleanup; not an APK build.
 - [x] #647 follow-up test containment commit recorded: `1379a0c36d062c555d0a7efe8433075ece7c6d62`.
-- [ ] #647 build and signed APK artifact complete.
+- [x] #648 APK artifact built; user runtime acceptance failed, so it is not final.
 - [ ] P0-1 native startup error surfaced and tested.
 - [ ] P0-2 actual peer handshake + tunneled request + egress + leak test.
 - [ ] P0-3 site media detection/MSE and playback download.
 - [ ] P0-4 actual PiP video continuity/background test.
-- [ ] Settings → Information → References implemented.
+- [x] Settings → Information → References list includes source links and concise feature status (Barrel Smart Connect, Laya/BitChord added).
 - [ ] Full release acceptance tests passed.
 
 ## 7. Latest workflow state at time of this document
@@ -167,6 +167,13 @@ Last checked: JS checks, contract tests, Rust tests, Rust Android arm64 library 
 - 정확한 오류 문자열은 `native/maglev-core/src/engine.rs`의 `session_start_error()`에서 생성됐다. `Session::new_with_opts`의 구체적인 원인을 generic message로 숨기고 있었다. 후속 코드에서 bounded sanitized native cause를 반환하고 URL user-info를 redact하도록 수정했다. 실제 기기 원인은 다음 진단 메시지/로그에서 확인해야 하며 아직 특정 원인으로 단정하지 않는다.
 - MSE/SourceBuffer 관찰 hook을 `PageScan.kt`에 추가하고 browser note event로 전달한다. fetch/XHR 응답 MIME 또는 manifest/segment URL이 식별되는 경우 기존 Found list/stream path로 들어갈 수 있다. MSE byte capture, arbitrary blob byte extraction, full site extractor coverage는 여전히 미완료다.
 - PiP API에 detected video aspect ratio를 전달하고 Android-supported range로 clamp한다. 이것은 ratio/transition parameter 개선일 뿐, actual WebView video surface continuity, background playback, real device PiP acceptance를 증명하지 않는다.
-- Settings → Information already has a references section; update Barrel Smart Connect and Laya/BitChord source entries and keep each feature status honest.
-- Add native engine session startup smoke test with network disabled to Rust CI. It does not replace Android device validation.
+- Updated app/settings/about.tsx with Barrel Smart Connect and Laya/BitChord source entries; added matching utils/settingsIndex.ts entries and FocusAnchor targets so Settings search can find them.
+- Added native engine session startup smoke test with network disabled in Rust CI (commit 36b9cc010f974394c8ec4fbffc2086a090e005cb); its CI result is still pending and it does not replace Android device validation.
 - **Do not ask the user to reinstall another APK until CI passes and internal validation gates are run.** Never call a build final unless peer handshake + tunneled HTTPS/egress, site media recognition + download, and actual PiP video continuity have evidence.
+
+
+## 9. #665 follow-up
+
+- #665 JS typecheck passed, but the UI contract test rejected the two new About rows because Settings search requires a utils/settingsIndex.ts entry and a FocusAnchor for each row. This was a test/registration failure, not a runtime failure.
+- Follow-up commit adds both index entries and FocusAnchor wrappers. The next CI run must pass typecheck, unit/contract tests, Rust startup smoke, arm64 native build, APK signing/version checks and artifact upload before any APK is considered for internal validation.
+- #648 remains rejected by runtime acceptance. No final APK claim until WireGuard peer handshake + tunneled HTTPS/egress, actual site media detection/download and actual PiP video continuity are demonstrated.

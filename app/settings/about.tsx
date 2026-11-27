@@ -139,8 +139,12 @@ export default function AboutSettings() {
         <ListRow title="MPMux 버퍼 멀티플렉서" subtitle="MSE/SourceBuffer appendBuffer 캡처와 라이브 mux 참고. 실제 바이트 캡처·init/media segment 조립·파일 저장은 미구현입니다." icon="external" onPress={() => void Linking.openURL('https://mpmux.com/buffermuxer')} />
         <ListRow title="Morphe WireGuard 패치" subtitle="userspace WireGuard·인증 로컬 프록시·.conf 암호화 저장 코드가 있습니다. #648에서 엔진 시작 실패가 재현되어 원인 메시지 공개를 수정했으며 peer handshake와 실제 HTTP/HTTPS 프록시 경로는 미검증입니다." icon="github" onPress={() => void Linking.openURL('https://github.com/seo-rii/morphe-wireguard-patches')} />
         <ListRow title="FFmpeg · 오디오 후처리" subtitle="FFmpegKit 변환기와 완료 후처리 큐 코드가 있습니다. MP3·M4A·Opus 및 영상 컨테이너 변환은 저장 실패 보고가 있어 완료로 인정하지 않습니다." />
+        <FocusAnchor anchorKey={rowKey("Barrel 1.1.2 · Smart Connect")}>
         <ListRow title="Barrel 1.1.2 · Smart Connect" subtitle="APK 정적 분석에서 확인한 Smart Connect·미디어 인식·재생 우선 다운로드 기능을 참고합니다. 실제 동작은 기능별 runtime 검증이 필요합니다." icon="file" onPress={() => void Linking.openURL('https://github.com/dragonslayers-k/Maglev_forked/blob/feature/p1-video-detection-observer/docs/reference/Barrel_1.1.2_APK_%EC%8B%AC%EC%B8%B5_%EB%B6%84%EC%84%9D_%EB%8B%A4%EC%9A%B4%EB%A1%9C%EB%93%9C_%EA%B8%B0%EB%8A%A5_%EC%9D%B4%EC%8B%9D_%EC%84%A4%EA%B3%84%EC%84%9C.md')} />
+        </FocusAnchor>
+        <FocusAnchor anchorKey={rowKey("Laya · BitChord 앱 내부 WireGuard")}>
         <ListRow title="Laya · BitChord 앱 내부 WireGuard" subtitle="userspace WireGuard·gVisor TCP/IP·인증 로컬 프록시 구조를 참고합니다. 시스템 VPN과는 별도이며 실제 터널 검증은 미완료입니다." icon="github" onPress={() => void Linking.openURL('https://github.com/04pril/Laya')} />
+        </FocusAnchor>
         <FocusAnchor anchorKey={rowKey("Barrel 1.1.2 APK 분석·이식 범위")}>
           <ListRow title="Barrel 1.1.2 APK 분석·이식 범위" subtitle="정적 분석 원문과 기능별 clean-room 이식 계획입니다. APK 자체는 포함하지 않으며 기능 이식은 별도 검증합니다." icon="file" onPress={() => void Linking.openURL('https://github.com/dragonslayers-k/Maglev_forked/blob/feature/p1-video-detection-observer/docs/reference/Barrel_1.1.2_APK_%EC%8B%AC%EC%B8%B5_%EB%B6%84%EC%84%9D_%EB%8B%A4%EC%9A%B4%EB%A1%9C%EB%93%9C_%EA%B8%B0%EB%8A%A5_%EC%9D%B4%EC%8B%9D_%EC%84%A4%EA%B3%84%EC%84%9C.md')} />
         </FocusAnchor>
