@@ -36,6 +36,7 @@ export type MenuItemId =
   | 'copy'
   | 'share'
   | 'show-found'
+  | 'analyze-page'
   | 'link-options';
 
 export interface MenuItem {
@@ -63,6 +64,7 @@ export const mediaMenuCopy = {
   openVideoNewTab: '새 탭에서 동영상 열기',
   copyVideoAddress: '동영상 주소 복사',
   showFound: '이 페이지에서 감지한 파일 보기',
+  analyzePage: '페이지에서 영상·화질 분석',
   linkOptions: '링크 옵션',
   imageInline: '페이지에 포함된 이미지라 여기에서 저장할 수 없습니다.',
   videoBlob: '이 영상은 직접 저장할 수 없는 방식으로 재생됩니다. 감지 파일 목록을 확인하세요.',
@@ -196,6 +198,7 @@ export function buildMediaMenu(hit: MediaHit): MediaMenu {
       if (hit.poster) items.push({ id: 'save-poster', title: C.savePoster, icon: 'download', url: hit.poster });
       note = cls === 'blob' ? C.videoBlob : cls === 'data' ? C.videoInline : C.videoNone;
       items.push({ id: 'show-found', title: C.showFound, icon: 'folder', url: null });
+      if (cls === 'blob' && hit.pageUrl) items.push({ id: 'analyze-page', title: C.analyzePage, icon: 'stream', url: hit.pageUrl });
     }
     if (hit.url) {
       items.push(
