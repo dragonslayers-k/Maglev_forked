@@ -115,7 +115,7 @@ export default function BrowserScreen({ inTab = false }: { inTab?: boolean }) {
   }, []);
   useEffect(() => {
     if (!pipRequested || !appForeground || viewportWidth < screenWidth * 0.9) return;
-    const timeout = setTimeout(() => setPipRequested(false), 900);
+    const timeout = setTimeout(() => setPipRequested(false), 5000);
     return () => clearTimeout(timeout);
   }, [pipRequested, appForeground, viewportWidth, screenWidth]);
   const isOwner = useSyncExternalStore(subscribeTabData, () => getViewOwner() === instanceId, () => false);
@@ -783,7 +783,9 @@ export default function BrowserScreen({ inTab = false }: { inTab?: boolean }) {
       const aspectRatio = video ? (video.width! / video.height!) : 16 / 9;
       void maglevEngine.enterBrowserPictureInPicture(aspectRatio).then((result) => {
         if (result.ok) {
-          showNotice({ message: notices.browser.pipStarted }, 2500);
+          // A pending result means the active page is being promoted to fullscreen video first;
+          // native PiP entry follows from onShowCustomView, so don't announce success prematurely.
+          if ((result as any).pending !== true) showNotice({ message: notices.browser.pipStarted }, 2500);
         } else {
           setPipRequested(false);
           showNotice({ message: result.message || notices.browser.pipFailed }, 4000);

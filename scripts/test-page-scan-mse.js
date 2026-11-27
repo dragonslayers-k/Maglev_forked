@@ -26,6 +26,7 @@ if (!pipNative.includes('requestedAspectRatio: Double') || !pipNative.includes('
 if (!pipUi.includes('enterBrowserPictureInPicture(aspectRatio)') || !pipUi.includes('video.width! / video.height!')) throw new Error('Browser PiP does not pass detected video aspect ratio');
 if (!pipTypes.includes('enterBrowserPictureInPicture(aspectRatio: number)')) throw new Error('PiP aspect ratio is missing from native TypeScript contract');
 if (!browser.includes('fullscreenPipButton') || !browser.includes('setAutoEnterEnabled(autoEnter)') || !browser.includes('activeVideoAspectRatioKnown')) throw new Error('Fullscreen video does not expose intrinsic-ratio PiP and auto-enter');
-if (!pipNative.includes('!MaglevBrowserView.fullscreenVideoActive') || !pipNative.includes('VIDEO_NOT_FULLSCREEN')) throw new Error('PiP must not capture the whole browser Activity when video is not fullscreen');
-if (!pipUi.includes('result.message || notices.browser.pipFailed')) throw new Error('PiP UI hides the native full-screen requirement');
+if (!pipNative.includes('MaglevBrowserView.requestFullscreenVideoForPip') || !pipNative.includes('"pending" to true')) throw new Error('Inline video PiP does not request a fullscreen video surface before entering PiP');
+if (!browser.includes('pipPendingFromBrowserMenu') || !browser.includes('v.requestFullscreen') || !browser.includes('.ytp-fullscreen-button')) throw new Error('Browser PiP cannot promote an inline player to its fullscreen video surface');
+if (!pipUi.includes('(result as any).pending !== true')) throw new Error('PiP UI announces success before the native pending transition completes');
 console.log('PASS: MSE observation and fullscreen-video PiP contract');

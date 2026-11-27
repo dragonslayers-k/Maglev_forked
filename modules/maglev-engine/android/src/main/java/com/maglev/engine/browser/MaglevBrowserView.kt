@@ -184,6 +184,8 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
     private var customViewHost: ViewGroup? = null
     private var fullscreenPipButton: TextView? = null
     private var previousOrientation: Int = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+    /** Set when the browser menu requests PiP while the page video is still inline. */
+    private var pipPendingFromBrowserMenu = false
 
     private val bridge = PageScanBridge { json -> onScanReport(json) }
 
@@ -1539,6 +1541,61 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
 
     // region Fullscreen video
 
+    /** Requests the page player's fullscreen video surface from the browser PiP menu. */
+    private fun requestFullscreenVideoForPipInternal(onResult: (Boolean) -> Unit) {
+        if (destroyed || !active) {
+            onResult(false)
+            return
+        }
+        pipPendingFromBrowserMenu = true
+        mainHandler.postDelayed({
+            if (pipPendingFromBrowserMenu && !fullscreenVideoActive) pipPendingFromBrowserMenu = false
+        }, 5_000L)
+        val script = """
+            (function() {
+              var videos = Array.prototype.slice.call(document.querySelectorAll('video'));
+              videos = videos.filter(function(v) { return v.readyState >= 1 && v.videoWidth > 0 && v.videoHeight > 0; });
+              videos.sort(function(a, b) {
+                var ap = (!a.paused && !a.ended) ? 1 : 0, bp = (!b.paused && !b.ended) ? 1 : 0;
+                if (ap !== bp) return bp - ap;
+                return (b.clientWidth * b.clientHeight) - (a.clientWidth * a.clientHeight);
+              });
+              var v = videos[0];
+              if (!v) return false;
+              var selectors = [
+                '.ytp-fullscreen-button',
+                '[aria-label*="full screen" i]',
+                '[aria-label*="fullscreen" i]',
+                '[title*="full screen" i]',
+                '[title*="fullscreen" i]',
+                '.fullscreen-button'
+              ];
+              for (var i = 0; i < selectors.length; i++) {
+                var button = document.querySelector(selectors[i]);
+                if (button && button.getClientRects().length) {
+                  try { button.click(); return true; } catch (e) {}
+                }
+              }
+              try {
+                if (v.requestFullscreen) {
+                  var p = v.requestFullscreen();
+                  if (p && p.catch) p.catch(function(){});
+                  return true;
+                }
+              } catch (e) {}
+              try {
+                if (v.webkitEnterFullscreen) { v.webkitEnterFullscreen(); return true; }
+              } catch (e) {}
+              return false;
+            })()
+        """.trimIndent()
+        webView.evaluateJavascript(script) { raw ->
+            val accepted = raw?.trim() == "true"
+            if (!accepted) pipPendingFromBrowserMenu = false
+            onResult(accepted)
+        }
+    }
+
     private fun showFullscreen(view: View, callback: WebChromeClient.CustomViewCallback) {
         if (destroyed || customView != null) {
             callback.onCustomViewHidden()
@@ -1591,7 +1648,15 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
             val controller = WindowCompat.getInsetsController(activity.window, decor)
             controller.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
             controller.hide(WindowInsetsCompat.Type.systemBars())
-            updateFullscreenPipParams(activity, autoEnter = true)
+            if (pipPendingFromBrowserMenu) {
+                pipPendingFromBrowserMenu = false
+                // Wait for intrinsic video dimensions, then enter PiP on the isolated fullscreen surface.
+                updateFullscreenPipParams(activity, autoEnter = true) {
+                    enterFullscreenPictureInPicture(activity, pipButton)
+                }
+            } else {
+                updateFullscreenPipParams(activity, autoEnter = true)
+            }
         } else {
             addView(container, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
             customViewHost = this
@@ -1693,6 +1758,16 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
             private set
         @Volatile var activeVideoAspectRatioKnown: Boolean = false
             private set
+
+        /** Used by the PiP menu to request fullscreen on the active tab's current HTML video. */
+        fun requestFullscreenVideoForPip(onResult: (Boolean) -> Unit) {
+            val view = serviceWorkerObserver.get()
+            if (view == null || view.destroyed) {
+                onResult(false)
+                return
+            }
+            view.requestFullscreenVideoForPipInternal(onResult)
+        }
 
         // ServiceWorkerController is process-wide. Keep one dispatcher and point it at the active browser tab only.
         private val serviceWorkerObserver = AtomicReference<MaglevBrowserView?>(null)

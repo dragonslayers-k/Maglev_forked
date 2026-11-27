@@ -31,7 +31,22 @@ class MaglevWatchModule : Module() {
             } else if (activity == null) {
                 promise.resolve(mapOf("ok" to false, "code" to "NOT_READY", "message" to "The app screen is not available."))
             } else if (!MaglevBrowserView.fullscreenVideoActive) {
-                promise.resolve(mapOf("ok" to false, "code" to "VIDEO_NOT_FULLSCREEN", "message" to "먼저 영상의 전체화면을 연 뒤 영상 오른쪽 위 PiP 버튼을 누르세요."))
+                // Inline players (including YouTube mobile Web) do not expose a native custom video
+                // surface until their fullscreen control is invoked. Request that transition from
+                // the active WebView; showFullscreen will enter PiP after measuring the video ratio.
+                activity.runOnUiThread {
+                    MaglevBrowserView.requestFullscreenVideoForPip { accepted ->
+                        if (accepted) {
+                            promise.resolve(mapOf("ok" to true, "pending" to true))
+                        } else {
+                            promise.resolve(mapOf(
+                                "ok" to false,
+                                "code" to "VIDEO_NOT_FOUND",
+                                "message" to "현재 페이지에서 재생 가능한 동영상을 찾지 못했습니다. 먼저 영상 재생을 시작하세요."
+                            ))
+                        }
+                    }
+                }
             } else {
                 // Prefer the intrinsic dimensions measured from the active HTML video element.
                 // Fall back to the discovered media ratio only until the WebView measurement arrives.
