@@ -23,15 +23,19 @@ class MaglevWatchModule : Module() {
     override fun definition() = ModuleDefinition {
         Name("MaglevWatch")
 
-        AsyncFunction("enterBrowserPictureInPicture") { promise: Promise ->
+        AsyncFunction("enterBrowserPictureInPicture") { requestedAspectRatio: Double, promise: Promise ->
             val activity = appContext.currentActivity
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
                 promise.resolve(mapOf("ok" to false, "code" to "UNSUPPORTED", "message" to "Picture-in-picture requires Android 8.0 or later."))
             } else if (activity == null) {
                 promise.resolve(mapOf("ok" to false, "code" to "NOT_READY", "message" to "The app screen is not available."))
             } else {
+                // Use the detected video's real aspect ratio where available; clamp to Android's
+                // supported PiP range so malformed page metadata cannot reject the transition.
+                val ratio = if (requestedAspectRatio.isFinite()) requestedAspectRatio.coerceIn(0.42, 2.39) else (16.0 / 9.0)
+                val numerator = (ratio * 1000.0).toInt().coerceAtLeast(1)
                 val params = PictureInPictureParams.Builder()
-                    .setAspectRatio(Rational(16, 9))
+                    .setAspectRatio(Rational(numerator, 1000))
                     .build()
                 // PiP is a Window/Activity operation. Run it on the UI thread and report the
                 // actual platform return value instead of resolving before the transition.
