@@ -37,6 +37,7 @@ import com.maglev.engine.storage.StorageManager
 import com.maglev.engine.storage.StreamMuxer
 import com.maglev.engine.util.Json
 import com.maglev.engine.wireguard.WireGuardController
+import com.maglev.engine.wireguard.WireGuardProfileStore
 import com.maglev.engine.util.TorrentFetcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExecutorCoroutineDispatcher
@@ -324,7 +325,22 @@ object EngineHost {
         val configMap = LinkedHashMap<String, Any?>()
         snake.forEach { (key, value) -> if (key is String) configMap[key] = value }
         // If app-local WireGuard survived process death, boot fail-closed until its proxy is restored.
-        ctx?.let { c -> if (WireGuardController.isEnabled(c)) configMap["proxy_url"] = null }
+        ctx?.let { c ->
+            if (WireGuardController.isEnabled(c)) {
+                if (!WireGuardProfileStore.hasOriginalProxy(c)) {
+                    try {
+                        WireGuardProfileStore.saveOriginalProxy(c, configMap["proxy_url"] as? String)
+                    } catch (t: Throwable) {
+                        Log.e(TAG, "Could not preserve the original proxy while WireGuard is enabled", t)
+                        return Json.failure(
+                            "APP_WIREGUARD_PROXY_SAVE_FAILED",
+                            "기존 다운로드 프록시를 안전하게 저장하지 못해 엔진 초기화를 중단했습니다.")
+                    }
+                }
+                // Keep native startup fail-closed until the app-local tunnel is applied.
+                configMap["proxy_url"] = null
+            }
+        }
         val configJson = Json.toJson(configMap)
         captureGlobalLimits(configMap)
         // JS opened the app: a schedule hold from an earlier pause no longer applies once the schedule allows transfers.

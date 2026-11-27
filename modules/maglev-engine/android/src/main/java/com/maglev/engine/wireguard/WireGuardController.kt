@@ -49,20 +49,6 @@ object WireGuardController {
         if (enabled) {
             if (!hasProfile(context)) return@synchronized Json.failure(
                 "APP_WIREGUARD_PROFILE_MISSING", "먼저 WireGuard .conf 프로필을 가져오세요.")
-            // The settings screen can be opened before the native engine/service has started.
-            // Start it from the saved config before reading or replacing its proxy settings.
-            if (!EngineHost.isEngineInitialized()) {
-                val engineStarted = EngineHost.ensureStarted()
-                if (engineStarted["ok"] != true) {
-                    val engineCode = engineStarted["code"]?.toString()?.take(80) ?: "UNKNOWN"
-                    val engineMessage = engineStarted["message"]?.toString()?.take(500)
-                        ?: "다운로드 엔진을 시작하지 못했습니다."
-                    Log.e("MaglevWireGuard", "EngineHost.ensureStarted failed: code=$engineCode message=$engineMessage")
-                    return@synchronized Json.failure(
-                        "APP_WIREGUARD_ENGINE_START_FAILED",
-                        "다운로드 엔진 초기화 실패 [$engineCode]: $engineMessage")
-                }
-            }
             if (EngineHost.isEngineInitialized()) {
                 val paused = EngineHost.pauseTorrentsForAppWireGuard()
                 if (paused["ok"] != true) return@synchronized Json.failure(
@@ -71,6 +57,14 @@ object WireGuardController {
                 if (pausedDownloads["ok"] != true) return@synchronized Json.failure(
                     "APP_WIREGUARD_DOWNLOAD_PAUSE_FAILED", "기존 다운로드를 안전하게 멈추지 못해 WireGuard를 켜지 않았습니다.")
                 pausedDownloadsForEnable = (pausedDownloads["paused_ids"] as? List<*>)?.mapNotNull { it as? String } ?: emptyList()
+            }
+            if (EngineHost.isEngineInitialized()) {
+                val saved = saveOriginalProxyIfNeeded(context)
+                if (saved["ok"] != true) {
+                    if (pausedDownloadsForEnable.isNotEmpty()) EngineHost.resumeDownloadsAfterAppWireGuard(pausedDownloadsForEnable)
+                    pausedDownloadsForEnable = emptyList()
+                    return@synchronized saved
+                }
             }
             // Block app WebView requests during startup; never leave them on direct networking.
             if (!installBrowserProxy(9, active = false)) {
@@ -82,7 +76,7 @@ object WireGuardController {
             context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putBoolean(ENABLED, true).apply()
             // Start the userspace tunnel and authenticated loopback proxy immediately when the
             // app-local switch is enabled; it is not deferred until the first download.
-            val started = prepareDownload(context)
+            val started = startTunnel(context)
             if (started["ok"] != true) {
                 val savedProxy = if (WireGuardProfileStore.hasOriginalProxy(context)) {
                     WireGuardProfileStore.loadOriginalProxy(context)
@@ -107,16 +101,37 @@ object WireGuardController {
                     "APP_WIREGUARD_ROLLBACK_FAILED",
                     "WireGuard 시작은 실패했고 기존 다운로드 프록시 복원도 실패했습니다. 다운로드는 안전을 위해 일시 중지된 상태입니다.")
             }
-            val pausedIds = pausedDownloadsForEnable
+            if (EngineHost.isEngineInitialized()) {
+                val applied = applyTunnelToEngine()
+                if (applied["ok"] != true) return@synchronized Json.failure(
+                    "APP_WIREGUARD_ENGINE_APPLY_FAILED",
+                    "WireGuard 터널은 실행 중이지만 다운로드 엔진 프록시 적용에 실패했습니다. 다운로드는 재개하지 않았습니다. " + (applied["message"]?.toString() ?: ""))
+                val pausedIds = pausedDownloadsForEnable
+                pausedDownloadsForEnable = emptyList()
+                val resumed = if (pausedIds.isNotEmpty()) EngineHost.resumeDownloadsAfterAppWireGuard(pausedIds) else mapOf("ok" to true)
+                return@synchronized mapOf(
+                    "ok" to true, "enabled" to true, "running" to true,
+                    "resumed_downloads" to (resumed["resumed"] ?: 0),
+                    "message" to "앱 브라우저와 HTTP/HTTPS 다운로드에 WireGuard 프록시를 적용했습니다.")
+            }
             pausedDownloadsForEnable = emptyList()
-            val resumed = if (pausedIds.isNotEmpty()) EngineHost.resumeDownloadsAfterAppWireGuard(pausedIds) else mapOf("ok" to true)
             return@synchronized mapOf(
                 "ok" to true, "enabled" to true, "running" to true,
-                "resumed_downloads" to (resumed["resumed"] ?: 0),
-                "message" to "앱 브라우저와 HTTP/HTTPS 다운로드에 WireGuard 프록시를 적용했습니다.")
+                "download_engine_ready" to false,
+                "message" to "앱 브라우저 WireGuard 터널을 시작했습니다. 다운로드 엔진이 준비되면 HTTP/HTTPS 다운로드에도 터널을 적용합니다.")
         }
 
         val hasSaved = WireGuardProfileStore.hasOriginalProxy(context)
+        if (hasSaved && !EngineHost.isEngineInitialized()) {
+            val engineStarted = EngineHost.ensureStarted()
+            if (engineStarted["ok"] != true) {
+                val code = engineStarted["code"]?.toString()?.take(80) ?: "UNKNOWN"
+                val message = engineStarted["message"]?.toString()?.take(500) ?: "다운로드 엔진을 시작하지 못했습니다."
+                return@synchronized Json.failure(
+                    "APP_WIREGUARD_RESTORE_ENGINE_START_FAILED",
+                    "기존 프록시 복원 엔진이 시작되지 않아 WireGuard를 계속 유지합니다. [$code] $message")
+            }
+        }
         // Remove the WebView route before restoring the downloader's original proxy. If restore
         // fails, put the browser route back so the still-enabled tunnel cannot silently go direct.
         if (!clearBrowserProxy()) return@synchronized Json.failure(
@@ -143,6 +158,89 @@ object WireGuardController {
         mapOf("ok" to true, "enabled" to false)
     }
 
+    private fun saveOriginalProxyIfNeeded(context: Context): Map<String, Any?> {
+        if (!EngineHost.isEngineInitialized() || WireGuardProfileStore.hasOriginalProxy(context)) return mapOf("ok" to true)
+        val current = EngineHost.getAppWireGuardProxy()
+        if (current["ok"] != true) return current
+        return try {
+            WireGuardProfileStore.saveOriginalProxy(context, current["proxy_url"] as? String)
+            mapOf("ok" to true)
+        } catch (t: Throwable) {
+            Log.e("MaglevWireGuard", "Could not preserve original downloader proxy", t)
+            Json.failure("APP_WIREGUARD_PROXY_SAVE_FAILED", "기존 다운로드 프록시를 암호화 저장하지 못해 WireGuard를 켜지 않았습니다.")
+        }
+    }
+
+    /** Starts the userspace tunnel and browser route without requiring the downloader engine. */
+    private fun startTunnel(context: Context): Map<String, Any?> {
+        if (!hasProfile(context)) return Json.failure(
+            "APP_WIREGUARD_PROFILE_MISSING", "저장된 WireGuard 프로필이 없습니다. 직접 연결로 우회하지 않았습니다.")
+        if (running && proxyPort in 1..65535 && !localProxy.isNullOrBlank()) {
+            if (!browserProxyApplied && !installBrowserProxy(proxyPort)) return Json.failure(
+                "APP_WIREGUARD_BROWSER_PROXY_FAILED", "앱 브라우저의 WireGuard 프록시를 적용하지 못했습니다.")
+            return mapOf("ok" to true, "proxy_url" to localProxy, "browser_proxy" to true)
+        }
+        if (!browserProxyApplied && !installBrowserProxy(9, active = false)) return Json.failure(
+            "APP_WIREGUARD_BROWSER_PROXY_FAILED", "WireGuard 시작 전 앱 브라우저를 차단 상태로 전환하지 못했습니다.")
+        val random = ByteArray(32).also { SecureRandom().nextBytes(it) }
+        val password = Base64.encodeToString(random, Base64.URL_SAFE or Base64.NO_PADDING or Base64.NO_WRAP)
+        random.fill(0)
+        val config = try { WireGuardProfileStore.loadProfile(context) }
+        catch (_: Exception) { return Json.failure(
+            "APP_WIREGUARD_PROFILE_INVALID", "WireGuard 프로필을 복호화하거나 검증하지 못했습니다.") }
+        val port = try { NativeTunnel.start(config, USER, password, 0) }
+        catch (t: Throwable) {
+            val errorType = t.javaClass.simpleName.ifBlank { "Throwable" }.take(80)
+            Log.e("MaglevWireGuard", "NativeTunnel.start failed: $errorType", t)
+            return Json.failure(
+                "APP_WIREGUARD_START_FAILED",
+                "앱 내부 WireGuard 시작 실패 ($errorType). 직접 연결로 우회하지 않았습니다. 진단 로그를 확인하세요.")
+        }
+        if (port == -4) return Json.failure(
+            "APP_WIREGUARD_ENDPOINT_DNS_FAILED",
+            "WireGuard Endpoint 도메인 DNS 조회에 실패했습니다. 네트워크 또는 DNS를 확인하세요. 직접 연결로 우회하지 않았습니다.")
+        if (port == -1) return Json.failure("APP_WIREGUARD_PROFILE_INVALID", "WireGuard 프로필 설정이 올바르지 않습니다.")
+        if (port == -2) return Json.failure("APP_WIREGUARD_ALREADY_RUNNING", "WireGuard userspace 엔진이 이미 실행 중입니다.")
+        if (port !in 1..65535) return Json.failure(
+            "APP_WIREGUARD_START_FAILED", "WireGuard 로컬 프록시를 시작하지 못했습니다. 직접 연결로 우회하지 않았습니다.")
+        val url = "http://$USER:$password@127.0.0.1:$port"
+        localProxy = url
+        proxyPort = port
+        proxyUsername = USER
+        proxyPassword = password
+        running = true
+        if (!installBrowserProxy(port)) {
+            runCatching { NativeTunnel.stop() }
+            running = false
+            localProxy = null
+            proxyPort = 0
+            proxyUsername = null
+            proxyPassword = null
+            installBrowserProxy(9, active = false)
+            return Json.failure(
+                "APP_WIREGUARD_BROWSER_PROXY_FAILED",
+                "앱 브라우저의 WireGuard 프록시를 적용하지 못했습니다. WebView 프록시 기능을 확인하세요.")
+        }
+        return mapOf("ok" to true, "proxy_url" to url, "browser_proxy" to true)
+    }
+
+    private fun applyTunnelToEngine(): Map<String, Any?> {
+        if (!EngineHost.isEngineInitialized()) return mapOf("ok" to true, "deferred" to true)
+        val url = localProxy ?: return Json.failure(
+            "APP_WIREGUARD_PROXY_NOT_READY", "앱 WireGuard 로컬 프록시가 준비되지 않았습니다.")
+        val applied = EngineHost.setAppWireGuardProxy(url)
+        if (applied["ok"] != true) return Json.failure(
+            "APP_WIREGUARD_ENGINE_APPLY_FAILED",
+            applied["message"]?.toString() ?: "다운로드 엔진에 WireGuard 프록시를 적용하지 못했습니다.")
+        if (!installBrowserProxy(proxyPort)) return Json.failure(
+            "APP_WIREGUARD_BROWSER_PROXY_FAILED", "앱 브라우저의 WireGuard 프록시를 적용하지 못했습니다.")
+        val released = EngineHost.releaseAppWireGuardStartupHold()
+        if (released["ok"] != true) return Json.failure(
+            "APP_WIREGUARD_STARTUP_HOLD_RELEASE_FAILED",
+            "WireGuard 프록시는 적용됐지만 다운로드 시작 게이트를 해제하지 못했습니다.")
+        return mapOf("ok" to true)
+    }
+
     /** Returns an authenticated loopback proxy or an error; a closed proxy is installed first. */
     fun prepareDownload(context: Context): Map<String, Any?> = synchronized(lock) {
         if (!isEnabled(context)) return@synchronized mapOf("ok" to true)
@@ -153,9 +251,13 @@ object WireGuardController {
         // engine has been initialized. Never read/apply its proxy config until the engine is ready.
         if (!EngineHost.isEngineInitialized()) {
             val engineStarted = EngineHost.ensureStarted()
-            if (engineStarted["ok"] != true) return@synchronized Json.failure(
-                "APP_WIREGUARD_ENGINE_START_FAILED",
-                "다운로드 엔진을 시작하지 못했습니다. 앱을 다시 열고 WireGuard 상태를 확인하세요.")
+            if (engineStarted["ok"] != true) {
+                val code = engineStarted["code"]?.toString()?.take(80) ?: "UNKNOWN"
+                val message = engineStarted["message"]?.toString()?.take(500) ?: "다운로드 엔진을 시작하지 못했습니다."
+                return@synchronized Json.failure(
+                    "APP_WIREGUARD_ENGINE_START_FAILED",
+                    "WireGuard 터널은 유지 중이지만 다운로드 엔진 초기화에 실패했습니다. [$code] $message. 직접 연결로 우회하지 않았습니다.")
+            }
         }
 
         // EngineHost may have restarted independently while the native tunnel stayed alive.
@@ -176,13 +278,8 @@ object WireGuardController {
             return@synchronized mapOf("ok" to true, "proxy_url" to cachedProxy, "browser_proxy" to true)
         }
 
-        val hasSaved = WireGuardProfileStore.hasOriginalProxy(context)
-        if (!hasSaved) {
-            val current = EngineHost.getAppWireGuardProxy()
-            if (current["ok"] != true) return@synchronized Json.failure(
-                "APP_WIREGUARD_ENGINE_UNAVAILABLE", "다운로드 엔진 설정을 읽지 못했습니다.")
-            WireGuardProfileStore.saveOriginalProxy(context, current["proxy_url"] as? String)
-        }
+        val saved = saveOriginalProxyIfNeeded(context)
+        if (saved["ok"] != true) return@synchronized saved
 
         val random = ByteArray(32).also { SecureRandom().nextBytes(it) }
         val password = Base64.encodeToString(random, Base64.URL_SAFE or Base64.NO_PADDING or Base64.NO_WRAP)
@@ -300,14 +397,22 @@ object WireGuardController {
         if (!isEnabled(context)) return mapOf("ok" to true, "browser_proxy" to false)
         if (!browserProxyApplied && !installBrowserProxy(9, active = false)) return Json.failure(
             "APP_WIREGUARD_BROWSER_PROXY_FAILED", "앱 브라우저를 WireGuard 복구 전 차단 상태로 전환하지 못했습니다.")
-        return prepareDownload(context)
+        val started = startTunnel(context)
+        if (started["ok"] != true) return started
+        if (EngineHost.isEngineInitialized()) {
+            val saved = saveOriginalProxyIfNeeded(context)
+            if (saved["ok"] != true) return saved
+            val applied = applyTunnelToEngine()
+            if (applied["ok"] != true) return applied
+        }
+        return mapOf("ok" to true, "browser_proxy" to true, "running" to true)
     }
 
     /** Forces traffic through the userspace tunnel and reports the observed exit country/IP. */
     /** Verifies the actual authenticated HTTP CONNECT proxy used by app downloads. */
     fun testConnection(context: Context): Map<String, Any?> {
         if (!isEnabled(context)) return Json.failure("APP_WIREGUARD_NOT_ENABLED", "WireGuard를 먼저 켜세요.")
-        val prepared = prepareDownload(context)
+        val prepared = ensureBrowserProxy(context)
         if (prepared["ok"] != true) return prepared
         val port = proxyPort
         val password = proxyPassword

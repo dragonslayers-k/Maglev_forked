@@ -177,3 +177,11 @@ Last checked: JS checks, contract tests, Rust tests, Rust Android arm64 library 
 - #665 JS typecheck passed, but the UI contract test rejected the two new About rows because Settings search requires a utils/settingsIndex.ts entry and a FocusAnchor for each row. This was a test/registration failure, not a runtime failure.
 - Follow-up commit adds both index entries and FocusAnchor wrappers. The next CI run must pass typecheck, unit/contract tests, Rust startup smoke, arm64 native build, APK signing/version checks and artifact upload before any APK is considered for internal validation.
 - #648 remains rejected by runtime acceptance. No final APK claim until WireGuard peer handshake + tunneled HTTPS/egress, actual site media detection/download and actual PiP video continuity are demonstrated.
+
+
+## 10. WireGuard/downloader startup decoupling
+
+- #648 showed the WireGuard enable path was blocked by EngineHost.ensureStarted(), because setEnabled() called prepareDownload() before NativeTunnel.start(). This coupled the app-local tunnel to a separate downloader native session and surfaced the downloader generic error as a WireGuard configuration failure.
+- Follow-up source refactor starts the userspace WireGuard tunnel and WebView proxy independently. The downloader engine is started only when a download is prepared; until its authenticated proxy is applied, its startup hold remains fail-closed. Browser tunnel status and HTTPS egress test no longer require downloader initialization.
+- Preserve the original downloader proxy encrypted before nulling it in EngineHost.initLocked(); restore it before disabling the tunnel. If the engine cannot be started to restore the original proxy, keep WireGuard enabled rather than silently route direct.
+- This removes the startup dependency but does not prove the user's peer handshake or NordVPN egress; those remain runtime acceptance gates.
