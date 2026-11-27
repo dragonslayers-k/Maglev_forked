@@ -777,7 +777,7 @@ export default function BrowserScreen({ inTab = false }: { inTab?: boolean }) {
         }
       });
     });
-  }, [showNotice]);
+  }, [showNotice, found]);
 
   return (
     <SafeAreaView style={styles.root} edges={pipCompact ? [] : inTab ? ['top', 'left', 'right'] : ['top', 'left', 'right', 'bottom']}>
