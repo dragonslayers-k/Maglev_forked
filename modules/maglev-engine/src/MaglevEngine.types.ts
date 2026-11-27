@@ -926,6 +926,8 @@ export interface MaglevEngineApi {
   /** App-local WireGuard profile status. This is not the Android system VPN state. */
   getAppWireGuardStatus(): Promise<EngineResult<{ enabled: boolean; hasProfile: boolean; running: boolean }>>;
   /** Imports and validates a WireGuard .conf document; private key is stored encrypted at rest. */
+  /** Performs a real HTTPS request through the app-local WireGuard tunnel and reports the observed exit. */
+  testAppWireGuardConnection(): Promise<EngineResult<{ ip: string; country: string; country_code: string; message: string }>>;
   importAppWireGuardProfile(uri: string): Promise<EngineResult<{ hasProfile: boolean }>>;
   /** Enables app-local HTTP(S) download routing; no VpnService or APN/system route changes. */
   setAppWireGuardEnabled(enabled: boolean): Promise<EngineResult<{ enabled: boolean }>>;
