@@ -172,5 +172,31 @@ object WireGuardController {
         }
     }
 
+    fun status(context: Context): Map<String, Any?> {
+        val result = linkedMapOf<String, Any?>(
+            "ok" to true,
+            "enabled" to isEnabled(context),
+            "has_profile" to hasProfile(context),
+            "running" to running,
+            "peer_handshake" to false,
+            "peer_rx_bytes" to 0L,
+            "peer_tx_bytes" to 0L,
+            "last_handshake_unix" to 0L
+        )
+        if (!running) return result
+        return try {
+            val peer = JSONObject(NativeTunnel.peerStatus())
+            result["peer_handshake"] = peer.optBoolean("handshake", false)
+            result["peer_rx_bytes"] = peer.optLong("rx_bytes", 0L)
+            result["peer_tx_bytes"] = peer.optLong("tx_bytes", 0L)
+            result["last_handshake_unix"] = peer.optLong("last_handshake_unix", 0L)
+            result["handshake_age_seconds"] = peer.optLong("handshake_age_seconds", -1L)
+            result
+        } catch (_: Throwable) {
+            result["status_error"] = true
+            result
+        }
+    }
+
     fun isRunning(): Boolean = running
 }
