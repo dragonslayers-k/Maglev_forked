@@ -240,6 +240,9 @@ class MaglevEngineModule : Module() {
                 mapOf("ok" to true, "has_profile" to true)
             }
         }
+        AsyncFunction("testAppWireGuardConnection") { promise: Promise ->
+            io(promise) { WireGuardController.testConnection() }
+        }
         AsyncFunction("setAppWireGuardEnabled") { enabled: Boolean, promise: Promise ->
             val c = context
             if (c == null) promise.resolve(Json.failure("ENGINE_UNAVAILABLE", "Module is not attached"))
