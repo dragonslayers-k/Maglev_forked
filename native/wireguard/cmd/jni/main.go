@@ -78,6 +78,17 @@ func morphe_wg_check() *C.char {
 	return C.CString(string(payload))
 }
 
+//export morphe_wg_peer_status
+func morphe_wg_peer_status() *C.char {
+	current.Lock()
+	engine := current.engine
+	current.Unlock()
+	if engine == nil { return C.CString("{\"ok\":false,\"handshake\":false,\"code\":\"not_running\"}") }
+	payload, err := json.Marshal(engine.PeerStatus())
+	if err != nil { return C.CString("{\"ok\":false,\"handshake\":false,\"code\":\"status_failed\"}") }
+	return C.CString(string(payload))
+}
+
 //export morphe_wg_validate
 func morphe_wg_validate(config *C.char) *C.char {
 	if err := wg.Validate(C.GoString(config)); err != nil {
