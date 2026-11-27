@@ -861,6 +861,8 @@ export interface MaglevEngineApi {
   moveStorage(id: string, target: MoveTarget): Promise<EngineResult>;
   /** Opens the stream in a player chooser. UNSUPPORTED when no player is installed. */
   openStream(url: string, mime: string, title: string): Promise<EngineResult>;
+  /** Starts native in-app playback; Media3 handles progressive, HLS and DASH media. */
+  playInAppMedia(url: string, mime: string, title: string, headers?: Record<string, string>): Promise<EngineResult>;
   setSchedule(config: ScheduleConfig): Promise<EngineResult>;
   getScheduleStatus(): Promise<ScheduleStatus>;
   setFeedAutomation(config: FeedAutomationConfig): Promise<EngineResult>;
