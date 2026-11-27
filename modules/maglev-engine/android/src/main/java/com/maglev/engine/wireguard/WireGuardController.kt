@@ -1,6 +1,7 @@
 package com.maglev.engine.wireguard
 
 import android.content.Context
+import android.util.Log
 import android.net.Uri
 import android.util.Base64
 import androidx.webkit.ProxyConfig
