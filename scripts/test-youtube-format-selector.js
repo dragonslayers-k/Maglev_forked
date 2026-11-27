@@ -19,6 +19,7 @@ const checks = [
   ['YouTube source extension filters open compact selection sheets', source.includes('setVideoExtensionSheet(true)') && source.includes('setAudioExtensionSheet(true)') && source.includes('videoExtensions.map((ext) => (') && source.includes('audioExtensions.map((ext) => (')],
   ['video and audio quality lists open dedicated selection sheets', source.includes('setVideoFormatsSheet(true)') && source.includes('setAudioFormatsSheet(true)') && source.includes('visibleVideos.map((format) => (') && source.includes('audioChoices.map((format, index) => (') && !source.includes('videoFormatsExpanded') && !source.includes('audioFormatsExpanded')],
   ['output container selection opens dedicated sheets, not inline expanding lists', source.includes('<Sheet visible={videoContainerSheet}') && source.includes('<Sheet visible={audioContainerSheet}') && !source.includes('videoContainerExpanded') && !source.includes('audioContainerExpanded')],
+  ['selected format reconciles after provider dedupe so actions stay enabled', source.includes('if (selectedVideo && visibleVideos.some((format) => formatKey(format) === selectedVideo)) return;') && source.includes('if (selectedAudio && audioChoices.some((format) => formatKey(format) === selectedAudio)) return;') && source.includes('setSelectedVideo(first ? formatKey(first) : null);') && source.includes('setSelectedAudio(first ? formatKey(first) : null);')],
 ];
 let failed = false;
 for (const [name, ok] of checks) {
