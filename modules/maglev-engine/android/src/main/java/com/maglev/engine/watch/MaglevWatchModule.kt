@@ -1,6 +1,8 @@
 package com.maglev.engine.watch
 
 import android.content.Context
+import android.content.Intent
+import com.maglev.engine.player.MaglevMediaPlayerActivity
 import android.app.PictureInPictureParams
 import android.app.Activity
 import android.os.Build
@@ -22,6 +24,34 @@ class MaglevWatchModule : Module() {
 
     override fun definition() = ModuleDefinition {
         Name("MaglevWatch")
+
+        AsyncFunction("playInAppMedia") { url: String, mime: String, title: String, headers: Map<String, Any?>?, promise: Promise ->
+            val activity = appContext.currentActivity
+            val c = context
+            if (activity == null || c == null) {
+                promise.resolve(mapOf("ok" to false, "code" to "NOT_READY", "message" to "앱 화면을 사용할 수 없습니다."))
+            } else if (url.isBlank() || !(url.startsWith("https://", true) || url.startsWith("http://", true) || url.startsWith("content://", true) || url.startsWith("file://", true))) {
+                promise.resolve(mapOf("ok" to false, "code" to "INVALID_URL", "message" to "재생할 수 없는 미디어 주소입니다."))
+            } else {
+                val safeHeaders = HashMap<String, String>()
+                headers?.forEach { (key, value) ->
+                    if (key.length <= 128 && value is String && value.length <= 8192 && !key.contains("\\r") && !key.contains("\\n") && !value.contains("\\r") && !value.contains("\\n")) safeHeaders[key] = value
+                }
+                activity.runOnUiThread {
+                    try {
+                        val intent = Intent(activity, MaglevMediaPlayerActivity::class.java)
+                            .putExtra(MaglevMediaPlayerActivity.EXTRA_URI, url)
+                            .putExtra(MaglevMediaPlayerActivity.EXTRA_MIME, mime.take(128))
+                            .putExtra(MaglevMediaPlayerActivity.EXTRA_TITLE, title.take(200))
+                            .putExtra(MaglevMediaPlayerActivity.EXTRA_HEADERS, safeHeaders)
+                        activity.startActivity(intent)
+                        promise.resolve(mapOf("ok" to true))
+                    } catch (_: Throwable) {
+                        promise.resolve(mapOf("ok" to false, "code" to "PLAYER_START_FAILED", "message" to "앱 내 미디어 플레이어를 열지 못했습니다."))
+                    }
+                }
+            }
+        }
 
         AsyncFunction("enterBrowserPictureInPicture") { promise: Promise ->
             val activity = appContext.currentActivity
