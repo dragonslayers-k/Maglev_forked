@@ -186,6 +186,21 @@ export default function YouTubeDownloadScreen() {
     ? selectedAudioFormat.abr
     : Number(/^bestaudio_(\d+)$/.exec(selectedAudioFormat?.formatId ?? '')?.[1]) || undefined;
 
+  // Provider deduplication can change the exact format row chosen by the initial
+  // metadata response. Keep selections synchronized with the rows actually shown,
+  // otherwise the download actions can stay disabled despite a visible format.
+  useEffect(() => {
+    if (selectedVideo && visibleVideos.some((format) => formatKey(format) === selectedVideo)) return;
+    const first = visibleVideos[0];
+    setSelectedVideo(first ? formatKey(first) : null);
+  }, [selectedVideo, visibleVideos]);
+
+  useEffect(() => {
+    if (selectedAudio && audioChoices.some((format) => formatKey(format) === selectedAudio)) return;
+    const first = audioChoices[0];
+    setSelectedAudio(first ? formatKey(first) : null);
+  }, [selectedAudio, audioChoices]);
+
   return (
     <Screen title={screenTitle} onBack={back} scroll contentStyle={styles.content}>
       {loading ? <Text style={styles.muted}>YouTube 형식과 오디오 음질을 확인하고 있습니다…</Text> : null}
