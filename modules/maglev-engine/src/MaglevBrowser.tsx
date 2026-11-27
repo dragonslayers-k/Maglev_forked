@@ -64,7 +64,7 @@ export type BrowserDownloadRequestEvent = {
 export type BrowserMagnetEvent = { uri: string };
 export type BrowserRefusedEvent = { url: string; reason: BrowserRefusalReason };
 /** `drm`: the page uses protected video. `blob`: the player streams in a way Maglev can't save. */
-export type BrowserNoteEvent = { note: 'drm' | 'blob' };
+export type BrowserNoteEvent = { note: 'drm' | 'blob' | 'mse' };
 
 export type PopupKind = 'window' | 'redirect' | 'app';
 /** Open `url` in a new foreground tab with this tab as its opener. `gesture` is true for a tapped link or `window.open`. */
