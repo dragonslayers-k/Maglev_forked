@@ -161,73 +161,84 @@ APK의 앱 식별·서명에 관한 이전 #702 검사 기록:
 
 열린 PR은 조사 시점에 #1 하나다. 종료 PR·브랜치는 코드/테스트 근거를 잃지 않도록 이번 설계 작업에서 삭제하지 않는다.
 
-## 2.2 #702에서 PR #1 현재 head까지의 실제 변경량
+## 2.2 #702에서 현재 PR #1 head까지의 실제 변경량 — 2026-11-28 최신 정정
 
-#702 source tree와 PR #1 head commit `6a03adf6b3e6b6fc41fa32c039a04a60b0d38a6e`의 Git tree blob SHA를 비교했다.
+비교 대상:
+- #702 baseline: 45e685603a3a23507b61cb49398a78380d5db7a5
+- 현재 PR #1 head / #739: 2820b4dff15773ce835a43a3ea4936aa6e7b26ad
 
-- #702 tree entries: 1,836
-- actual differing paths: 45
-- modified: 37
-- added: 4
-- deleted: 4
+**전체 Git tree의 blob 경로를 직접 비교한 정확한 결과**다. PR API의 230개 changed-file 목록은 PR base인 dev와의 diff이므로, #702와의 차이를 산출하는 데 단독 사용하면 안 된다. #702에만 존재하고 dev에는 원래 없던 파일이 PR API 목록에서 누락될 수 있다.
 
-이 수치는 PR #1이 upstream `dev`에 표시하는 230-file broad diff와 다르다. 230-file diff의 상당 부분은 #702 이전 시점부터 feature branch에 존재하던 역사적 변경이다. 현재 퇴보 판단은 반드시 **#702 → 현재 head** 차이를 기준으로 해야 한다.
+| #702 → 현재 PR head | 파일 수 |
+|---|---:|
+| 양쪽에 존재하며 blob SHA 동일 | 1,588 |
+| 양쪽에 존재하지만 blob SHA가 다른 수정 파일 | 39 |
+| PR head에만 새로 추가 | 4 |
+| #702에만 존재해 PR head에서 삭제 | 4 |
+| 총 변경 경로 | 47 |
+| #702 tree / PR head tree의 각 파일 수 | 1,631 / 1,631 |
 
-### 45개 차이 — 수정 파일
+이 수치는 2026-11-28에 현재 PR #1 head 2820b4d를 기준으로 다시 계산한 값이다. 아래의 과거 인벤토리 및 오래된 head 6a03adf6b3e6b6fc41fa32c039a04a60b0d38a6e 기준 분석과 혼용하지 않는다.
 
-- `.github/workflows/ci.yml`
-- `README_KO.md`
-- `app/browser.tsx`
-- `app/settings/about.tsx`
-- `app/settings/wireguard.tsx`
-- `components/browser/MediaMenu.tsx`
-- `components/browser/StreamSheet.tsx`
-- `constants/copy.ts`
-- `modules/maglev-engine/android/build.gradle`
-- `modules/maglev-engine/android/src/main/AndroidManifest.xml`
-- `modules/maglev-engine/android/src/main/java/com/maglev/engine/EngineHost.kt`
-- `modules/maglev-engine/android/src/main/java/com/maglev/engine/MaglevEngineModule.kt`
-- `modules/maglev-engine/android/src/main/java/com/maglev/engine/browser/FoundClassifier.kt`
-- `modules/maglev-engine/android/src/main/java/com/maglev/engine/browser/MaglevBrowserView.kt`
-- `modules/maglev-engine/android/src/main/java/com/maglev/engine/browser/PageScan.kt`
-- `modules/maglev-engine/android/src/main/java/com/maglev/engine/watch/MaglevWatchModule.kt`
-- `modules/maglev-engine/android/src/main/java/com/maglev/engine/wireguard/NativeTunnel.java`
-- `modules/maglev-engine/android/src/main/java/com/maglev/engine/wireguard/WireGuardController.kt`
-- `modules/maglev-engine/android/src/test/java/com/maglev/engine/browser/FoundClassifierTest.kt`
-- `modules/maglev-engine/android/src/test/java/com/maglev/engine/browser/PageScanTest.kt`
-- `modules/maglev-engine/src/MaglevBrowser.tsx`
-- `modules/maglev-engine/src/MaglevEngine.types.ts`
-- `modules/maglev-engine/src/MaglevMockEngine.ts`
-- `modules/maglev-engine/src/MaglevNativeBridge.ts`
-- `native/maglev-core/src/config.rs`
-- `native/maglev-core/src/engine.rs`
-- `native/maglev-core/src/http_dl/driver.rs`
-- `native/wireguard/cmd/jni/jni.c`
-- `native/wireguard/cmd/jni/main.go`
-- `native/wireguard/engine.go`
-- `native/wireguard/engine_test.go`
-- `package.json`
-- `scripts/test-app-wireguard-isolation.js`
-- `scripts/test-browser-tabs-ui.js`
-- `scripts/test-media-hit.js`
-- `utils/browser/mediaHit.ts`
-- `utils/settingsIndex.ts`
+### 39개 수정 파일
 
-### 추가 파일
+- .github/workflows/ci.yml
+- README_KO.md
+- app/browser.tsx
+- app/settings/about.tsx
+- app/settings/wireguard.tsx
+- app/youtube-download.tsx
+- components/browser/MediaMenu.tsx
+- components/browser/StreamSheet.tsx
+- constants/copy.ts
+- modules/maglev-engine/android/build.gradle
+- modules/maglev-engine/android/src/main/AndroidManifest.xml
+- modules/maglev-engine/android/src/main/java/com/maglev/engine/EngineHost.kt
+- modules/maglev-engine/android/src/main/java/com/maglev/engine/MaglevEngineModule.kt
+- modules/maglev-engine/android/src/main/java/com/maglev/engine/browser/FoundClassifier.kt
+- modules/maglev-engine/android/src/main/java/com/maglev/engine/browser/MaglevBrowserView.kt
+- modules/maglev-engine/android/src/main/java/com/maglev/engine/browser/PageScan.kt
+- modules/maglev-engine/android/src/main/java/com/maglev/engine/watch/MaglevWatchModule.kt
+- modules/maglev-engine/android/src/main/java/com/maglev/engine/wireguard/NativeTunnel.java
+- modules/maglev-engine/android/src/main/java/com/maglev/engine/wireguard/WireGuardController.kt
+- modules/maglev-engine/android/src/test/java/com/maglev/engine/browser/FoundClassifierTest.kt
+- modules/maglev-engine/android/src/test/java/com/maglev/engine/browser/PageScanTest.kt
+- modules/maglev-engine/src/MaglevBrowser.tsx
+- modules/maglev-engine/src/MaglevEngine.types.ts
+- modules/maglev-engine/src/MaglevMockEngine.ts
+- modules/maglev-engine/src/MaglevNativeBridge.ts
+- native/maglev-core/src/config.rs
+- native/maglev-core/src/engine.rs
+- native/maglev-core/src/http_dl/driver.rs
+- native/wireguard/cmd/jni/jni.c
+- native/wireguard/cmd/jni/main.go
+- native/wireguard/engine.go
+- native/wireguard/engine_test.go
+- package.json
+- scripts/test-app-wireguard-isolation.js
+- scripts/test-browser-tabs-ui.js
+- scripts/test-media-hit.js
+- scripts/test-youtube-format-selector.js
+- utils/browser/mediaHit.ts
+- utils/settingsIndex.ts
 
-- `docs/CI707_RUNTIME_FAILURE_TRIAGE_KO.md`
-- `docs/MASTER_MEDIA_DOWNLOADER_SPEC_KO.md`
-- `modules/maglev-engine/android/src/main/java/com/maglev/engine/player/MaglevMediaPlayerActivity.kt`
-- `scripts/test-in-app-player-contract.js`
+### 4개 추가 파일
 
-### 삭제 파일
+- docs/CI707_RUNTIME_FAILURE_TRIAGE_KO.md
+- docs/MASTER_MEDIA_DOWNLOADER_SPEC_KO.md
+- modules/maglev-engine/android/src/main/java/com/maglev/engine/player/MaglevMediaPlayerActivity.kt
+- scripts/test-in-app-player-contract.js
 
-- `docs/FINAL_PRODUCT_REFERENCE_AND_IMPLEMENTATION_MASTER.md`
-- `docs/RUNTIME_FIRST_STABILIZATION_PLAN.md`
-- `scripts/test-page-scan-mse.js`
-- `scripts/test-wireguard-decoupled.js`
+### 4개 삭제 파일 — 반드시 복구/대체 테스트 검증
 
-**즉시 처리:** 삭제된 문서와 테스트는 먼저 다시 검토해 복구한다. 같은 목적의 새 문서/테스트가 존재한다는 이유만으로 삭제하지 않는다. 테스트를 삭제하려면 대체 테스트가 동일하거나 더 넓은 계약을 검증한다는 증거가 필요하다.
+- docs/FINAL_PRODUCT_REFERENCE_AND_IMPLEMENTATION_MASTER.md
+- docs/RUNTIME_FIRST_STABILIZATION_PLAN.md
+- scripts/test-page-scan-mse.js
+- scripts/test-wireguard-decoupled.js
+
+두 테스트 파일은 #702 tree에 실제 존재하고 현재 PR #1 head에는 없다. 동일하거나 더 강한 대체 테스트가 확인되기 전까지 복구 대상으로 둔다. 두 문서는 새 통합 설계서가 내용 전체를 대체했는지 확인하고 원본 이력 또는 복구 브랜치에 보존한다.
+
+**정정:** 이전 커밋 6a03adf6 기준으로 작성된 과거 인벤토리의 45개 변경(37 modified + 4 added + 4 deleted)은 당시 head 스냅샷 기준이다. 현재 #739 head에 대한 최신 비교는 47개(39 modified + 4 added + 4 deleted)다.
 
 ## 2.3 현재 변경 중 우선 보수 대상
 
@@ -1099,7 +1110,7 @@ Each ADR includes Context, Options, Decision, Consequences, Rejected Alternative
 - [x] exact #702 commit and APK hash verified.
 - [x] #702 Actions job summary captured.
 - [x] #702 source tree captured.
-- [x] 45-path #702→PR1 current-head diff computed.
+- [x] 47-path full-tree #702→current PR #1 head diff computed (39 modified, 4 added, 4 deleted; 1,588 identical).
 - [x] APK archive and native library inventory rechecked.
 - [ ] record exact Galaxy/Android/WebView details and user-described last-good functions.
 - [ ] add artifact metadata file with SHA, size, package, version, signature, ABI.
