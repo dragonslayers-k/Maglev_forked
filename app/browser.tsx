@@ -770,7 +770,8 @@ export default function BrowserScreen({ inTab = false }: { inTab?: boolean }) {
     // the Activity into PiP; otherwise the dim/scrim layer can be captured in the PiP window.
     afterSheetCloses(() => {
       const video = found.find((item) => item.kind === 'video' && (item.width ?? 0) > 0 && (item.height ?? 0) > 0);
-      const aspectRatio = video ? (video.width! / video.height!) : 16 / 9;\n      void maglevEngine.enterBrowserPictureInPicture(aspectRatio).then((result) => {
+      const aspectRatio = video ? (video.width! / video.height!) : 16 / 9;
+      void maglevEngine.enterBrowserPictureInPicture(aspectRatio).then((result) => {
         if (result.ok) {
           showNotice({ message: notices.browser.pipStarted }, 2500);
         } else {
