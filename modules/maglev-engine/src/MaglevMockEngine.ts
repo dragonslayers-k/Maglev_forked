@@ -868,6 +868,9 @@ export class MaglevMockEngine implements MaglevEngineApi {
   public getAppWireGuardStatus(): Promise<EngineResult<{ enabled: boolean; hasProfile: boolean; running: boolean }>> {
     return Promise.resolve({ ok: true, enabled: false, hasProfile: false, running: false });
   }
+  public testAppWireGuardConnection(): Promise<EngineResult<{ ip: string; country: string; country_code: string; message: string }>> {
+    return Promise.resolve({ ok: false, code: 'UNSUPPORTED', message: 'WireGuard exit verification is available on Android only.' });
+  }
   public importAppWireGuardProfile(_uri: string): Promise<EngineResult<{ hasProfile: boolean }>> {
     return Promise.resolve({ ok: false, code: 'UNSUPPORTED', message: 'App-local WireGuard profile import is available on Android only.' });
   }
