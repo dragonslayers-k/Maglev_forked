@@ -51,6 +51,8 @@ type testPeer struct {
 	authLeaked   atomic.Bool
 	httpPort     string
 	httpsPort    string
+	httpServer   *http.Server
+	httpsServer  *http.Server
 	certificates *x509.CertPool
 	clientBind   conn.Bind // nil selects production Start and real UDP.
 }
@@ -192,6 +194,7 @@ func newTestPeerWithBind(t *testing.T, serverBind, clientBind conn.Bind, ipv6 bo
 	}
 	_, p.httpPort, _ = net.SplitHostPort(httpListener.Addr().String())
 	httpServer := &http.Server{Handler: handler, ReadHeaderTimeout: 5 * time.Second, ErrorLog: log.New(io.Discard, "", 0)}
+	p.httpServer = httpServer
 	t.Cleanup(func() { _ = httpServer.Close() })
 	go func() { _ = httpServer.Serve(httpListener) }()
 	tlsCert, roots := makeTestCertificate(t)
@@ -202,6 +205,7 @@ func newTestPeerWithBind(t *testing.T, serverBind, clientBind conn.Bind, ipv6 bo
 	}
 	_, p.httpsPort, _ = net.SplitHostPort(tlsListener.Addr().String())
 	httpsServer := &http.Server{Handler: handler, ReadHeaderTimeout: 5 * time.Second, ErrorLog: log.New(io.Discard, "", 0)}
+	p.httpsServer = httpsServer
 	t.Cleanup(func() { _ = httpsServer.Close() })
 	go func() {
 		_ = httpsServer.Serve(tls.NewListener(tlsListener, &tls.Config{Certificates: []tls.Certificate{tlsCert}, MinVersion: tls.VersionTLS12}))
@@ -500,6 +504,14 @@ func testConcurrentTrafficAndLifecycle(t *testing.T, create func(*testing.T) *te
 			}()
 		}
 		workers.Wait()
+		// Stop both virtual HTTP listeners and release client-side idle sockets
+		// before closing the gVisor stack. Stack.Close can deadlock in the pinned
+		// gVisor version while TCP endpoints still have pending close callbacks.
+		if transport, ok := client.Transport.(*http.Transport); ok {
+			transport.CloseIdleConnections()
+		}
+		_ = peer.httpServer.Close()
+		_ = peer.httpsServer.Close()
 		workers.Add(2)
 		go func() { defer workers.Done(); engine.Close() }()
 		go func() { defer workers.Done(); engine.Close() }()
