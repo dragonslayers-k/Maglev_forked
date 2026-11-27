@@ -109,7 +109,7 @@ export default function BrowserScreen({ inTab = false }: { inTab?: boolean }) {
   // instance mounts native views (it takes the owner token on focus), and a blurred or backgrounded browser pauses them.
   const instanceId = useId();
   const focused = useIsFocused();
-  const [appForeground, setAppForeground] = useState(AppState.currentState === 'active');
+
   useEffect(() => {
     const sub = AppState.addEventListener('change', (st) => setAppForeground(st === 'active'));
     return () => sub.remove();
