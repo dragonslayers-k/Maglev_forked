@@ -367,7 +367,12 @@ object EngineHost {
         val networkOff = vpnBlockedNow()
         call { NativeCore.nativeSetNetworkOff(networkOff) }
         val res = call { NativeCore.nativeInit(configJson, session, target.path) }
-        if (!isOk(res)) return res
+        if (!isOk(res)) {
+            // Keep the native startup failure visible in the exported diagnostic log. Do not log
+            // configJson, profile contents, proxy credentials, or other user secrets.
+            Log.e(TAG, "nativeInit failed: code=${res["code"]} message=${res["message"]}")
+            return res
+        }
         networkOffApplied = networkOff
 
         startWarning = (res["config_warning"] as? String)?.takeIf { it.isNotEmpty() }
