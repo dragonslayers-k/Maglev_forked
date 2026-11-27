@@ -32,7 +32,7 @@ export type MenuItemId =
   | 'download-video'
   | 'download-stream'
   | 'play-video'
-  | 'save-poster
+  | 'save-poster'
   | 'open-tab'
   | 'copy'
   | 'share'
