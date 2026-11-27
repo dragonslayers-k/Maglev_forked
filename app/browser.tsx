@@ -613,7 +613,10 @@ export default function BrowserScreen({ inTab = false }: { inTab?: boolean }) {
       const d = getData(id);
       if (id !== activeIdRef.current || d.notes.has(e.note)) return;
       d.notes.add(e.note);
-      showNotice({ message: e.note === 'drm' ? notices.browser.drm : e.note === 'mse' ? notices.browser.mseDetected : notices.browser.mseCaptureUnavailable }, 4500);
+      // MSE is only an observation signal, not proof that a complete media file was captured.
+      // Do not repeatedly tell users to look in Files when no playable item was actually produced.
+      if (e.note === 'mse') return;
+      showNotice({ message: e.note === 'drm' ? notices.browser.drm : notices.browser.mseCaptureUnavailable }, 4500);
     },
     onNewWindow: (id, e) => void openTabChecked({ url: e.url, opener: id }),
     onPopupRequest: (id, e) => setPopups((p) => popupsApi.request(p, id, { url: e.url, kind: e.kind, sourceUrl: e.sourceUrl })),
