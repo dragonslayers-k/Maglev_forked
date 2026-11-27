@@ -91,6 +91,7 @@ export default function BrowserScreen({ inTab = false }: { inTab?: boolean }) {
   const { colors, dark } = useTheme();
   const { width: viewportWidth } = useWindowDimensions();
   const [pipRequested, setPipRequested] = useState(false);
+  const [appForeground, setAppForeground] = useState(AppState.currentState === 'active');
   const screenWidth = Math.max(1, Dimensions.get('screen').width);
   // Keep the WebView active during PiP transitions; compact its chrome when Android resizes the Activity
   // or backgrounds it. Width-relative detection also works for portrait video PiP on Samsung.
@@ -108,7 +109,6 @@ export default function BrowserScreen({ inTab = false }: { inTab?: boolean }) {
   // instance mounts native views (it takes the owner token on focus), and a blurred or backgrounded browser pauses them.
   const instanceId = useId();
   const focused = useIsFocused();
-  const [appForeground, setAppForeground] = useState(AppState.currentState === 'active');
   useEffect(() => {
     const sub = AppState.addEventListener('change', (st) => setAppForeground(st === 'active'));
     return () => sub.remove();

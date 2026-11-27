@@ -192,3 +192,8 @@ Last checked: JS checks, contract tests, Rust tests, Rust Android arm64 library 
 - PiP compact mode is driven by the actual PiP request plus Android Activity resize/background state, not landscape aspect ratio alone. The selected WebView remains active during the PiP transition so its native hidden-tab pause path does not call video.pause() while the Activity is in PiP. When the Activity returns to full width, the compact request state resets.
 - When restoring the original downloader proxy after process recreation, release the native startup hold only after the original proxy is applied. If release fails, reapply the tunnel proxy and keep the browser route/tunnel active; do not leave downloads blocked or fall back direct.
 - These are code-level lifecycle fixes. Actual PiP video surface continuity and user-configured peer handshake/egress still require Android runtime acceptance.
+
+
+## 12. #669 TypeScript correction
+
+- #669's first typecheck found appForeground was referenced in the new PiP compact expression before its state declaration. The state is moved beside pipRequested before pipCompact; the AppState listener remains later in the component. No runtime behavior change beyond fixing declaration order.
