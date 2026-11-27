@@ -31,7 +31,8 @@
 
 - 표시 이름: **Maglev+**
 - Android applicationId: `com.maglev.plus` (원본 `com.maglev`과 다름)
-- Android versionCode: `33` / app version: `0.33` (현재 `app.json` / `package.json` 기준)
+- app version: `0.33.0` / base versionCode: `33` (`app.json` / `package.json` 기준)
+- CI APK versionCode: `334` (base versionCode 33 + ABI suffix; CI에서 실제 manifest 값 검증)
 - 원본 Maglev과 별도 설치·데이터 공간을 사용합니다. 원본 앱을 덮어쓰지 않습니다.
 - Release APK는 포크의 전용 서명 키로 서명하여 업데이트 체인을 분리합니다. CI의 테스트 APK는 debug 서명일 수 있으므로 정식 배포 APK와 구분하십시오.
 
@@ -85,19 +86,16 @@
 
 기기 설치 개발 빌드는 원본의 Expo 개발 빌드 절차를 따릅니다. 릴리스용 APK는 GitHub Actions CI가 실제 네이티브 엔진을 포함해 빌드한 결과만 사용합니다. JS mock 엔진이 포함된 개발 화면은 다운로드 성공 증거가 아닙니다.
 
-## 문서
+## 문서 기준점
 
-- [최종 목표 제품 명세 및 검수 기준](docs/PRODUCT_TARGET_KO.md)
-- [프로젝트 인수인계](docs/PROJECT_HANDOFF_KO.md)
-- [영상 감지 계약](docs/STREAM_DETECTION_CONTRACT_KO.md)
-- [LJ Downloader 분석 검토](docs/LJ_ANALYSIS_REVIEW_KO.md)
-- [Galaxy 실기기 검증 계획](docs/GALAXY_TEST_PLAN_KO.md)
-- [개발 로드맵](docs/ROADMAP.md)
-- [원본 Maglev 월간 업데이트 정책](docs/UPSTREAM_SYNC_POLICY_KO.md)
-- [MPMux 기능 벤치마크 및 Maglev 이식 설계](docs/MPMUX_BENCHMARK_INTEGRATION_KO.md)\n- [기능 보존·다중 엔진 통합·보호 미디어 처리 기준](docs/FEATURE_PRESERVATION_AND_PROTECTED_MEDIA_KO.md)
-- [통합 개발 기준 및 현재 검증 게이트](docs/INTEGRATED_PRODUCT_PLAN_KO.md)
-- [종합 미디어 다운로더 실행 기준서](docs/MASTER_MEDIA_DOWNLOADER_SPEC_KO.md)
-- [CI #707 / Galaxy 기능 실패 분석 및 저장소 정리](docs/CI707_RUNTIME_FAILURE_TRIAGE_KO.md)
+- **[종합 미디어 다운로더 실행 기준서](docs/MASTER_MEDIA_DOWNLOADER_SPEC_KO.md)** — 제품 아키텍처·작업순서·완료 기준의 단일 기준.
+- **[CI #707 / Galaxy 기능 실패 분석](docs/CI707_RUNTIME_FAILURE_TRIAGE_KO.md)** — CI 실패내역, 실제 사용자 실패, PR/Issue/Branch/Workflow 정리.
+- [제품 목표·기능 요구사항](docs/PRODUCT_TARGET_KO.md) — 요구사항 상세.
+- [Galaxy 실기기 검증 계획](docs/GALAXY_TEST_PLAN_KO.md) — 설치·기능·회귀 테스트 절차.
+- [원본 Maglev 월간 업데이트 정책](docs/UPSTREAM_SYNC_POLICY_KO.md) — upstream 검토·선별 병합.
+- [MPMux 벤치마크](docs/MPMUX_BENCHMARK_INTEGRATION_KO.md) · [LJ 분석](docs/LJ_ANALYSIS_REVIEW_KO.md) · [Barrel 분석](docs/reference/Barrel_1.1.2_APK_심층분석_다운로드기능_이식설계서.md) — 참고 자료.
+
+기존 인수인계·로드맵·통합 계획·감지 계약 문서는 과거/상세 기록으로 유지하며 현재 상태 판단은 위 기준서와 Issue #8에 통합합니다.
 
 ## 라이선스와 출처
 
