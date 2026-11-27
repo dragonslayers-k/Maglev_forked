@@ -126,6 +126,15 @@ JNIEXPORT jstring JNICALL Java_com_maglev_engine_wireguard_NativeTunnel_checkCon
     return value;
 }
 
+JNIEXPORT jstring JNICALL Java_com_maglev_engine_wireguard_NativeTunnel_peerStatus(JNIEnv *env, jclass klass) {
+    (void) klass;
+    char *result = morphe_wg_peer_status();
+    if (result == NULL) return (*env)->NewStringUTF(env, "{\"ok\":false,\"handshake\":false,\"code\":\"native_error\"}");
+    jstring value = (*env)->NewStringUTF(env, result);
+    free_text(result);
+    return value;
+}
+
 JNIEXPORT void JNICALL Java_com_maglev_engine_wireguard_NativeTunnel_validate(JNIEnv *env, jclass klass, jstring config) {
     (void) klass;
     char *conf = read_utf8(env, config, 65536);
