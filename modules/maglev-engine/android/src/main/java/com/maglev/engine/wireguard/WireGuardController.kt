@@ -23,6 +23,11 @@ object WireGuardController {
 
     fun hasProfile(context: Context): Boolean = WireGuardProfileStore.hasProfile(context)
 
+    /** Media3 route: null means WG is disabled; enabled-but-not-ready returns a closed proxy (never direct). */
+    fun mediaPlaybackProxy(context: Context): String? = synchronized(lock) {
+        if (!isEnabled(context)) null else localProxy?.takeIf { running } ?: CLOSED_PROXY
+    }
+
     fun importProfile(context: Context, uri: Uri) {
         val text = WireGuardProfileStore.readUri(context, uri)
         WireGuardProfileStore.saveProfile(context, text)
