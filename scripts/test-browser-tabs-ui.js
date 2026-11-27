@@ -26,7 +26,7 @@ const pkg = read('package.json');
 
 console.log('one view per live tab');
 check('the screen maps liveTabs to TabWebView', /liveTabs\(tabsState\)[\s\S]{0,600}<TabWebView/.test(scr));
-check('each view is keyed by its tab id and gets active={t.id === activeId}', /key=\{t\.id\}/.test(scr) && /active=\{focused && appForeground && t\.id === activeId\}/.test(scr));
+check('each view is keyed by its tab id and keeps active WebView during PiP', /key=\{t\.id\}/.test(scr) && /active=\{focused && \(appForeground \|\| pipRequested\) && t\.id === activeId\}/.test(scr));
 check('the screen no longer mounts MaglevBrowser itself', !/<MaglevBrowser\b/.test(scr));
 check('the view forwards active to the native view', /active=\{active\}/.test(view));
 check('an inactive view is hidden: opacity 0 and pointerEvents none', /opacity: 0/.test(view) && /pointerEvents=\{active \? 'auto' : 'none'\}/.test(view));
@@ -125,8 +125,10 @@ check('the test is chained after test-browser-tabs.js', /node scripts\/test-brow
 
 const tabRoute = read('app/(tabs)/browse.tsx');
 check('in the tab bar the screen skips the bottom inset (the tab bar already pads for it)', /<BrowserScreen inTab \/>/.test(tabRoute) && /pipCompact \? \[\] : inTab \? \['top', 'left', 'right'\] : \['top', 'left', 'right', 'bottom'\]/.test(scr));
-check('PiP compact viewport hides browser chrome and found-file overlays', /viewportWidth > viewportHeight \* 1\.35/.test(scr) && /!pipCompact && \(findOpen \?/.test(scr) && /!pipCompact && hasPage \? \(/.test(scr));
+check('PiP compact viewport hides browser chrome and found-file overlays', /pipRequested && \(viewportWidth < screenWidth \* 0\.9 \|\| !appForeground\)/.test(scr) && /!pipCompact && \(findOpen \?/.test(scr) && /!pipCompact && hasPage \? \(/.test(scr));
 check('PiP request waits for sheet dismissal and passes the detected aspect ratio', /afterSheetCloses\(\(\) => \{\s*const video = found\.find[\s\S]*?void maglevEngine\.enterBrowserPictureInPicture\(aspectRatio\)/.test(scr));
+check('PiP keeps the active WebView alive during background transition', /active=\{focused && \(appForeground \|\| pipRequested\) && t\.id === activeId\}/.test(scr));
+check('PiP compact state resets when the Activity returns to full width', /setTimeout\(\(\) => setPipRequested\(false\), 900\)/.test(scr));
 
 // 24.11 history from a blank tab
 const recent = read('components/browser/StartPage.tsx'); // the Recent list now lives in StartPage (RecentHistory.tsx is gone)

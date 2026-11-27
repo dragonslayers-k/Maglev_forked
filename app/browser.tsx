@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useId, useMemo, useRef, useState, useSyncExternalStore } from 'react';
-import { AppState, BackHandler, Keyboard, Linking, Share, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { AppState, BackHandler, Dimensions, Keyboard, Linking, Share, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { useFocusEffect, useIsFocused, useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Clipboard from 'expo-clipboard';
@@ -89,11 +89,12 @@ let mountedScreens = 0;
 /** inTab: shown inside the tab bar, which already pads for the system navigation area, so the bottom inset is skipped. */
 export default function BrowserScreen({ inTab = false }: { inTab?: boolean }) {
   const { colors, dark } = useTheme();
-  const { width: viewportWidth, height: viewportHeight } = useWindowDimensions();
-  // Android resizes the activity to the PiP window. Hide browser chrome/overlays there so the video viewport is unobstructed.
-  // PiP can be resized larger than the old 260dp cutoff on Samsung. Detect the landscape, compact Activity shape too.
-  // Android PiP can be expanded to a tall/large landscape window on Samsung; aspect ratio is the reliable signal.
-  const pipCompact = viewportWidth > viewportHeight * 1.35;
+  const { width: viewportWidth } = useWindowDimensions();
+  const [pipRequested, setPipRequested] = useState(false);
+  const screenWidth = Math.max(1, Dimensions.get('screen').width);
+  // Keep the WebView active during PiP transitions; compact its chrome when Android resizes the Activity
+  // or backgrounds it. Width-relative detection also works for portrait video PiP on Samsung.
+  const pipCompact = pipRequested && (viewportWidth < screenWidth * 0.9 || !appForeground);
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const router = useRouter();
   const params = useLocalSearchParams<{ url?: string; prefill?: string; open?: string; newTab?: string }>();
@@ -112,6 +113,11 @@ export default function BrowserScreen({ inTab = false }: { inTab?: boolean }) {
     const sub = AppState.addEventListener('change', (st) => setAppForeground(st === 'active'));
     return () => sub.remove();
   }, []);
+  useEffect(() => {
+    if (!pipRequested || !appForeground || viewportWidth < screenWidth * 0.9) return;
+    const timeout = setTimeout(() => setPipRequested(false), 900);
+    return () => clearTimeout(timeout);
+  }, [pipRequested, appForeground, viewportWidth, screenWidth]);
   const isOwner = useSyncExternalStore(subscribeTabData, () => getViewOwner() === instanceId, () => false);
   useEffect(() => () => releaseViewOwner(instanceId), [instanceId]);
   // Shared per-tab data and pop-up prompts changed (any instance): render again.
@@ -766,6 +772,7 @@ export default function BrowserScreen({ inTab = false }: { inTab?: boolean }) {
 
   const enterPictureInPicture = useCallback(() => {
     setMenuOpen(false);
+    setPipRequested(true);
     // The menu is a modal sheet. Wait for its close animation before asking Android to resize
     // the Activity into PiP; otherwise the dim/scrim layer can be captured in the PiP window.
     afterSheetCloses(() => {
@@ -775,8 +782,12 @@ export default function BrowserScreen({ inTab = false }: { inTab?: boolean }) {
         if (result.ok) {
           showNotice({ message: notices.browser.pipStarted }, 2500);
         } else {
+          setPipRequested(false);
           showNotice({ message: notices.browser.pipFailed }, 4000);
         }
+      }).catch(() => {
+        setPipRequested(false);
+        showNotice({ message: notices.browser.pipFailed }, 4000);
       });
     });
   }, [showNotice, found]);
@@ -920,7 +931,7 @@ export default function BrowserScreen({ inTab = false }: { inTab?: boolean }) {
                     key={t.id}
                     id={t.id}
                     url={initialUrls.get(t.id) ?? t.url}
-                    active={focused && appForeground && t.id === activeId}
+                    active={focused && (appForeground || pipRequested) && t.id === activeId}
                     adBlock={prefs.adBlock}
                     allowAdsHosts={prefs.allowAdsHosts}
                     desktopMode={desktop}

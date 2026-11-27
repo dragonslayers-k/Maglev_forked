@@ -146,6 +146,16 @@ object WireGuardController {
                     "APP_WIREGUARD_RESTORE_FAILED",
                     "기존 다운로드 프록시를 복원하지 못했습니다. 다운로드를 시작하지 마세요.")
             }
+            if (hasSaved && EngineHost.isEngineInitialized()) {
+                val released = EngineHost.releaseAppWireGuardStartupHold()
+                if (released["ok"] != true) {
+                    localProxy?.let { EngineHost.setAppWireGuardProxy(it) }
+                    if (proxyPort in 1..65535) installBrowserProxy(proxyPort)
+                    return@synchronized Json.failure(
+                        "APP_WIREGUARD_STARTUP_HOLD_RELEASE_FAILED",
+                        "기존 프록시는 복원됐지만 다운로드 시작 게이트를 해제하지 못했습니다. WireGuard 터널을 계속 유지합니다.")
+                }
+            }
         }
         runCatching { NativeTunnel.stop() }
         running = false
@@ -155,7 +165,12 @@ object WireGuardController {
         proxyPassword = null
         WireGuardProfileStore.clearOriginalProxy(context)
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putBoolean(ENABLED, false).apply()
-        mapOf("ok" to true, "enabled" to false)
+        val pausedIds = pausedDownloadsForEnable
+        pausedDownloadsForEnable = emptyList()
+        val resumed = if (pausedIds.isNotEmpty() && EngineHost.isEngineInitialized()) {
+            EngineHost.resumeDownloadsAfterAppWireGuard(pausedIds)
+        } else mapOf("ok" to true)
+        mapOf("ok" to true, "enabled" to false, "resumed_downloads" to (resumed["resumed"] ?: 0))
     }
 
     private fun saveOriginalProxyIfNeeded(context: Context): Map<String, Any?> {

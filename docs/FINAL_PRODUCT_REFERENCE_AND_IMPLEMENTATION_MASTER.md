@@ -185,3 +185,10 @@ Last checked: JS checks, contract tests, Rust tests, Rust Android arm64 library 
 - Follow-up source refactor starts the userspace WireGuard tunnel and WebView proxy independently. The downloader engine is started only when a download is prepared; until its authenticated proxy is applied, its startup hold remains fail-closed. Browser tunnel status and HTTPS egress test no longer require downloader initialization.
 - Preserve the original downloader proxy encrypted before nulling it in EngineHost.initLocked(); restore it before disabling the tunnel. If the engine cannot be started to restore the original proxy, keep WireGuard enabled rather than silently route direct.
 - This removes the startup dependency but does not prove the user's peer handshake or NordVPN egress; those remain runtime acceptance gates.
+
+
+## 11. PiP playback continuity and tunnel disable recovery
+
+- PiP compact mode is driven by the actual PiP request plus Android Activity resize/background state, not landscape aspect ratio alone. The selected WebView remains active during the PiP transition so its native hidden-tab pause path does not call video.pause() while the Activity is in PiP. When the Activity returns to full width, the compact request state resets.
+- When restoring the original downloader proxy after process recreation, release the native startup hold only after the original proxy is applied. If release fails, reapply the tunnel proxy and keep the browser route/tunnel active; do not leave downloads blocked or fall back direct.
+- These are code-level lifecycle fixes. Actual PiP video surface continuity and user-configured peer handshake/egress still require Android runtime acceptance.

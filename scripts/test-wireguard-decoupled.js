@@ -6,6 +6,8 @@ const host = fs.readFileSync(path.join(root, 'modules/maglev-engine/android/src/
 const setStart = controller.indexOf('fun setEnabled(context: Context, enabled: Boolean)');
 const setEnd = controller.indexOf('val hasSaved = WireGuardProfileStore.hasOriginalProxy(context)', setStart);
 const setBlock = controller.slice(setStart, setEnd);
+const disableEnd = controller.indexOf('private fun saveOriginalProxyIfNeeded', setEnd);
+const disableBlock = controller.slice(setEnd, disableEnd);
 const prepStart = controller.indexOf('fun prepareDownload(context: Context)');
 const prepEnd = controller.indexOf('private fun installBrowserProxy', prepStart);
 const prepBlock = controller.slice(prepStart, prepEnd);
@@ -18,6 +20,8 @@ const testBlock = controller.slice(testStart, testEnd);
 if (setBlock.includes('EngineHost.ensureStarted()')) throw new Error('WireGuard enable is still blocked on downloader engine startup');
 if (!setBlock.includes('startTunnel(context)')) throw new Error('WireGuard enable does not start the independent userspace tunnel');
 if (!prepBlock.includes('EngineHost.ensureStarted()') || !prepBlock.includes('EngineHost.setAppWireGuardProxy') || !prepBlock.includes('EngineHost.releaseAppWireGuardStartupHold')) throw new Error('Download path does not initialize engine and apply the tunnel proxy');
+if (disableBlock.includes('EngineHost.setAppWireGuardProxy(restore)') && !disableBlock.includes('EngineHost.releaseAppWireGuardStartupHold')) throw new Error('Disabling after process restart leaves the native startup hold engaged');
+if (!disableBlock.includes('resumeDownloadsAfterAppWireGuard(pausedIds)')) throw new Error('Disabling WireGuard does not resume downloads paused during enable');
 if (!ensureBlock.includes('startTunnel(context)') || ensureBlock.includes('prepareDownload(context)')) throw new Error('Browser tunnel recovery still depends on downloader startup');
 if (!testBlock.includes('ensureBrowserProxy(context)') || testBlock.includes('prepareDownload(context)')) throw new Error('Tunnel egress test still depends on downloader startup');
 const initStart = host.indexOf('private fun initLocked(config: Map<String, Any?>)');
