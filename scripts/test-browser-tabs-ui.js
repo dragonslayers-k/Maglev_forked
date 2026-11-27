@@ -50,7 +50,7 @@ console.log('one screen, one tab set (section 30)');
 check('only the owner instance renders TabWebView', /tabsState && isOwner\s*\?\s*liveTabs\(tabsState\)/.test(scr));
 check('the owner token is set on focus and released on unmount', /setViewOwner\(instanceId\)/.test(scr) && /releaseViewOwner\(instanceId\)/.test(scr) && /export function setViewOwner/.test(shared));
 check('a blur alone does not release the token (a blurred browser keeps its pages)', !/blur[\s\S]{0,80}releaseViewOwner/.test(scr));
-check('active includes focus and app foreground', /useIsFocused\(\)/.test(scr) && /AppState\.addEventListener\('change'/.test(scr) && /active=\{focused && appForeground && t\.id === activeId\}/.test(scr));
+check('active includes focus, app foreground, or PiP request', /useIsFocused\(\)/.test(scr) && /AppState\.addEventListener\('change'/.test(scr) && /active=\{focused && \(appForeground \|\| pipRequested\) && t\.id === activeId\}/.test(scr));
 check('found, page and pop-up state are shared between instances', /export const tabData = new Map/.test(shared) && /export function setPopupsState/.test(shared) && !/useReducer/.test(scr) && !/const dataRef/.test(scr));
 const sites = ['app/(tabs)/index.tsx', 'app/(tabs)/search.tsx', 'app/add-download.tsx', 'app/browser-history.tsx'];
 check('every /browser navigation goes through openBrowser', sites.every((f) => /openBrowser\(router/.test(read(f)) && /utils\/browser\/openBrowser/.test(read(f))));

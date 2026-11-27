@@ -197,3 +197,8 @@ Last checked: JS checks, contract tests, Rust tests, Rust Android arm64 library 
 ## 12. #669 TypeScript correction
 
 - #669's first typecheck found appForeground was referenced in the new PiP compact expression before its state declaration. The state is moved beside pipRequested before pipCompact; the AppState listener remains later in the component. No runtime behavior change beyond fixing declaration order.
+
+
+## 13. #670 contract test correction
+
+- #670 TypeScript passed. The browser UI test still had one legacy assertion requiring active={focused && appForeground}; the new PiP contract intentionally allows pipRequested to keep the selected WebView active during Activity background/resize. Updated that legacy assertion to the new contract; all new PiP-specific checks had passed.
