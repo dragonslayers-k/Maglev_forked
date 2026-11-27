@@ -1569,7 +1569,23 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
         mainHandler.postDelayed({ if (pipPendingFromBrowserMenu && !fullscreenVideoActive) pipPendingFromBrowserMenu = false }, 5_000L)
         val script = """
             (function() {
-              var videos = Array.prototype.slice.call(document.querySelectorAll('video'));
+              var videos = [];
+              // Web players often place the real video element inside one or more open shadow roots.
+              // Walk those roots too; otherwise the browser reports no playing video and PiP never starts.
+              var roots=[document], seenRoots=[];
+              while(roots.length && seenRoots.length<128){
+                var current=roots.shift();
+                if(!current || seenRoots.indexOf(current)!==-1)continue;
+                seenRoots.push(current);
+                try{videos=videos.concat(Array.prototype.slice.call(current.querySelectorAll('video')));}catch(e){}
+                try{
+                  var elements=current.querySelectorAll('*');
+                  for(var ei=0;ei<elements.length;ei++){
+                    if(elements[ei].shadowRoot)roots.push(elements[ei].shadowRoot);
+                  }
+                }catch(e){}
+              }
+              videos=videos.filter(function(v,i){return videos.indexOf(v)===i;});
               videos = videos.filter(function(v) {
                 var s = window.getComputedStyle(v);
                 return !v.paused && !v.ended && v.readyState >= 2 && v.videoWidth > 0 && v.videoHeight > 0 &&
@@ -1579,10 +1595,20 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
               videos.sort(function(a,b){return (b.clientWidth*b.clientHeight)-(a.clientWidth*a.clientHeight);});
               var v=videos[0]; if(!v)return 0;
               var ratio=v.videoWidth/v.videoHeight;if(!isFinite(ratio)||ratio<0.42||ratio>2.39)return 0;
-              var root=v;
-              for(var d=0;d<7&&root.parentElement;d++){root=root.parentElement;if(root.querySelector&&root.querySelector('.ytp-fullscreen-button'))break;}
               var selectors=['.ytp-fullscreen-button','[aria-label*="fullscreen" i]','[title*="fullscreen" i]','.fullscreen-button'];
-              for(var i=0;i<selectors.length;i++){var b=root.querySelector?root.querySelector(selectors[i]):null;if(b&&b.getClientRects().length&&!b.disabled){try{b.click();return ratio;}catch(e){}}}
+              var node=v, clicked=false;
+              for(var d=0;d<10&&node&&!clicked;d++){
+                var tree=null;try{tree=node.getRootNode?node.getRootNode():null;}catch(e){}
+                var scope=tree&&tree.querySelector?tree:(node.ownerDocument||document);
+                for(var i=0;i<selectors.length;i++){
+                  var b=null;try{b=scope.querySelector(selectors[i]);}catch(e){}
+                  if(b&&b.getClientRects().length&&!b.disabled){try{b.click();clicked=true;break;}catch(e){}}
+                }
+                var parent=node.parentElement;
+                if(!parent&&tree&&tree.host)parent=tree.host;
+                node=parent;
+              }
+              if(clicked)return ratio;
               try{if(v.requestFullscreen){var p=v.requestFullscreen();if(p&&p.catch)p.catch(function(){});return ratio;}}catch(e){}
               try{if(v.webkitEnterFullscreen){v.webkitEnterFullscreen();return ratio;}}catch(e){}
               return 0;
