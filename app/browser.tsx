@@ -1044,7 +1044,7 @@ export default function BrowserScreen({ inTab = false }: { inTab?: boolean }) {
         onPlay={async (hit, u) => {
           try {
             const pageUrl = hit.pageUrl || page?.url || tab?.url || '';
-            const rawHeaders = await downloadHeaders({ url: u, pageUrl, userAgent: '' });
+            const rawHeaders = await downloadHeaders({ url: u, pageUrl, userAgent: page?.userAgent || '' });
             const headers = Object.fromEntries(Object.entries(rawHeaders).filter(([, value]) => typeof value === 'string')) as Record<string, string>;
             const title = hit.alt || page?.title || nameFromUrl(u);
             const result = await maglevEngine.playInAppMedia(u, guessMediaMime(u), title, headers);
