@@ -489,6 +489,12 @@ func testConcurrentTrafficAndLifecycle(t *testing.T, create func(*testing.T) *te
 		peer := create(t)
 		engine := peer.start(t)
 		client := proxyClient(t, engine, peer.certificates)
+		// Close each virtual TCP flow at request completion. gVisor's pinned
+		// TCP stack can deadlock during Stack.Close when idle keep-alive
+		// endpoints remain in FIN_WAIT2 after concurrent shutdown.
+		if transport, ok := client.Transport.(*http.Transport); ok {
+			transport.DisableKeepAlives = true
+		}
 		var workers sync.WaitGroup
 		for i := 0; i < 8; i++ {
 			workers.Add(1)
