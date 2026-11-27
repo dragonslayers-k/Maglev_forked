@@ -838,6 +838,7 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
         if (added) scheduleFlush()
         if (report.eme) mainHandler.post { if (!destroyed) onPageNote(mapOf("note" to "drm")) }
         if (report.blob) mainHandler.post { if (!destroyed) onPageNote(mapOf("note" to "blob")) }
+        if (report.mse) mainHandler.post { if (!destroyed) onPageNote(mapOf("note" to "mse")) }
     }
 
     private fun onDownload(url: String?, userAgent: String?, disposition: String?, mime: String?, length: Long) {
