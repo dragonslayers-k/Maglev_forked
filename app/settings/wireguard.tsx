@@ -64,7 +64,7 @@ export default function AppWireGuardSettings() {
       const result = await maglevEngine.testAppWireGuardConnection();
       if (result.ok) {
         Alert.alert('WireGuard 연결 확인',
-          '실제 HTTPS 요청이 WireGuard 터널을 통과했습니다.\n\n출구 국가: ' + (result.country || '확인 불가') + ' (' + (result.country_code || '?') + ')\n출구 IP: ' + (result.ip || '확인 불가') + '\n\n이 검사는 다운로드 프록시 연결 확인이며, 브라우저 전체 트래픽이 터널링된다는 뜻은 아닙니다.');
+          '실제 HTTPS 요청이 WireGuard 터널을 통과했습니다.\n\n출구 국가: ' + (result.country || '확인 불가') + ' (' + (result.country_code || '?') + ')\n출구 IP: ' + (result.ip || '확인 불가') + '\n\n이 검사는 앱 내부 WireGuard 프록시의 실제 HTTPS 출구를 확인합니다.');
       } else {
         Alert.alert('WireGuard 연결 확인 실패', result.message || '원격 연결 또는 터널 인터넷 접속을 확인하지 못했습니다.');
       }
@@ -102,19 +102,19 @@ export default function AppWireGuardSettings() {
         />
         <ListRow
           title={testing ? '실제 터널 연결 확인 중…' : '실제 터널 연결 테스트'}
-          subtitle="외부 HTTPS 요청으로 출구 국가·IP와 원격 연결을 확인합니다."
+          subtitle="다운로더와 앱 브라우저가 같은 WireGuard 출구를 사용하는지 확인합니다."
           onPress={() => { void testConnection(); }}
         />
         <ListRow
-          title="HTTP/HTTPS 다운로드에 사용"
+          title="앱 브라우저 + HTTP/HTTPS 다운로드"
           subtitle={enabled ? (running ? (peerHandshake ? `Peer handshake 확인 · RX ${peerRxBytes.toLocaleString()} B / TX ${peerTxBytes.toLocaleString()} B` : '로컬 프록시 실행 중 · 원격 peer handshake 대기') : '앱 내부 터널을 시작하는 중') : '꺼짐'}
           accessory={<Toggle value={enabled} onValueChange={(v) => void changeEnabled(v)} accessibilityLabel="앱 내부 WireGuard" />}
         />
       </Card>
       <Caption tone="warning">
         이 기능은 Android VpnService를 등록하지 않고 APN이나 휴대폰 전체 경로를 변경하지 않습니다.
-        스위치를 켜면 앱 내부 userspace WireGuard 터널과 인증된 로컬 프록시가 즉시 실행됩니다. Maglev의 HTTP/HTTPS 다운로드 엔진만 앱 내부 로컬 프록시를 사용합니다.
-        토렌트·DHT와 브라우저/WebView 요청은 이 터널에 포함되지 않으며, WireGuard가 켜져 있으면 토렌트 추가·재개를 차단합니다.
+        스위치를 켜면 앱 내부 userspace WireGuard 터널과 인증된 로컬 프록시가 즉시 실행됩니다. Maglev의 앱 내 WebView 브라우저와 HTTP/HTTPS 다운로드 엔진이 앱 내부 로컬 프록시를 사용합니다.
+        휴대전화의 다른 앱과 시스템 네트워크는 터널에 포함하지 않습니다. 토렌트·DHT는 아직 지원하지 않으며, WireGuard가 켜져 있으면 토렌트 추가·재개를 차단합니다.
         터널 시작 또는 프록시 적용에 실패하면 직접 연결로 우회하지 않습니다.
       </Caption>
       <Card>
