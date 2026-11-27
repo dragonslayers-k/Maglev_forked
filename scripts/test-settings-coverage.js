@@ -42,6 +42,7 @@ const ALLOW = {
   "scheduling: `${r.start}–${r.end} · ${actionLabel(r)}`": "one row per schedule rule",
   "feeds: r.name || 'Untitled rule'": "one row per feed rule",
   "watch: w.paused ? `${w.query} · ${watchCopy.paused}` : w.query": "one row per watched title",
+  "wireguard: testing ? '실제 터널 연결 확인 중…' : '실제 터널 연결 테스트'": "button label changes while checking; both states are one indexed connection-test action",
   // Fixed choice lists whose options are each indexed (the stale check keeps them honest).
   "backup: copy.parts[part]": "restore parts, indexed as 'What to restore' entries",
   "browser: c.title": "pop-up choices, indexed as Ask, Block, Allow",
