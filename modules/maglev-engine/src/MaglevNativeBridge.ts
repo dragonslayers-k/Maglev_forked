@@ -240,16 +240,33 @@ export class MaglevEngineBridge implements MaglevEngineApi {
     this.startExpected?.release();
     if (!this.startPromise) {
       this.startPromise = (async () => {
-        const config = toNativeConfig(settings);
-        const res = await this.init(config);
-        if (res.ok) {
-          await this.pushGovernanceAndLimits(settings, config);
-          // Settings may have changed while init was in flight.
-          if (this.lastSettings && this.lastSettings !== settings) await this.applySettings(this.lastSettings);
-        } else {
-          this.startPromise = null; // allow a retry after failure
+        try {
+          const config = toNativeConfig(settings);
+          const res = await this.init(config);
+          if (res.ok) {
+            await this.pushGovernanceAndLimits(settings, config);
+            // Settings may have changed while init was in flight.
+            if (this.lastSettings && this.lastSettings !== settings) await this.applySettings(this.lastSettings);
+          } else {
+            this.startPromise = null; // allow a retry after a structured native failure
+          }
+          return this.status;
+        } catch (error: unknown) {
+          // A rejected native bridge call previously left the engine in "starting" and
+          // obscured the actual Android/JNI failure behind the generic startup screen.
+          const detail = error instanceof Error
+            ? `${error.name || 'Error'}: ${error.message || 'No error message'}`
+            : String(error);
+          this.startPromise = null; // allow retry after the exception is surfaced
+          this.setState({
+            status: {
+              kind: 'unavailable',
+              message: `Native engine startup threw: ${detail.slice(0, 240)}`,
+              code: 'ENGINE_START_EXCEPTION',
+            },
+          });
+          return this.status;
         }
-        return this.status;
       })();
     }
     return this.startPromise;
