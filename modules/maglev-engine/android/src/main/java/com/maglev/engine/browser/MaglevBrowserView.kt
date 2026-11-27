@@ -1578,7 +1578,7 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
         pipRequestResult = onResult
         pipPendingFromBrowserMenu = true
         mainHandler.postDelayed({
-            if (pipRequestResult != null && !fullscreenVideoActive) {
+            if (pipRequestResult != null) {
                 pipPendingFromBrowserMenu = false
                 resolvePipRequest(false)
             }
@@ -1673,8 +1673,8 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
             controller.hide(WindowInsetsCompat.Type.systemBars())
             if (pipPendingFromBrowserMenu) {
                 pipPendingFromBrowserMenu = false
-                resolvePipRequest(true)
-                // Do not enter PiP in the same frame as onShowCustomView. WebView's fullscreen
+                // Do not enter PiP in the same frame as onShowCustomView.
+                // The pending request is resolved only after Android accepts PiP below. WebView's fullscreen
                 // video surface is attached/reparented here; entering immediately can snapshot
                 // the old SurfaceView geometry (black PiP with the video left at the bottom).
                 // Wait for layout + orientation changes to settle, then request a fresh layout
@@ -1748,9 +1748,15 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
         updateFullscreenPipParams(activity, autoEnter = true) { ratio ->
             try {
                 val entered = activity.enterPictureInPictureMode(buildPipParams(ratio, autoEnter = true))
-                if (!entered) button.visibility = View.VISIBLE
+                if (!entered) {
+                    button.visibility = View.VISIBLE
+                    resolvePipRequest(false)
+                } else {
+                    resolvePipRequest(true)
+                }
             } catch (_: Throwable) {
                 button.visibility = View.VISIBLE
+                resolvePipRequest(false)
             }
         }
     }
