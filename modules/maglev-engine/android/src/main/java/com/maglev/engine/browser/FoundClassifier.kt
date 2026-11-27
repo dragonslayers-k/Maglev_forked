@@ -162,6 +162,28 @@ object FoundClassifier {
             if (a.startsWith("video/")) return Classified("video", ext, null, false)
             if (a.startsWith("audio/")) return Classified("audio", ext, null, false)
         }
+        // MSE players commonly fetch extensionless media chunks with */* Accept headers.
+        // Classify only URLs carrying an explicit media MIME/type signal or a recognizable
+        // video endpoint; do not turn every opaque XHR into a downloadable video.
+        val lower = url.lowercase()
+        val query = lower.substringAfter('?', "").substringBefore('#')
+            .replace("%2f", "/").replace("%3a", ":")
+        val explicitMime = Regex("(?:^|[&])(?:mime|content[_-]?type)=((?:video|audio)/[^&]+)").find(query)
+            ?.groupValues?.get(1)?.substringBefore(';')
+        if (explicitMime?.startsWith("video/") == true) return Classified("video", ext, null, false)
+        if (explicitMime?.startsWith("audio/") == true) return Classified("audio", ext, null, false)
+        if (lower.contains("/videoplayback") && query.contains("mime=video/")) {
+            return Classified("video", ext, null, false)
+        }
+        if (lower.contains("/videoplayback") && query.contains("mime=audio/")) {
+            return Classified("audio", ext, null, false)
+        }
+        if (Regex("(?:^|[?&])(?:type|format)=video(?:[&]|$)").containsMatchIn(query)) {
+            return Classified("video", ext, null, false)
+        }
+        if (Regex("(?:^|[?&])(?:type|format)=audio(?:[&]|$)").containsMatchIn(query)) {
+            return Classified("audio", ext, null, false)
+        }
         return null
     }
 
