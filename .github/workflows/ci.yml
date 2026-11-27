@@ -47,8 +47,9 @@ jobs:
           cache-dependency-path: native/wireguard/go.sum
 
       - name: Test app-local WireGuard userspace core
+        timeout-minutes: 3
         working-directory: native/wireguard
-        run: go test -count=1 .
+        run: go test -count=1 -timeout 2m -v .
 
       - name: Vet app-local WireGuard userspace core
         working-directory: native/wireguard
