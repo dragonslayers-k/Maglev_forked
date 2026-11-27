@@ -200,6 +200,20 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
     private var pullLoading = false
     // 24.10a: the injected script that finds media under a long press (prop mediaHitScript), and the dark pages switch.
     private var mediaHitJs = ""
+
+    // Same-host YouTube ads evade domain-only blocklists. Hide ad surfaces and click
+    // only the visible Skip control; this does not remove non-skippable ads.
+    private val youtubeAdScript = """
+      (function(){
+        var sid='__mg_yt_ads';
+        var css='ytd-display-ad-renderer,ytd-promoted-sparkles-web-renderer,ytd-in-feed-ad-layout-renderer,ytd-ad-slot-renderer,ytd-video-masthead-ad-v3,ytd-banner-promo-renderer,ytd-promoted-video-renderer,ytd-action-companion-ad-renderer,ytd-companion-slot-renderer,#player-ads,#masthead-ad,.ytp-ad-module,.ytp-ad-overlay-container,.ytp-ad-player-overlay,.ytp-ad-image-overlay,.ytp-ad-text-overlay,.ytp-ad-overlay-slot{display:none!important}';
+        function install(){if(document.getElementById(sid))return;var root=document.head||document.documentElement;if(!root)return;var s=document.createElement('style');s.id=sid;s.textContent=css;root.appendChild(s);}
+        function skip(){var p=document.querySelector('.html5-video-player.ad-showing');if(!p)return;var bs=p.querySelectorAll('.ytp-ad-skip-button,.ytp-ad-skip-button-modern,button[aria-label*="Skip ad" i]');for(var i=0;i<bs.length;i++){var b=bs[i];if(b&&b.getClientRects().length&&!b.disabled&&b.getAttribute('aria-disabled')!=='true'){try{b.click();return;}catch(e){}}}}
+        function start(){install();if(document.documentElement)new MutationObserver(function(){install();skip();}).observe(document.documentElement,{subtree:true,childList:true,attributes:true,attributeFilter:['class','style','aria-disabled']});skip();}
+        if(document.head||document.documentElement)start();else document.addEventListener('DOMContentLoaded',start,{once:true});
+        setInterval(skip,750);
+      })();
+    """
     private var darkPages = false
     private val pullSafety = Runnable { if (!destroyed) refresh.isRefreshing = false }
 
@@ -830,7 +844,10 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
         val n = nonce.ifEmpty { newNonce() }
         view.evaluateJavascript(PageScan.scanScript(n), null)
         if (mediaHitJs.isNotEmpty()) view.evaluateJavascript(mediaHitJs, null)
-        if (adBlock && !hostAllowsAds(pageHost)) view.evaluateJavascript(PageScan.cosmeticScript, null)
+        if (adBlock && !hostAllowsAds(pageHost)) {
+            view.evaluateJavascript(PageScan.cosmeticScript, null)
+            view.evaluateJavascript(youtubeAdScript, null)
+        }
     }
 
     private fun onScanReport(json: String) {
@@ -1542,68 +1559,40 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
     // region Fullscreen video
 
     /** Requests the page player's fullscreen video surface from the browser PiP menu. */
-    private fun requestFullscreenVideoForPipInternal(onResult: (Boolean) -> Unit) {
-        if (destroyed || !active) {
-            onResult(false)
-            return
+    private fun requestFullscreenVideoForPipInternal(requestedAspectRatio: Double, onResult: (Boolean) -> Unit) {
+        if (destroyed || !active) { onResult(false); return }
+        if (requestedAspectRatio.isFinite() && requestedAspectRatio in 0.42..2.39) {
+            activeVideoAspectRatio = requestedAspectRatio
+            activeVideoAspectRatioKnown = true
         }
         pipPendingFromBrowserMenu = true
-        mainHandler.postDelayed({
-            if (pipPendingFromBrowserMenu && !fullscreenVideoActive) pipPendingFromBrowserMenu = false
-        }, 5_000L)
+        mainHandler.postDelayed({ if (pipPendingFromBrowserMenu && !fullscreenVideoActive) pipPendingFromBrowserMenu = false }, 5_000L)
         val script = """
             (function() {
-              // PiP must never be entered for a merely loaded/paused video: that produces an empty
-              // system window and looks like playback failed. Require a genuinely playing frame.
               var videos = Array.prototype.slice.call(document.querySelectorAll('video'));
               videos = videos.filter(function(v) {
-                return !v.paused && !v.ended && v.readyState >= 2 && v.videoWidth > 0 && v.videoHeight > 0;
+                var s = window.getComputedStyle(v);
+                return !v.paused && !v.ended && v.readyState >= 2 && v.videoWidth > 0 && v.videoHeight > 0 &&
+                  v.getClientRects().length > 0 && s.display !== 'none' && s.visibility !== 'hidden' &&
+                  v.clientWidth > 0 && v.clientHeight > 0;
               });
-              videos.sort(function(a, b) {
-                return (b.clientWidth * b.clientHeight) - (a.clientWidth * a.clientHeight);
-              });
-              var v = videos[0];
-              if (!v) return false;
-
-              // Resolve controls from the selected video's own player container. A global selector can
-              // accidentally click a hidden/other video player's fullscreen button.
-              var root = v;
-              for (var depth = 0; depth < 7 && root.parentElement; depth++) {
-                root = root.parentElement;
-                if (root.querySelector && (root.querySelector('.ytp-fullscreen-button') ||
-                    root.querySelector('[aria-label*="fullscreen" i]') ||
-                    root.querySelector('[title*="fullscreen" i]'))) break;
-              }
-              var selectors = [
-                '.ytp-fullscreen-button',
-                '[aria-label*="full screen" i]',
-                '[aria-label*="fullscreen" i]',
-                '[title*="full screen" i]',
-                '[title*="fullscreen" i]',
-                '.fullscreen-button'
-              ];
-              for (var i = 0; i < selectors.length; i++) {
-                var button = root.querySelector ? root.querySelector(selectors[i]) : null;
-                if (button && button.getClientRects().length && !button.disabled) {
-                  try { button.click(); return true; } catch (e) {}
-                }
-              }
-              try {
-                if (v.requestFullscreen) {
-                  var p = v.requestFullscreen();
-                  if (p && p.catch) p.catch(function(){});
-                  return true;
-                }
-              } catch (e) {}
-              try {
-                if (v.webkitEnterFullscreen) { v.webkitEnterFullscreen(); return true; }
-              } catch (e) {}
-              return false;
+              videos.sort(function(a,b){return (b.clientWidth*b.clientHeight)-(a.clientWidth*a.clientHeight);});
+              var v=videos[0]; if(!v)return 0;
+              var ratio=v.videoWidth/v.videoHeight;if(!isFinite(ratio)||ratio<0.42||ratio>2.39)return 0;
+              var root=v;
+              for(var d=0;d<7&&root.parentElement;d++){root=root.parentElement;if(root.querySelector&&root.querySelector('.ytp-fullscreen-button'))break;}
+              var selectors=['.ytp-fullscreen-button','[aria-label*="fullscreen" i]','[title*="fullscreen" i]','.fullscreen-button'];
+              for(var i=0;i<selectors.length;i++){var b=root.querySelector?root.querySelector(selectors[i]):null;if(b&&b.getClientRects().length&&!b.disabled){try{b.click();return ratio;}catch(e){}}}
+              try{if(v.requestFullscreen){var p=v.requestFullscreen();if(p&&p.catch)p.catch(function(){});return ratio;}}catch(e){}
+              try{if(v.webkitEnterFullscreen){v.webkitEnterFullscreen();return ratio;}}catch(e){}
+              return 0;
             })()
         """.trimIndent()
         webView.evaluateJavascript(script) { raw ->
-            val accepted = raw?.trim() == "true"
-            if (!accepted) pipPendingFromBrowserMenu = false
+            val ratio = raw?.trim()?.removeSurrounding("\"")?.toDoubleOrNull()
+            val accepted = ratio != null && ratio.isFinite() && ratio in 0.42..2.39
+            if (accepted) { activeVideoAspectRatio = ratio!!; activeVideoAspectRatioKnown = true }
+            else pipPendingFromBrowserMenu = false
             onResult(accepted)
         }
     }
@@ -1696,7 +1685,10 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
         val safeRatio = if (ratio.isFinite()) ratio.coerceIn(0.42, 2.39) else (16.0 / 9.0)
         val numerator = (safeRatio * 1000.0).toInt().coerceAtLeast(1)
         val builder = PictureInPictureParams.Builder().setAspectRatio(Rational(numerator, 1000))
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) builder.setAutoEnterEnabled(autoEnter)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            builder.setAutoEnterEnabled(autoEnter)
+            builder.setSeamlessResizeEnabled(true)
+        }
         return builder.build()
     }
 
@@ -1705,10 +1697,11 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
         val script = """
             (function() {
               var videos = Array.prototype.slice.call(document.querySelectorAll('video'));
-              videos = videos.filter(function(v) { return v.videoWidth > 0 && v.videoHeight > 0; });
-              videos.sort(function(a, b) { return (b.clientWidth * b.clientHeight) - (a.clientWidth * a.clientHeight); });
-              var v = videos.find(function(v) { return !v.paused && !v.ended; }) || videos[0];
-              return v ? String(v.videoWidth / v.videoHeight) : '';
+              videos = videos.filter(function(v) { var s=window.getComputedStyle(v); return v.videoWidth>0&&v.videoHeight>0&&v.getClientRects().length>0&&s.display!=='none'&&s.visibility!=='hidden'&&v.clientWidth>0&&v.clientHeight>0; });
+              var playing=videos.filter(function(v){return !v.paused&&!v.ended&&v.readyState>=2;});
+              function area(v){return Math.max(0,v.clientWidth)*Math.max(0,v.clientHeight);}
+              playing.sort(function(a,b){return area(b)-area(a);});videos.sort(function(a,b){return area(b)-area(a);});
+              var v=playing[0]||videos[0];return v?String(v.videoWidth/v.videoHeight):'';
             })()
         """.trimIndent()
         webView.evaluateJavascript(script) { raw ->
@@ -1788,13 +1781,13 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
             private set
 
         /** Used by the PiP menu to request fullscreen on the active tab's current HTML video. */
-        fun requestFullscreenVideoForPip(onResult: (Boolean) -> Unit) {
+        fun requestFullscreenVideoForPip(requestedAspectRatio: Double, onResult: (Boolean) -> Unit) {
             val view = serviceWorkerObserver.get()
             if (view == null || view.destroyed) {
                 onResult(false)
                 return
             }
-            view.requestFullscreenVideoForPipInternal(onResult)
+            view.requestFullscreenVideoForPipInternal(requestedAspectRatio, onResult)
         }
 
         // ServiceWorkerController is process-wide. Keep one dispatcher and point it at the active browser tab only.
