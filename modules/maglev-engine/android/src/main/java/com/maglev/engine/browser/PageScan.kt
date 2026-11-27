@@ -299,7 +299,33 @@ object PageScan {
                 out.add(ScanEntry(url, type, clamp(e.optInt("w", 0)), clamp(e.optInt("h", 0)), mime))
             }
         }
-        return ScanReport(out, o.optBoolean("eme", false), o.optBoolean("blob", false), o.optBoolean("mse", false))
+        // Long-press media hit reports use the same nonce-protected bridge. Previously the wrapper's
+        // mediaHit object was silently ignored, so the browser menu could detect a target but the native
+        // found-files tracker never received it.
+        val hit = o.optJSONObject("mediaHit")
+        var blob = o.optBoolean("blob", false)
+        var mse = o.optBoolean("mse", false)
+        if (hit != null) {
+            val kind = hit.optString("kind", "")
+            if (kind == "video" || kind == "image") {
+                val rawSrc = hit.optString("src", "")
+                val rawPoster = hit.optString("poster", "")
+                val src = rawSrc.takeIf { it.length <= MAX_URL_CHARS && FoundClassifier.normalize(it) != null }
+                if (src != null) {
+                    // A long-press image is user-selected; it need not satisfy the background scan's
+                    // 200x200 image threshold. meta-image is the explicit user-hit category.
+                    out.add(ScanEntry(src, if (kind == "image") "meta-image" else "video", 0, 0, null))
+                } else if (rawSrc.startsWith("blob:", ignoreCase = true)) {
+                    blob = true
+                    mse = mse || rawSrc.contains("MediaSource", ignoreCase = true)
+                }
+                val poster = rawPoster.takeIf { it.length <= MAX_URL_CHARS && FoundClassifier.normalize(it) != null }
+                if (kind == "video" && poster != null) {
+                    out.add(ScanEntry(poster, "meta-image", 0, 0, null))
+                }
+            }
+        }
+        return ScanReport(out.take(MAX_ENTRIES), o.optBoolean("eme", false), blob, mse)
     }
 
     /** Turns a scan entry into an item, or null when it doesn't qualify. */
