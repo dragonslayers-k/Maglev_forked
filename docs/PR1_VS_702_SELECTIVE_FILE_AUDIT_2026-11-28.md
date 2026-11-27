@@ -1,3 +1,5 @@
+> **2026-11-28 정정 기록:** 이 문서의 최초 작성 시 PR API 230개 changed-file 목록만 비교해 #702-only 삭제 파일 4개를 놓친 계산(187 same / 36 modified / 4 added / 0 deleted)을 포함했다. 전체 #702 tree와 현재 PR #1 head tree의 직접 비교로 확정한 결과는 1,588 same / 39 modified / 4 added / 4 deleted = 47 changed paths다. 아래 Section 1.2와 3이 정정된 최종값이며, 과거 계산은 재사용하지 않는다.
+
 # PR #1 ↔ #702 파일 단위 차이 감사
 
 - 작성일: 2026-11-28 (KST)
@@ -23,24 +25,32 @@
 | removed | 3 |
 | 합계 | 230 |
 
-### 1.2 #702와 PR head의 실제 tree/blob 비교
+### 1.2 #702와 PR head 전체 Git tree/blob 비교 — 최신 정확값
 
-| #702 대비 PR head | 파일 수 | 판정 |
-|---|---:|---|
-| 양쪽에 존재하며 blob SHA 동일 | 187 | 동일 소스 내용. 우선 보존 |
-| 양쪽에 존재하지만 blob SHA 다름 | 36 | 실제 변경. 변경 이유·회귀·테스트 개별 감사 |
-| #702에는 없고 PR head에 새로 존재 | 4 | 신규 추가. 기능 수용 전 별도 검증 |
-| #702에는 있지만 PR head에서 삭제 | 0 | #702 파일 삭제는 확인되지 않음 |
-| 양쪽 모두에 없음 | 3 | PR base dev에서 삭제로 기록됐지만 #702에도 이미 없던 경로 |
+비교:
+- #702: 45e685603a3a23507b61cb49398a78380d5db7a5
+- PR #1 head: 2820b4dff15773ce835a43a3ea4936aa6e7b26ad
 
-**실제 #702 → PR head 소스 차이는 40개 경로(36 modified + 4 added)다.** 나머지 187개 파일은 내용이 완전히 동일하다. 삭제 3개는 PR base dev와 비교한 결과이며 #702 회귀로 분류하지 않는다.
+PR API의 230개 파일은 base=dev 기준이다. #702 전용 파일의 삭제 여부를 놓치지 않도록 양쪽 Git tree의 전체 blob path와 SHA를 직접 비교했다.
 
-양쪽에 없는 3개 경로:
-- app/(tabs)/assistant.tsx
-- app/settings/assistant.tsx
-- components/StarPrompt.tsx
+| #702 대비 PR head | 파일 수 |
+|---|---:|
+| 내용 동일 | 1,588 |
+| 양쪽에 존재하지만 내용 변경 | 39 |
+| PR head에만 추가 | 4 |
+| #702에서 PR head로 삭제 | 4 |
+| 전체 차이 | 47 |
+| 양쪽 tree의 blob 수 | 각각 1,631 |
 
-따라서 이전의 “PR #1 전체 230개 파일이 모두 새로 오염됐다”는 해석은 부정확하다. 대다수 파일은 #702와 동일하다. 실제 집중 감사 범위는 40개 변경·신규 경로이며, PR diff에는 #702 이전부터 이미 존재하지 않던 assistant UI 삭제 3건이 포함되어 있다.
+PR API의 base=dev 기준 changed files는 별도로 modified 157, added 70, removed 3, 합계 230이다. 이 숫자를 #702 대비 변경 수와 혼용하지 않는다.
+
+정확한 #702-only 삭제 4개:
+- docs/FINAL_PRODUCT_REFERENCE_AND_IMPLEMENTATION_MASTER.md
+- docs/RUNTIME_FIRST_STABILIZATION_PLAN.md
+- scripts/test-page-scan-mse.js
+- scripts/test-wireguard-decoupled.js
+
+앞서 작성한 초안에서 PR API 230개 목록을 바탕으로 187 same / 36 changed / 4 added / 0 deleted라고 계산한 값은 #702 전용 파일 4개가 누락된 불완전한 대조였다. 전체 tree 대조가 최종 수치다.
 
 ## 2. PR #1의 230개 경로 분포
 
@@ -60,9 +70,9 @@
 | Tests / test scripts | 79 |
 | 합계 | 230 |
 
-## 3. #702와 내용이 달라진 36개 파일
+## 3. #702와 내용이 달라지거나 추가/삭제된 47개 경로
 
-### 3.1 CI, 앱 설정 및 UI/API
+### 3.1 #702 대비 수정된 39개 파일
 
 1. .github/workflows/ci.yml
 2. README_KO.md
@@ -73,48 +83,56 @@
 7. components/browser/MediaMenu.tsx
 8. components/browser/StreamSheet.tsx
 9. constants/copy.ts
-10. package.json
-11. utils/settingsIndex.ts
+10. modules/maglev-engine/android/build.gradle
+11. modules/maglev-engine/android/src/main/AndroidManifest.xml
+12. modules/maglev-engine/android/src/main/java/com/maglev/engine/EngineHost.kt
+13. modules/maglev-engine/android/src/main/java/com/maglev/engine/MaglevEngineModule.kt
+14. modules/maglev-engine/android/src/main/java/com/maglev/engine/browser/FoundClassifier.kt
+15. modules/maglev-engine/android/src/main/java/com/maglev/engine/browser/MaglevBrowserView.kt
+16. modules/maglev-engine/android/src/main/java/com/maglev/engine/browser/PageScan.kt
+17. modules/maglev-engine/android/src/main/java/com/maglev/engine/watch/MaglevWatchModule.kt
+18. modules/maglev-engine/android/src/main/java/com/maglev/engine/wireguard/NativeTunnel.java
+19. modules/maglev-engine/android/src/main/java/com/maglev/engine/wireguard/WireGuardController.kt
+20. modules/maglev-engine/android/src/test/java/com/maglev/engine/browser/FoundClassifierTest.kt
+21. modules/maglev-engine/android/src/test/java/com/maglev/engine/browser/PageScanTest.kt
+22. modules/maglev-engine/src/MaglevBrowser.tsx
+23. modules/maglev-engine/src/MaglevEngine.types.ts
+24. modules/maglev-engine/src/MaglevMockEngine.ts
+25. modules/maglev-engine/src/MaglevNativeBridge.ts
+26. native/maglev-core/src/config.rs
+27. native/maglev-core/src/engine.rs
+28. native/maglev-core/src/http_dl/driver.rs
+29. native/wireguard/cmd/jni/jni.c
+30. native/wireguard/cmd/jni/main.go
+31. native/wireguard/engine.go
+32. native/wireguard/engine_test.go
+33. package.json
+34. scripts/test-app-wireguard-isolation.js
+35. scripts/test-browser-tabs-ui.js
+36. scripts/test-media-hit.js
+37. scripts/test-youtube-format-selector.js
+38. utils/browser/mediaHit.ts
+39. utils/settingsIndex.ts
 
-### 3.2 Native Android / Browser / WireGuard
-
-12. modules/maglev-engine/android/build.gradle
-13. modules/maglev-engine/android/src/main/AndroidManifest.xml
-14. modules/maglev-engine/android/src/main/java/com/maglev/engine/EngineHost.kt
-15. modules/maglev-engine/android/src/main/java/com/maglev/engine/MaglevEngineModule.kt
-16. modules/maglev-engine/android/src/main/java/com/maglev/engine/browser/FoundClassifier.kt
-17. modules/maglev-engine/android/src/main/java/com/maglev/engine/browser/MaglevBrowserView.kt
-18. modules/maglev-engine/android/src/main/java/com/maglev/engine/browser/PageScan.kt
-19. modules/maglev-engine/android/src/main/java/com/maglev/engine/watch/MaglevWatchModule.kt
-20. modules/maglev-engine/android/src/main/java/com/maglev/engine/wireguard/NativeTunnel.java
-21. modules/maglev-engine/android/src/main/java/com/maglev/engine/wireguard/WireGuardController.kt
-22. modules/maglev-engine/android/src/test/java/com/maglev/engine/browser/FoundClassifierTest.kt
-23. modules/maglev-engine/android/src/test/java/com/maglev/engine/browser/PageScanTest.kt
-
-### 3.3 Cross-platform bridge / Rust / Go / tests
-
-24. modules/maglev-engine/src/MaglevEngine.types.ts
-25. modules/maglev-engine/src/MaglevMockEngine.ts
-26. modules/maglev-engine/src/MaglevNativeBridge.ts
-27. native/maglev-core/src/config.rs
-28. native/wireguard/cmd/jni/jni.c
-29. native/wireguard/cmd/jni/main.go
-30. native/wireguard/engine.go
-31. native/wireguard/engine_test.go
-32. scripts/test-app-wireguard-isolation.js
-33. scripts/test-browser-tabs-ui.js
-34. scripts/test-media-hit.js
-35. scripts/test-youtube-format-selector.js
-36. utils/browser/mediaHit.ts
-
-## 4. #702 이후 새로 추가된 4개 경로
+### 3.2 #702 이후 신규 추가된 4개
 
 1. docs/CI707_RUNTIME_FAILURE_TRIAGE_KO.md
 2. docs/MASTER_MEDIA_DOWNLOADER_SPEC_KO.md
 3. modules/maglev-engine/android/src/main/java/com/maglev/engine/player/MaglevMediaPlayerActivity.kt
 4. scripts/test-in-app-player-contract.js
 
-문서 2개는 이후 재설계의 참고자료로 유지한다. Player Activity는 Activity 단위 Media3 prototype으로 분류하며 MediaSessionService 기반 완성된 background playback으로 승격하지 않는다. Player contract test는 유지하되 정적 계약 검사만으로 런타임 기능을 증명하지 않는다.
+### 3.3 #702에는 있으나 현재 PR head에서 삭제된 4개
+
+1. docs/FINAL_PRODUCT_REFERENCE_AND_IMPLEMENTATION_MASTER.md
+2. docs/RUNTIME_FIRST_STABILIZATION_PLAN.md
+3. scripts/test-page-scan-mse.js
+4. scripts/test-wireguard-decoupled.js
+
+**복구 처리:** MSE observer 회귀와 WG lifecycle decoupling 회귀를 다시 테스트해야 하므로 2개 스크립트는 우선 복구하거나 동일/상위 coverage의 실행 가능한 대체 테스트를 만든다. 삭제된 문서 2개는 새 문서가 전체 내용을 대체하는지 확인하고 원본을 history 또는 recovery docs로 보존한다. 이 네 경로를 단순히 삭제된 것으로 넘기지 않는다.
+
+## 4. 추가 파일 수용 기준
+
+#702 이후 신규 추가 4개는 Section 3.2에 열거했다. 문서 2개는 이후 재설계 참고자료로 유지한다. Player Activity는 Activity 단위 Media3 prototype으로 분류하며 MediaSessionService 기반 완성된 background playback으로 승격하지 않는다. Player contract test는 유지하되 정적 계약 검사만으로 런타임 기능을 증명하지 않는다.
 
 ## 5. 핵심 변경의 source-level 판정
 
@@ -259,6 +277,6 @@
 
 ## 9. 현재 실행 경계
 
-본 감사는 #702와 PR #1의 Git tree/blob을 비교하고 중요 소스의 변경점을 식별한 결과다. PR #1 전체 230개 파일의 경로별 상태는 확인했지만, 36개 모든 diff의 상세 함수별 검토와 전체 test behavior 검토는 아직 끝나지 않았다. 특히 UI, Watch service, build plugin, app update, sharing, settings, subtitles 관련 diff는 추가 검토가 필요하다.
+본 감사는 #702와 PR #1의 Git tree/blob을 비교하고 중요 소스의 변경점을 식별한 결과다. PR #1 전체 230개 PR API 경로와 #702→head 전체 tree 차이 47개 경로를 별도로 확인했다. 39개 수정 파일 중 3개(MaglevBrowser.tsx, native/maglev-core/src/engine.rs, native/maglev-core/src/http_dl/driver.rs)는 후속 상세 함수별 감사가 남아 있으며, 나머지 변경 파일도 전체 test behavior review는 아직 끝나지 않았다. 특히 UI, Watch service, build plugin, app update, sharing, settings, subtitles 관련 diff는 추가 검토가 필요하다.
 
 이 문서 및 같은 복구 branch의 상위 실행 설계서는 문서만 추가한다. #702 앱 소스, main/dev, PR #1, 기존 releases/tags/workflows는 수정하지 않았다. **이 감사 결과만으로 새 APK를 만들거나 어떤 기능을 완료 처리하지 않는다.**
