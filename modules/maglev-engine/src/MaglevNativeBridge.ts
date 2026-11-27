@@ -678,7 +678,7 @@ export class MaglevEngineBridge implements MaglevEngineApi {
         ? NativeModule
         : null;
     if (!pip) {
-      return { ok: false, code: 'NATIVE_MODULE_MISSING', message: 'PiP native support is not linked in this APK. Rebuild the Android app.' };
+      return { ok: false, code: 'UNSUPPORTED', message: 'PiP native support is not linked in this APK. Rebuild the Android app.' };
     }
     try {
       return await pip.enterBrowserPictureInPicture(aspectRatio);
