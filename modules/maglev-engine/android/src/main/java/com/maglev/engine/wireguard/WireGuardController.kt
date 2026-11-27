@@ -86,7 +86,6 @@ object WireGuardController {
     /** Returns an authenticated loopback proxy or an error; a closed proxy is installed first. */
     fun prepareDownload(context: Context): Map<String, Any?> = synchronized(lock) {
         if (!isEnabled(context)) return@synchronized mapOf("ok" to true)
-        localProxy?.let { return@synchronized mapOf("ok" to true, "proxy_url" to it) }
         if (!hasProfile(context)) return@synchronized Json.failure(
             "APP_WIREGUARD_PROFILE_MISSING", "저장된 WireGuard 프로필이 없습니다. 직접 연결로 우회하지 않았습니다.")
 
@@ -96,7 +95,18 @@ object WireGuardController {
             val engineStarted = EngineHost.ensureStarted()
             if (engineStarted["ok"] != true) return@synchronized Json.failure(
                 "APP_WIREGUARD_ENGINE_START_FAILED",
-                engineStarted["message"]?.toString() ?: "다운로드 엔진을 시작하지 못했습니다.")
+                "다운로드 엔진을 시작하지 못했습니다. 앱을 다시 열고 WireGuard 상태를 확인하세요.")
+        }
+
+        // EngineHost may have restarted independently while the native tunnel stayed alive.
+        // A cached proxy URL is not enough: re-apply it to the newly initialized download engine
+        // on every prepare call, otherwise requests can run without the intended tunnel proxy.
+        localProxy?.let { cachedProxy ->
+            val applied = EngineHost.setAppWireGuardProxy(cachedProxy)
+            if (applied["ok"] != true) return@synchronized Json.failure(
+                "APP_WIREGUARD_PROXY_REAPPLY_FAILED",
+                "WireGuard 프록시를 다운로드 엔진에 다시 적용하지 못했습니다. 연결을 껐다가 다시 켜세요.")
+            return@synchronized mapOf("ok" to true, "proxy_url" to cachedProxy)
         }
 
         val hasSaved = WireGuardProfileStore.hasOriginalProxy(context)
