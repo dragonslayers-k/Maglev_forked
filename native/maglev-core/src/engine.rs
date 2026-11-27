@@ -4118,10 +4118,21 @@ mod tests {
     }
 
     #[test]
-    fn session_start_error_keeps_the_busy_port_message_when_retry_fails() {
+    fn session_start_error_keeps_busy_port_message_and_surfaces_other_causes() {
         let e = session_start_error("Address already in use");
         assert!(e.message.contains("already in use"));
-        assert!(session_start_error("boom").message.contains("couldn't start"));
+        let e = session_start_error("listener bind failed: permission denied");
+        assert!(e.message.contains("couldn't start"));
+        assert!(e.message.contains("listener bind failed: permission denied"));
+    }
+
+    #[test]
+    fn startup_detail_redacts_proxy_url_credentials_and_is_bounded() {
+        let detail = safe_start_detail("proxy http://alice:secret@127.0.0.1:8080 refused");
+        assert!(detail.contains("http://[redacted]@127.0.0.1:8080"));
+        assert!(!detail.contains("alice"));
+        assert!(!detail.contains("secret"));
+        assert!(safe_start_detail(&"x".repeat(500)).chars().count() <= 240);
     }
 
     #[test]
