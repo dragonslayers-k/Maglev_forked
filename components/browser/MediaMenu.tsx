@@ -18,12 +18,14 @@ export interface MediaMenuProps {
   onShare: (url: string) => void;
   /** Opens the Files tray for this page. */
   onShowFound: () => void;
+  /** Opens the extractor with the page URL for opaque Blob/MSE playback. */
+  onAnalyzePage?: (pageUrl: string) => void;
   /** Opens the link menu for the link around the media. The row is left out when not given. */
   onLinkOptions?: (linkHref: string) => void;
 }
 
 /** The long-press menu for an image or a video. Every action closes the menu first, like LinkMenu. */
-export function MediaMenu({ hit, onClose, onSave, onStream, onOpenNewTab, onCopy, onShare, onShowFound, onLinkOptions }: MediaMenuProps) {
+export function MediaMenu({ hit, onClose, onSave, onStream, onOpenNewTab, onCopy, onShare, onShowFound, onAnalyzePage, onLinkOptions }: MediaMenuProps) {
   const last = useRef<MediaHit | null>(hit);
   if (hit) last.current = hit;
   const h = hit ?? last.current;
@@ -56,6 +58,9 @@ export function MediaMenu({ hit, onClose, onSave, onStream, onOpenNewTab, onCopy
         break;
       case 'show-found':
         onShowFound();
+        break;
+      case 'analyze-page':
+        if (url) onAnalyzePage?.(url);
         break;
       case 'link-options':
         if (url) onLinkOptions?.(url);
