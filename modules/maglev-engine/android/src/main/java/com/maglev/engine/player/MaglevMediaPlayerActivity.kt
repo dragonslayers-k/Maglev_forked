@@ -142,7 +142,7 @@ class MaglevMediaPlayerActivity : Activity() {
                 val host = parsed.host ?: "127.0.0.1"
                 val port = parsed.port.takeIf { it in 1..65535 } ?: 9
                 builder.proxy(Proxy(Proxy.Type.HTTP, InetSocketAddress(host, port)))
-                val user = parsed.userInfo?.substringBefore(':')?.let(Uri::decode).orEmpty()
+                val user = parsed.userInfo?.substringBefore(':')?.let { Uri.decode(it) }.orEmpty()
                 val pass = parsed.userInfo?.substringAfter(':', "")?.let(Uri::decode).orEmpty()
                 if (user.isNotBlank()) {
                     builder.proxyAuthenticator(Authenticator { _, response: Response ->
