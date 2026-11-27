@@ -113,3 +113,12 @@ Release assets/tags cannot be fully enumerated with the available GitHub connect
 ## 7. Developer directive
 
 Work only on the active PR #1 branch, and only one gate at a time. Before each change inspect the source + prior failed logs. After commit, wait for the exact CI run, inspect all jobs/logs/artifacts/signature/version/hash. Do not request another user installation until the APK contains the intended runtime feature and internal validation has passed. Report honestly: implemented / automated-tested / APK-built / emulator-tested / Galaxy-tested / accepted are separate states.
+
+
+## 8. Native Media3 playback prototype added after #707
+
+- Commit series on active PR #1: new native Media3 Activity, ExoPlayer/UI/HLS/DASH/OkHttp DataSource dependencies, PiP params based on actual video aspect ratio, Expo bridge, browser long-press “앱에서 재생” action, MIME hinting, and WireGuard proxy/fail-closed route for Media3 requests.
+- Current intended path: browser long press a direct/HLS/DASH source → app Media3 player → actual playback controls → PiP. Cookie/Referer/Origin/User-Agent headers are forwarded when available.
+- CI #720 failed TypeScript syntax; corrected. #722 failed a newly added static player contract assertion; corrected. #723 JS/contract passed but run was cancelled before native/APK jobs by the next push. CI #724 is the latest commit's validation run.
+- **Not verified:** Android Gradle compile, install, actual Media3 playback, PiP surface continuity, background MediaSession, WebView PiP, MSE byte capture, and Galaxy WireGuard egress.
+- Media3 stable 1.11.1 reference: https://developer.android.com/jetpack/androidx/releases/media3.
