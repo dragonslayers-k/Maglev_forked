@@ -35,7 +35,7 @@ class MaglevWatchModule : Module() {
             } else {
                 val safeHeaders = HashMap<String, String>()
                 headers?.forEach { (key, value) ->
-                    if (key.length <= 128 && value is String && value.length <= 8192 && !key.contains("\\r") && !key.contains("\\n") && !value.contains("\\r") && !value.contains("\\n")) safeHeaders[key] = value
+                    if (key.length <= 128 && value is String && value.length <= 8192 && !key.contains("\r") && !key.contains("\n") && !value.contains("\r") && !value.contains("\n")) safeHeaders[key] = value
                 }
                 activity.runOnUiThread {
                     try {
