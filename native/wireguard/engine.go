@@ -202,6 +202,51 @@ func (e *Engine) CheckEgress(ctx context.Context) (map[string]any, error) {
 }
 
 
+// PeerStatus reports WireGuard's actual peer handshake and transfer counters.
+// A running userspace device is not considered connected until the peer has
+// completed a handshake. The private key and raw UAPI text are never returned.
+func (e *Engine) PeerStatus() map[string]any {
+	result := map[string]any{"ok": true, "handshake": false, "rx_bytes": int64(0), "tx_bytes": int64(0), "last_handshake_unix": int64(0)}
+	uapi, err := e.device.IpcGet()
+	if err != nil {
+		return map[string]any{"ok": false, "handshake": false, "message": "WireGuard peer status unavailable"}
+	}
+	var peerBlock bool
+	var handshakeSec, handshakeNsec, rxBytes, txBytes int64
+	for _, line := range strings.Split(uapi, "\\n") {
+		if line == "" {
+			continue
+		}
+		key, value, found := strings.Cut(line, "=")
+		if !found {
+			continue
+		}
+		switch key {
+		case "public_key":
+			peerBlock = value == base64.StdEncoding.EncodeToString(e.config.publicKey[:])
+			handshakeSec, handshakeNsec, rxBytes, txBytes = 0, 0, 0, 0
+		case "last_handshake_time_sec":
+			if peerBlock { handshakeSec, _ = strconv.ParseInt(value, 10, 64) }
+		case "last_handshake_time_nsec":
+			if peerBlock { handshakeNsec, _ = strconv.ParseInt(value, 10, 64) }
+		case "rx_bytes":
+			if peerBlock { rxBytes, _ = strconv.ParseInt(value, 10, 64) }
+		case "tx_bytes":
+			if peerBlock { txBytes, _ = strconv.ParseInt(value, 10, 64) }
+		}
+	}
+	result["handshake"] = handshakeSec > 0
+	result["rx_bytes"] = rxBytes
+	result["tx_bytes"] = txBytes
+	result["last_handshake_unix"] = handshakeSec
+	if handshakeSec > 0 {
+		result["handshake_age_seconds"] = time.Now().Unix() - handshakeSec
+	}
+	_ = handshakeNsec // Kept parsed for future sub-second display without leaking UAPI.
+	return result
+}
+
+
 func closeWireGuardDevice(dev *device.Device) {
 	// Device.Close closes the TUN before stopping receivers. Drain/remove peers
 	// first so an in-flight netstack write cannot race the TUN's channel close.
