@@ -2,6 +2,8 @@ package com.maglev.engine
 
 import android.Manifest
 import android.app.Activity
+import android.app.PictureInPictureParams
+import android.util.Rational
 import android.content.Context
 import android.util.Log
 import android.content.Intent
@@ -157,6 +159,39 @@ class MaglevEngineModule : Module() {
 
     private fun ModuleDefinitionBuilder.defineModulePart0() {
         Name("MaglevEngine")
+        // PiP is also exposed on the primary native module as a fallback: some Expo builds
+        // omit separately autolinked auxiliary modules even though MaglevEngine is present.
+        AsyncFunction("enterBrowserPictureInPicture") { requestedAspectRatio: Double, promise: Promise ->
+            val activity = appContext.currentActivity
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+                promise.resolve(mapOf("ok" to false, "code" to "UNSUPPORTED", "message" to "Android 8.0 or later is required for PiP."))
+            } else if (activity == null) {
+                promise.resolve(mapOf("ok" to false, "code" to "NOT_READY", "message" to "The app screen is not available."))
+            } else if (!MaglevBrowserView.fullscreenVideoActive) {
+                activity.runOnUiThread {
+                    MaglevBrowserView.requestFullscreenVideoForPip(requestedAspectRatio) { accepted ->
+                        promise.resolve(if (accepted) mapOf("ok" to true, "pending" to true) else mapOf(
+                            "ok" to false, "code" to "VIDEO_NOT_FOUND",
+                            "message" to "현재 페이지에서 재생 가능한 동영상을 찾지 못했습니다. 먼저 영상 재생을 시작하세요."
+                        ))
+                    }
+                }
+            } else {
+                val active = MaglevBrowserView.activeVideoAspectRatio
+                val ratio = if (MaglevBrowserView.activeVideoAspectRatioKnown && active.isFinite()) active.coerceIn(0.42, 2.39)
+                    else if (requestedAspectRatio.isFinite()) requestedAspectRatio.coerceIn(0.42, 2.39) else 16.0 / 9.0
+                val params = PictureInPictureParams.Builder()
+                    .setAspectRatio(Rational((ratio * 1000.0).toInt().coerceAtLeast(1), 1000))
+                    .build()
+                activity.runOnUiThread {
+                    try {
+                        promise.resolve(mapOf("ok" to activity.enterPictureInPictureMode(params)))
+                    } catch (_: Throwable) {
+                        promise.resolve(mapOf("ok" to false, "code" to "INTERNAL", "message" to "Android could not start picture-in-picture."))
+                    }
+                }
+            }
+        }
         Events("onTelemetry", "onTorrentCompleted", "onNotificationAction", "onStorageStatus", "onUpdateProgress", "onUpdateResult", "onBlocksChanged")
         OnCreate {
             context?.let {
