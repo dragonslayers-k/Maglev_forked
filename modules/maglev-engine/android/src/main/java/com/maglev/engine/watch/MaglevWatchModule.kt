@@ -8,6 +8,7 @@ import android.util.Rational
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import com.maglev.engine.EngineHost
+import com.maglev.engine.browser.MaglevBrowserView
 import expo.modules.kotlin.Promise
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
@@ -29,10 +30,19 @@ class MaglevWatchModule : Module() {
                 promise.resolve(mapOf("ok" to false, "code" to "UNSUPPORTED", "message" to "Picture-in-picture requires Android 8.0 or later."))
             } else if (activity == null) {
                 promise.resolve(mapOf("ok" to false, "code" to "NOT_READY", "message" to "The app screen is not available."))
+            } else if (!MaglevBrowserView.fullscreenVideoActive) {
+                promise.resolve(mapOf("ok" to false, "code" to "VIDEO_NOT_FULLSCREEN", "message" to "먼저 영상의 전체화면을 연 뒤 영상 오른쪽 위 PiP 버튼을 누르세요."))
             } else {
-                // Use the detected video's real aspect ratio where available; clamp to Android's
-                // supported PiP range so malformed page metadata cannot reject the transition.
-                val ratio = if (requestedAspectRatio.isFinite()) requestedAspectRatio.coerceIn(0.42, 2.39) else (16.0 / 9.0)
+                // Prefer the intrinsic dimensions measured from the active HTML video element.
+                // Fall back to the discovered media ratio only until the WebView measurement arrives.
+                val activeRatio = MaglevBrowserView.activeVideoAspectRatio
+                val ratio = if (MaglevBrowserView.activeVideoAspectRatioKnown && activeRatio.isFinite()) {
+                    activeRatio.coerceIn(0.42, 2.39)
+                } else if (requestedAspectRatio.isFinite()) {
+                    requestedAspectRatio.coerceIn(0.42, 2.39)
+                } else {
+                    (16.0 / 9.0)
+                }
                 val numerator = (ratio * 1000.0).toInt().coerceAtLeast(1)
                 val params = PictureInPictureParams.Builder()
                     .setAspectRatio(Rational(numerator, 1000))

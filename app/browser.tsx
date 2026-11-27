@@ -783,7 +783,7 @@ export default function BrowserScreen({ inTab = false }: { inTab?: boolean }) {
           showNotice({ message: notices.browser.pipStarted }, 2500);
         } else {
           setPipRequested(false);
-          showNotice({ message: notices.browser.pipFailed }, 4000);
+          showNotice({ message: result.message || notices.browser.pipFailed }, 4000);
         }
       }).catch(() => {
         setPipRequested(false);

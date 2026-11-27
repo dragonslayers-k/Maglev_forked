@@ -4,9 +4,12 @@ import android.annotation.SuppressLint
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
+import android.app.Activity
+import android.app.PictureInPictureParams
 import android.content.pm.ActivityInfo
 import android.graphics.Bitmap
 import android.graphics.Color
+import android.graphics.drawable.GradientDrawable
 import android.net.Uri
 import android.net.http.SslError
 import android.os.Build
@@ -16,6 +19,7 @@ import android.os.Message
 import android.os.SystemClock
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
+import android.view.Gravity
 import android.view.KeyEvent
 import android.view.MotionEvent
 import org.json.JSONObject
@@ -25,6 +29,8 @@ import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputConnection
 import android.view.inputmethod.InputConnectionWrapper
 import android.view.ViewGroup
+import android.util.Rational
+import android.widget.TextView
 import android.webkit.CookieManager
 import android.webkit.GeolocationPermissions
 import android.webkit.HttpAuthHandler
@@ -176,6 +182,7 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
     private var customView: View? = null
     private var customViewCallback: WebChromeClient.CustomViewCallback? = null
     private var customViewHost: ViewGroup? = null
+    private var fullscreenPipButton: TextView? = null
     private var previousOrientation: Int = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
 
     private val bridge = PageScanBridge { json -> onScanReport(json) }
@@ -1537,25 +1544,116 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
             callback.onCustomViewHidden()
             return
         }
-        customView = view
-        customViewCallback = callback
+        val container = FrameLayout(context).apply { setBackgroundColor(Color.BLACK) }
         view.setBackgroundColor(Color.BLACK)
+        container.addView(view, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
+        customView = container
+        customViewCallback = callback
+        fullscreenVideoActive = true
+        activeVideoAspectRatioKnown = false
+        activeVideoAspectRatio = 16.0 / 9.0
+
         val activity = appContext.currentActivity
+        val pipButton = TextView(context).apply {
+            text = "PiP"
+            textSize = 14f
+            setTextColor(Color.WHITE)
+            gravity = Gravity.CENTER
+            contentDescription = "Picture in picture"
+            val density = resources.displayMetrics.density
+            setPadding((12 * density).toInt(), (8 * density).toInt(), (12 * density).toInt(), (8 * density).toInt())
+            background = GradientDrawable().apply {
+                setColor(0xCC202124.toInt())
+                cornerRadius = 12f * density
+            }
+            elevation = 8f * density
+            setOnClickListener {
+                if (activity != null) enterFullscreenPictureInPicture(activity, this)
+            }
+        }
+        fullscreenPipButton = pipButton
+        val density = resources.displayMetrics.density
+        container.addView(
+            pipButton,
+            FrameLayout.LayoutParams((56 * density).toInt(), (40 * density).toInt(), Gravity.TOP or Gravity.END).apply {
+                setMargins(0, (16 * density).toInt(), (16 * density).toInt(), 0)
+            }
+        )
+
         if (activity != null) {
-            // Over the whole screen, system bars hidden; landscape allowed while it lasts.
+            // Fullscreen custom video is placed above the app chrome; PiP therefore captures the video surface,
+            // not the browser page and its toolbar. FULL_SENSOR permits both portrait and landscape video.
             val decor = activity.window.decorView as ViewGroup
-            decor.addView(view, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
+            decor.addView(container, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
             customViewHost = decor
             previousOrientation = activity.requestedOrientation
             activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR
             val controller = WindowCompat.getInsetsController(activity.window, decor)
             controller.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
             controller.hide(WindowInsetsCompat.Type.systemBars())
+            updateFullscreenPipParams(activity, autoEnter = true)
         } else {
-            addView(view, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
+            addView(container, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
             customViewHost = this
         }
         emitPage()
+    }
+
+    private fun buildPipParams(ratio: Double, autoEnter: Boolean): PictureInPictureParams {
+        val safeRatio = if (ratio.isFinite()) ratio.coerceIn(0.42, 2.39) else (16.0 / 9.0)
+        val numerator = (safeRatio * 1000.0).toInt().coerceAtLeast(1)
+        val builder = PictureInPictureParams.Builder().setAspectRatio(Rational(numerator, 1000))
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) builder.setAutoEnterEnabled(autoEnter)
+        return builder.build()
+    }
+
+    private fun updateFullscreenPipParams(activity: Activity, autoEnter: Boolean, onReady: ((Double) -> Unit)? = null) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
+        val script = """
+            (function() {
+              var videos = Array.prototype.slice.call(document.querySelectorAll('video'));
+              videos = videos.filter(function(v) { return v.videoWidth > 0 && v.videoHeight > 0; });
+              videos.sort(function(a, b) { return (b.clientWidth * b.clientHeight) - (a.clientWidth * a.clientHeight); });
+              var v = videos.find(function(v) { return !v.paused && !v.ended; }) || videos[0];
+              return v ? String(v.videoWidth / v.videoHeight) : '';
+            })()
+        """.trimIndent()
+        webView.evaluateJavascript(script) { raw ->
+            val parsed = raw?.trim()?.removeSurrounding("\"")?.toDoubleOrNull()
+            if (parsed != null && parsed.isFinite() && parsed in 0.42..2.39) {
+                activeVideoAspectRatio = parsed
+                activeVideoAspectRatioKnown = true
+            }
+            val ratio = if (activeVideoAspectRatioKnown) activeVideoAspectRatio else (16.0 / 9.0)
+            try {
+                activity.setPictureInPictureParams(buildPipParams(ratio, autoEnter))
+            } catch (_: Throwable) {
+            }
+            onReady?.invoke(ratio)
+        }
+    }
+
+    private fun enterFullscreenPictureInPicture(activity: Activity, button: TextView) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
+        button.visibility = View.INVISIBLE
+        updateFullscreenPipParams(activity, autoEnter = true) { ratio ->
+            try {
+                val entered = activity.enterPictureInPictureMode(buildPipParams(ratio, autoEnter = true))
+                if (!entered) button.visibility = View.VISIBLE
+            } catch (_: Throwable) {
+                button.visibility = View.VISIBLE
+            }
+        }
+    }
+
+    override fun onWindowFocusChanged(hasWindowFocus: Boolean) {
+        super.onWindowFocusChanged(hasWindowFocus)
+        val activity = appContext.currentActivity ?: return
+        if (activity.isInPictureInPictureMode) {
+            fullscreenPipButton?.visibility = View.INVISIBLE
+        } else if (hasWindowFocus) {
+            fullscreenPipButton?.visibility = View.VISIBLE
+        }
     }
 
     private fun exitFullscreen() {
@@ -1566,8 +1664,15 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
         customViewCallback = null
         customViewHost = null
         host?.removeView(view)
+        fullscreenPipButton = null
+        fullscreenVideoActive = false
+        activeVideoAspectRatioKnown = false
+        activeVideoAspectRatio = 16.0 / 9.0
         val activity = appContext.currentActivity
         if (activity != null && host != null && host !== this) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                runCatching { activity.setPictureInPictureParams(PictureInPictureParams.Builder().setAutoEnterEnabled(false).build()) }
+            }
             activity.requestedOrientation = previousOrientation
             WindowCompat.getInsetsController(activity.window, activity.window.decorView)
                 .show(WindowInsetsCompat.Type.systemBars())
@@ -1582,6 +1687,13 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
     // endregion
 
     companion object {
+        @Volatile var fullscreenVideoActive: Boolean = false
+            private set
+        @Volatile var activeVideoAspectRatio: Double = 16.0 / 9.0
+            private set
+        @Volatile var activeVideoAspectRatioKnown: Boolean = false
+            private set
+
         // ServiceWorkerController is process-wide. Keep one dispatcher and point it at the active browser tab only.
         private val serviceWorkerObserver = AtomicReference<MaglevBrowserView?>(null)
         private val serviceWorkerInstallLock = Any()

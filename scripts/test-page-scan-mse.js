@@ -25,4 +25,7 @@ if (!browser.includes('if (report.mse)') || !browser.includes('onPageNote(mapOf(
 if (!pipNative.includes('requestedAspectRatio: Double') || !pipNative.includes('requestedAspectRatio.coerceIn(0.42, 2.39)')) throw new Error('Native PiP does not accept/clamp video aspect ratio');
 if (!pipUi.includes('enterBrowserPictureInPicture(aspectRatio)') || !pipUi.includes('video.width! / video.height!')) throw new Error('Browser PiP does not pass detected video aspect ratio');
 if (!pipTypes.includes('enterBrowserPictureInPicture(aspectRatio: number)')) throw new Error('PiP aspect ratio is missing from native TypeScript contract');
-console.log('PASS: MSE observation and video-aspect PiP contract');
+if (!browser.includes('fullscreenPipButton') || !browser.includes('setAutoEnterEnabled(autoEnter)') || !browser.includes('activeVideoAspectRatioKnown')) throw new Error('Fullscreen video does not expose intrinsic-ratio PiP and auto-enter');
+if (!pipNative.includes('!MaglevBrowserView.fullscreenVideoActive') || !pipNative.includes('VIDEO_NOT_FULLSCREEN')) throw new Error('PiP must not capture the whole browser Activity when video is not fullscreen');
+if (!pipUi.includes('result.message || notices.browser.pipFailed')) throw new Error('PiP UI hides the native full-screen requirement');
+console.log('PASS: MSE observation and fullscreen-video PiP contract');
