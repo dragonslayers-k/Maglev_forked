@@ -185,8 +185,15 @@ object WireGuardController {
             "APP_WIREGUARD_PROFILE_INVALID", "WireGuard 프로필을 복호화하거나 검증하지 못했습니다.") }
 
         val port = try { NativeTunnel.start(config, USER, password, 0) }
-        catch (_: Throwable) { return@synchronized Json.failure(
-            "APP_WIREGUARD_START_FAILED", "앱 내부 WireGuard를 시작하지 못했습니다. 직접 연결로 우회하지 않았습니다.") }
+        catch (t: Throwable) {
+            // Keep the native load/JNI exception class visible to diagnostics. The previous
+            // catch discarded it and made every distinct startup failure look identical.
+            val errorType = t.javaClass.simpleName.ifBlank { "Throwable" }.take(80)
+            Log.e("MaglevWireGuard", "NativeTunnel.start failed: $errorType", t)
+            return@synchronized Json.failure(
+                "APP_WIREGUARD_START_FAILED",
+                "앱 내부 WireGuard 시작 실패 ($errorType). 직접 연결로 우회하지 않았습니다. 진단 로그를 확인하세요.")
+        }
         if (port == -4) return@synchronized Json.failure(
             "APP_WIREGUARD_ENDPOINT_DNS_FAILED",
             "WireGuard Endpoint 도메인 DNS 조회에 실패했습니다. 네트워크 또는 DNS를 확인하세요. 직접 연결로 우회하지 않았습니다.")
