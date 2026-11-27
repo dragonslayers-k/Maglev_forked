@@ -1034,6 +1034,39 @@ fn read_headers(h: &HeaderMap) -> Headers {
     }
 }
 
+fn parse_download_proxy(raw: &str) -> Result<reqwest::Proxy, String> {
+    let parsed = reqwest::Url::parse(raw).map_err(|_| "invalid proxy URL".to_string())?;
+    if parsed.scheme() == "http" && parsed.host_str() == Some("127.0.0.1") {
+        let port = parsed.port().ok_or_else(|| "loopback proxy port is missing".to_string())?;
+        let username = parsed.username();
+        let password = parsed.password().ok_or_else(|| "loopback proxy password is missing".to_string())?;
+        if username.is_empty() || password.is_empty() || parsed.path() != "/" || parsed.query().is_some() || parsed.fragment().is_some() {
+            return Err("invalid authenticated loopback proxy URL".to_string());
+        }
+        let endpoint = format!("http://127.0.0.1:{port}");
+        return reqwest::Proxy::all(&endpoint)
+            .map(|proxy| proxy.basic_auth(username, password))
+            .map_err(|_| "could not configure loopback HTTP proxy".to_string());
+    }
+    reqwest::Proxy::all(raw).map_err(|_| "unsupported or invalid proxy URL".to_string())
+}
+
+#[cfg(test)]
+mod proxy_url_tests {
+    use super::parse_download_proxy;
+
+    #[test]
+    fn authenticated_loopback_proxy_credentials_are_not_in_proxy_uri() {
+        let proxy = parse_download_proxy("http://maglev:YWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXo@127.0.0.1:36163");
+        assert!(proxy.is_ok(), "loopback proxy configuration should parse");
+    }
+
+    #[test]
+    fn authenticated_loopback_proxy_rejects_missing_password() {
+        assert!(parse_download_proxy("http://maglev@127.0.0.1:36163").is_err());
+    }
+}
+
 pub(super) fn build_client(proxy: Option<&str>, scope: LanScope) -> Result<Client, String> {
     // Contract section 17: redirects are followed by `redirect::send_following` (a cookie per hop's own host, at most
     // 10 hops, https to http refused). This policy never follows: it refuses a hop onto the local network (unless the
@@ -1054,7 +1087,7 @@ pub(super) fn build_client(proxy: Option<&str>, scope: LanScope) -> Result<Clien
         .dns_resolver(Arc::new(GuardedResolver { scope }))
         .user_agent(USER_AGENT_DEFAULT);
     if let Some(p) = proxy {
-        b = b.proxy(reqwest::Proxy::all(p).map_err(|e| e.to_string())?);
+        b = b.proxy(parse_download_proxy(p)?);
     }
     b.build().map_err(|e| e.to_string())
 }
