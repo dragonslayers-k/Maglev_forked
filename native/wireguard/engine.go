@@ -6,6 +6,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -169,6 +170,37 @@ func validCredentials(username, password string) bool {
 
 // Port returns the bound 127.0.0.1 TCP port.
 func (e *Engine) Port() int { return e.port }
+
+// CheckEgress performs a real HTTPS request through the userspace WireGuard
+// stack. A successful response proves that the peer handshake, AllowedIPs,
+// tunneled DNS, proxy transport and remote egress all worked for this request.
+// The returned IP/country are transient diagnostics; callers must not persist them.
+func (e *Engine) CheckEgress(ctx context.Context) (map[string]any, error) {
+	ctx, cancel := context.WithTimeout(ctx, 20*time.Second)
+	defer cancel()
+	request, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://ipwho.is/", nil)
+	if err != nil { return nil, err }
+	response, err := e.transport.RoundTrip(request)
+	if err != nil { return nil, errors.New("tunneled HTTPS egress test failed") }
+	defer response.Body.Close()
+	if response.StatusCode < 200 || response.StatusCode >= 300 {
+		return nil, fmt.Errorf("egress test service returned HTTP %d", response.StatusCode)
+	}
+	var result struct {
+		Success bool   `json:"success"`
+		IP string `json:"ip"`
+		Country string `json:"country"`
+		CountryCode string `json:"country_code"`
+	}
+	if err := json.NewDecoder(io.LimitReader(response.Body, 64*1024)).Decode(&result); err != nil {
+		return nil, errors.New("egress test response was invalid")
+	}
+	if !result.Success || net.ParseIP(result.IP) == nil || result.CountryCode == "" {
+		return nil, errors.New("egress test service could not identify the tunnel exit")
+	}
+	return map[string]any{"ok": true, "ip": result.IP, "country": result.Country, "country_code": result.CountryCode}, nil
+}
+
 
 func closeWireGuardDevice(dev *device.Device) {
 	// Device.Close closes the TUN before stopping receivers. Drain/remove peers
