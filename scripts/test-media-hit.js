@@ -78,7 +78,7 @@ const read = (rel) => fs.readFileSync(path.join(__dirname, '..', rel), 'utf8');
   check('blob video: plain note, found tray, no download, no copy', !!blob.note && /직접 저장할 수 없는 방식/.test(blob.note) && ids(blob).includes('show-found') && !ids(blob).includes('download-video') && !ids(blob).includes('copy'), ids(blob));
   check('blob video with poster offers the poster', ids(blob)[0] === 'save-poster' && blob.items[0].url === 'https://example.com/p.jpg');
   const noPoster = M.buildMediaMenu(M.parseMediaHit(payload({ kind: 'video', src: 'blob:https://example.com/u' })));
-  check('blob video without poster is just the tray row', JSON.stringify(ids(noPoster)) === JSON.stringify(['show-found']));
+  check('blob video without poster offers tray and page extractor', JSON.stringify(ids(noPoster)) === JSON.stringify(['show-found', 'analyze-page']) && noPoster.items[1].url === 'https://example.com/watch');
 
   const dataImg = M.buildMediaMenu(M.parseMediaHit(payload({ kind: 'image', src: 'data:image/png;base64,AAAA' })));
   check('data image: not supported, said plainly, no rows', dataImg.items.length === 0 && /여기에서 저장할 수 없습니다/.test(dataImg.note));
