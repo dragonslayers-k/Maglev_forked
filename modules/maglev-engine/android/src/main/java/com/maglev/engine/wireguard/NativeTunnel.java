@@ -14,6 +14,8 @@ public final class NativeTunnel {
     public static native void stop();
     /** Runs a real HTTPS egress request through the active userspace WireGuard peer. */
     public static native String checkConnection();
+    /** Returns actual peer handshake and RX/TX counters; local proxy state alone is not connected. */
+    public static native String peerStatus();
     /** Validates supported config text without opening sockets or changing routing. */
     public static native void validate(String config);
 
