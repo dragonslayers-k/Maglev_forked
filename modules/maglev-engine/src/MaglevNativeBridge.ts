@@ -659,7 +659,7 @@ export class MaglevEngineBridge implements MaglevEngineApi {
       return { ok: false, code: 'INTERNAL', message: String(e?.message ?? e) };
     }
   }
-  public getAppWireGuardStatus(): Promise<EngineResult<{ enabled: boolean; hasProfile: boolean; running: boolean; peerHandshake: boolean; peerRxBytes: number; peerTxBytes: number; lastHandshakeUnix: number; handshakeAgeSeconds?: number }>> {
+  public getAppWireGuardStatus(): Promise<EngineResult<{ enabled: boolean; hasProfile: boolean; running: boolean; peerHandshake: boolean; peerRxBytes: number; peerTxBytes: number; browserProxyApplied: boolean; lastHandshakeUnix: number; handshakeAgeSeconds?: number }>> {
     return this.route('getAppWireGuardStatus');
   }
   public testAppWireGuardConnection(): Promise<EngineResult<{ ip: string; country: string; country_code: string; message: string }>> {
