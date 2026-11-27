@@ -128,7 +128,7 @@ check('in the tab bar the screen skips the bottom inset (the tab bar already pad
 check('PiP compact viewport hides browser chrome and found-file overlays', /pipRequested && \(viewportWidth < screenWidth \* 0\.9 \|\| !appForeground\)/.test(scr) && /!pipCompact && \(findOpen \?/.test(scr) && /!pipCompact && hasPage \? \(/.test(scr));
 check('PiP request waits for sheet dismissal and passes the detected aspect ratio', /afterSheetCloses\(\(\) => \{\s*const video = found\.find[\s\S]*?void maglevEngine\.enterBrowserPictureInPicture\(aspectRatio\)/.test(scr));
 check('PiP keeps the active WebView alive during background transition', /active=\{focused && \(appForeground \|\| pipRequested\) && t\.id === activeId\}/.test(scr));
-check('PiP compact state resets when the Activity returns to full width', /setTimeout\(\(\) => setPipRequested\(false\), 900\)/.test(scr));
+check('PiP compact state resets when the Activity returns to full width', /setTimeout\(\(\) => setPipRequested\(false\), 5000\)/.test(scr));
 
 // 24.11 history from a blank tab
 const recent = read('components/browser/StartPage.tsx'); // the Recent list now lives in StartPage (RecentHistory.tsx is gone)
