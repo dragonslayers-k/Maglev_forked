@@ -5,6 +5,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import { maglevEngine } from 'maglev-engine';
 import { ListRow, Toggle } from '../../components/ui';
 import { Caption, Card, SettingsPage } from '../../components/settings/SettingsParts';
+import { FocusAnchor, rowKey } from '../../components/settings/settingsFocus';
 
 export default function AppWireGuardSettings() {
   const [enabled, setEnabled] = useState(false);
@@ -107,11 +108,13 @@ export default function AppWireGuardSettings() {
           subtitle="다운로더와 앱 브라우저가 같은 WireGuard 출구를 사용하는지 확인합니다."
           onPress={() => { void testConnection(); }}
         />
-        <ListRow
-          title="앱 브라우저 + HTTP/HTTPS 다운로드"
-          subtitle={enabled ? (running ? (browserProxyApplied ? (peerHandshake ? `Browser + Peer handshake · RX ${peerRxBytes.toLocaleString()} B / TX ${peerTxBytes.toLocaleString()} B` : '브라우저 프록시 적용 · 원격 peer handshake 대기') : '브라우저 프록시 적용 실패') : '앱 내부 터널을 시작하는 중') : '꺼짐'}
-          accessory={<Toggle value={enabled} onValueChange={(v) => void changeEnabled(v)} accessibilityLabel="앱 내부 WireGuard" />}
-        />
+        <FocusAnchor anchorKey={rowKey("앱 브라우저 + HTTP/HTTPS 다운로드")}>
+          <ListRow
+            title="앱 브라우저 + HTTP/HTTPS 다운로드"
+            subtitle={enabled ? (running ? (browserProxyApplied ? (peerHandshake ? `Browser + Peer handshake · RX ${peerRxBytes.toLocaleString()} B / TX ${peerTxBytes.toLocaleString()} B` : '브라우저 프록시 적용 · 원격 peer handshake 대기') : '브라우저 프록시 적용 실패') : '앱 내부 터널을 시작하는 중') : '꺼짐'}
+            accessory={<Toggle value={enabled} onValueChange={(v) => void changeEnabled(v)} accessibilityLabel="앱 내부 WireGuard" />}
+          />
+        </FocusAnchor>
       </Card>
       <Caption tone="warning">
         이 기능은 Android VpnService를 등록하지 않고 APN이나 휴대폰 전체 경로를 변경하지 않습니다.
@@ -120,10 +123,12 @@ export default function AppWireGuardSettings() {
         터널 시작 또는 프록시 적용에 실패하면 직접 연결로 우회하지 않습니다.
       </Caption>
       <Card>
-        <ListRow
-          title="앱 브라우저 터널 상태"
-          subtitle={running ? (browserProxyApplied ? (peerHandshake ? `실제 peer handshake 확인 · RX ${peerRxBytes.toLocaleString()} B / TX ${peerTxBytes.toLocaleString()} B` : '브라우저 프록시 적용 · peer handshake 미확인') : '브라우저 프록시 미적용') : '아직 시작되지 않음'}
-        />
+        <FocusAnchor anchorKey={rowKey("앱 브라우저 터널 상태")}>
+          <ListRow
+            title="앱 브라우저 터널 상태"
+            subtitle={running ? (browserProxyApplied ? (peerHandshake ? `실제 peer handshake 확인 · RX ${peerRxBytes.toLocaleString()} B / TX ${peerTxBytes.toLocaleString()} B` : '브라우저 프록시 적용 · peer handshake 미확인') : '브라우저 프록시 미적용') : '아직 시작되지 않음'}
+          />
+        </FocusAnchor>
       </Card>
     </SettingsPage>
   );
