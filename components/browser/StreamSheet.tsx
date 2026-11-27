@@ -12,12 +12,22 @@ import { hostOf } from '../../utils/browserUrl';
 import { Banner, Button, LoadingDots, RadioCard, TextField } from '../ui';
 import { FloatingSheet, afterSheetCloses, NoteRow } from './FloatingSheet';
 import { useSettings } from '../../context/SettingsContext';
+import { formatBytes } from '../../constants/format';
 import { downloadHeaders } from './FoundDownload';
 import { SaveToRow } from './SaveToRow';
 import { pageUrlOption } from './pageUrlOption';
 import { audioLabel, buildSelection, defaultAudio, defaultVariant, needsAudioPicker, qualityLabel } from './streamChoice';
 
 type Phase = 'probing' | 'ready' | 'error' | 'adding';
+
+function formatStreamDuration(seconds: number): string {
+  if (!Number.isFinite(seconds) || seconds <= 0) return '길이 확인 불가';
+  const total = Math.floor(seconds);
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = total % 60;
+  return h > 0 ? `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}` : `${m}:${String(s).padStart(2, '0')}`;
+}
 
 const STREAM_BANNERS = {
   STREAM_PROTECTED: banners.browser.streamProtected.title,
@@ -79,7 +89,9 @@ export function StreamSheet({ item, pageTitle, userAgent = '', pageUrl = '', onC
         setProbe(res);
         setVariantId(defaultVariant(res.variants)?.id ?? null);
         setAudioId(defaultAudio(res.audioTracks));
-        setName((n) => n || sanitizeFileName((res.title || '').trim()));
+        // Prefer the page's human-readable title, then the stream's probed title, and only
+        // lastly the raw resource name (often `videoplayback` or a segment-like URL).
+        setName(sanitizeFileName((pageTitle || res.title || item.name || '').trim()));
         setPhase('ready');
         return;
       }
@@ -105,6 +117,13 @@ export function StreamSheet({ item, pageTitle, userAgent = '', pageUrl = '', onC
   const adding = phase === 'adding';
   const mobileNote = phase === 'ready' ? mobileDataLine(onMeteredNetwork, settings.network.wifiOnly, variant?.estBytes ?? null) : null;
   const askAudio = probe ? needsAudioPicker(variant, probe.audioTracks) : false;
+  const streamInfo = probe && variant ? [
+    probe.kind.toUpperCase(),
+    formatStreamDuration(probe.durationSec),
+    variant.width && variant.height ? `${variant.width} × ${variant.height}` : null,
+    variant.codecs,
+    variant.estBytes != null ? `약 ${formatBytes(variant.estBytes)}` : null,
+  ].filter(Boolean).join(' · ') : null;
 
   const start = async () => {
     if (!probe || !variant) return;
@@ -152,7 +171,12 @@ export function StreamSheet({ item, pageTitle, userAgent = '', pageUrl = '', onC
                 <RadioCard
                   key={v.id}
                   title={qualityLabel(v, probe.variants)}
-                  description={v.audio === 'none' ? '오디오 없음' : `${(v.bandwidth / 1_000_000).toFixed(1)} Mbps`}
+                  description={[
+                    v.width && v.height ? `${v.width}×${v.height}` : null,
+                    `${(v.bandwidth / 1_000_000).toFixed(1)} Mbps`,
+                    v.estBytes != null ? `약 ${formatBytes(v.estBytes)}` : null,
+                    v.audio === 'none' ? '오디오 없음' : null,
+                  ].filter(Boolean).join(' · ')}
                   icon="file"
                   selected={v.id === variantId}
                   onPress={() => {
@@ -162,6 +186,7 @@ export function StreamSheet({ item, pageTitle, userAgent = '', pageUrl = '', onC
                 />
               ))}
             </View>
+            {streamInfo ? <Text style={styles.meta}>{streamInfo}</Text> : null}
             {askAudio ? (
               <>
                 <Text style={styles.label}>{streamSheet.audio}</Text>
