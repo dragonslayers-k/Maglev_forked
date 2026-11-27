@@ -72,8 +72,10 @@ pub struct NativeConfig {
     /// "Stop waiting for peers after" (contract section 20.1), seconds. 0 = never.
     #[serde(deserialize_with = "lenient_u32")]
     pub peer_timeout_secs: u32,
-    /// `socks5://user:pass@host:port`, or null.
+    /// `socks5://user:pass@host:port` for torrent peer connections only, or null.
     pub proxy_url: Option<String>,
+    /// Authenticated app-local HTTP proxy for HTTP(S) link downloads only; never passed to librqbit.
+    pub http_download_proxy_url: Option<String>,
     /// Absolute path to a PeerGuardian style text list (`name:1.2.3.4-1.2.3.255`), plain or gzip.
     pub ip_filter_path: Option<String>,
 }
@@ -96,6 +98,7 @@ impl Default for NativeConfig {
             seed_time_limit_mins: 0,
             peer_timeout_secs: DEFAULT_PEER_TIMEOUT_SECS,
             proxy_url: None,
+            http_download_proxy_url: None,
             ip_filter_path: None,
         }
     }
@@ -118,6 +121,7 @@ impl NativeConfig {
             self.seed_ratio_limit = 0.0;
         }
         self.proxy_url = self.proxy_url.take().filter(|s| !s.trim().is_empty());
+        self.http_download_proxy_url = self.http_download_proxy_url.take().filter(|s| !s.trim().is_empty());
         self.ip_filter_path = self.ip_filter_path.take().filter(|s| !s.trim().is_empty());
     }
 
@@ -134,21 +138,27 @@ impl NativeConfig {
                         None => false,
                     }
                 });
-            // App-local WireGuard exposes an authenticated IPv4 loopback HTTP proxy.
-            // Permit only that narrow HTTP form; ordinary remote HTTP proxies are not accepted.
+            if !socks {
+                return Err(EngineError::new(
+                    ErrorCode::Internal,
+                    "Torrent peer proxy must use socks5:// or socks5h://",
+                ));
+            }
+        }
+        if let Some(p) = &self.http_download_proxy_url {
             let local_http = p.strip_prefix("http://").and_then(|rest| {
                 let (auth, endpoint) = rest.rsplit_once('@')?;
                 let (user, password) = auth.split_once(':')?;
                 let (host, port) = endpoint.rsplit_once(':')?;
                 let valid_port = port.parse::<u16>().is_ok_and(|n| n != 0);
-                ( !user.is_empty() && !password.is_empty() && host == "127.0.0.1" && valid_port
+                (!user.is_empty() && !password.is_empty() && host == "127.0.0.1" && valid_port
                     && !endpoint.contains('/') && !endpoint.contains('?') && !endpoint.contains('#'))
                     .then_some(())
             }).is_some();
-            if !socks && !local_http {
+            if !local_http {
                 return Err(EngineError::new(
                     ErrorCode::Internal,
-                    "Use socks5://host:port or an authenticated app-local HTTP proxy",
+                    "HTTP download proxy must be an authenticated 127.0.0.1 HTTP proxy",
                 ));
             }
         }
@@ -326,7 +336,8 @@ mod tests {
         assert!(NativeConfig::from_json(r#"{"proxy_url":"http://x:1"}"#).is_err());
         assert!(NativeConfig::from_json(r#"{"proxy_url":"http://u:p@proxy.example:8080"}"#).is_err());
         assert!(NativeConfig::from_json(r#"{"proxy_url":"http://u:p@127.0.0.1:0"}"#).is_err());
-        assert!(NativeConfig::from_json(r#"{"proxy_url":"http://maglev:token@127.0.0.1:12345"}"#).is_ok());
+        assert!(NativeConfig::from_json(r#"{"proxy_url":"http://maglev:token@127.0.0.1:12345"}"#).is_err());
+        assert!(NativeConfig::from_json(r#"{"http_download_proxy_url":"http://maglev:token@127.0.0.1:12345"}"#).is_ok());
         assert!(NativeConfig::from_json(r#"{"proxy_url":"socks5://host"}"#).is_err());
         let cfg = NativeConfig::from_json(r#"{"seed_ratio_limit":-3,"proxy_url":"  "}"#).unwrap();
         assert_eq!(cfg.seed_ratio_limit, 0.0);

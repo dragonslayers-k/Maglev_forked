@@ -288,7 +288,7 @@ object EngineHost {
         if (!isOk(result)) return@synchronized result
         val config = nativeWireGuardConfig(result)
         if (config.isEmpty()) return@synchronized Json.failure("INTERNAL", "다운로드 엔진 설정 응답이 비어 있습니다.")
-        mapOf("ok" to true, "proxy_url" to (config["proxy_url"] as? String))
+        mapOf("ok" to true, "proxy_url" to (config["http_download_proxy_url"] as? String))
     }
 
     fun setAppWireGuardProxy(proxyUrl: String?): Map<String, Any?> = synchronized(lifecycleLock) {
@@ -297,7 +297,7 @@ object EngineHost {
         if (!isOk(result)) return@synchronized result
         val config = nativeWireGuardConfig(result).toMutableMap()
         if (config.isEmpty()) return@synchronized Json.failure("INTERNAL", "다운로드 엔진 설정 응답이 비어 있습니다.")
-        config["proxy_url"] = proxyUrl
+        config["http_download_proxy_url"] = proxyUrl
         val applied = call { NativeCore.nativeApplyConfig(Json.toJson(config)) }
         if (!isOk(applied)) return@synchronized applied
         if (applied["restart_required"] == true) {

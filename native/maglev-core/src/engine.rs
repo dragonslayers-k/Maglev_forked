@@ -755,7 +755,7 @@ impl MaglevEngine {
             session.clone(),
             &session_dir,
             &default_dir,
-            cfg.proxy_url.clone(),
+            cfg.http_download_proxy_url.clone(),
             blocked.clone(),
         );
         downloads.set_max_active(cfg.max_active_downloads);
@@ -2919,7 +2919,7 @@ impl MaglevEngine {
         let old = self.config.lock().clone();
         let restart_required = old.restart_required(&new);
         self.apply_limits(new.download_limit_bps, new.upload_limit_bps);
-        self.downloads.set_proxy(new.proxy_url.clone());
+        self.downloads.set_proxy(new.http_download_proxy_url.clone());
         self.downloads.set_max_active(new.max_active_downloads);
         *self.config.lock() = new.clone();
         {
