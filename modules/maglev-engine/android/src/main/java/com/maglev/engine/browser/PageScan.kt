@@ -73,10 +73,16 @@ object PageScan {
     sent[k] = entry;
     list.push(entry);
   }
-  function resourceCandidate(list, u, mime){
+  function resourceCandidate(list, u, mime, initiator){
     var kind = kindFromMime(mime);
     var clean = cleanMime(mime);
     var path = String(u || '').split(/[?#]/)[0].toLowerCase();
+    // MSE-backed players often expose only opaque fetch/XHR segment URLs. Surface
+    // media-shaped requests as candidates while keeping arbitrary API calls out.
+    if (!kind && mseSeen && /^(fetch|xmlhttprequest)$/i.test(String(initiator || '')) &&
+        /(?:videoplayback|video|videos|media|stream|segment|chunk)/i.test(String(u || ''))) {
+      kind = /(?:^|[?&])(?:type|format|mime|content[_-]?type)=audio(?:%2f|\/)/i.test(String(u || '')) ? 'audio' : 'video';
+    }
     if (/\.(m3u8|mpd)$/i.test(path) ||
         clean === 'application/vnd.apple.mpegurl' || clean === 'application/x-mpegurl' ||
         clean === 'audio/mpegurl' || clean === 'audio/x-mpegurl' || clean === 'application/dash+xml') {
@@ -89,9 +95,9 @@ object PageScan {
     }
     if (kind) push(list, u, kind, 0, 0, mime);
   }
-  function reportResource(u, mime){
+  function reportResource(u, mime, initiator){
     var list = [];
-    resourceCandidate(list, u, mime);
+    resourceCandidate(list, u, mime, initiator);
     if (list.length) post({ items: list, mse: mseSeen && !mseSent });
     if (list.length && mseSeen) mseSent = true;
   }
@@ -153,7 +159,7 @@ object PageScan {
     try {
       var resources = performance && performance.getEntriesByType ? performance.getEntriesByType('resource') : [];
       for (i = Math.max(0, resources.length - 1500); i < resources.length; i++) {
-        if (resources[i] && resources[i].name) resourceCandidate(list, resources[i].name, '');
+        if (resources[i] && resources[i].name) resourceCandidate(list, resources[i].name, '', resources[i].initiatorType);
       }
     } catch (e) {}
     if (streamSeen) {
@@ -204,7 +210,7 @@ object PageScan {
         return result.then(function(response){
           try {
             var mime = response && response.headers ? response.headers.get('content-type') : '';
-            reportResource((response && response.url) || url, mime);
+            reportResource((response && response.url) || url, mime, 'fetch');
           } catch (e) {}
           return response;
         });
@@ -228,7 +234,7 @@ object PageScan {
         if (xhr.__mgMethod === 'GET' && xhr.addEventListener) {
           xhr.addEventListener('loadend', function(){
             try {
-              reportResource(xhr.responseURL || xhr.__mgUrl, xhr.getResponseHeader('content-type') || '');
+              reportResource(xhr.responseURL || xhr.__mgUrl, xhr.getResponseHeader('content-type') || '', 'xmlhttprequest');
             } catch (e) {}
           }, { once: true });
         }
