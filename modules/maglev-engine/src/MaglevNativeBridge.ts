@@ -728,6 +728,16 @@ export class MaglevEngineBridge implements MaglevEngineApi {
   public openStream(url: string, mime: string, title: string): Promise<EngineResult> {
     return this.route('openStream', url, mime, title);
   }
+  public async playInAppMedia(url: string, mime: string, title: string, headers: Record<string, string> = {}): Promise<EngineResult> {
+    if (Platform.OS !== 'android' || !PictureInPictureModule?.playInAppMedia) {
+      return { ok: false, code: 'UNSUPPORTED', message: '앱 내 미디어 재생은 Android에서 지원됩니다.' };
+    }
+    try {
+      return await PictureInPictureModule.playInAppMedia(url, mime, title, headers);
+    } catch (e: any) {
+      return { ok: false, code: 'INTERNAL', message: String(e?.message ?? e) };
+    }
+  }
   public setSchedule(config: ScheduleConfig): Promise<EngineResult> {
     return this.route('setSchedule', config);
   }
