@@ -1,5 +1,11 @@
 package com.maglev.engine.browser
 
+import android.app.Activity
+import android.app.PictureInPictureParams
+import android.util.Rational
+import android.view.Gravity
+import android.widget.TextView
+import android.graphics.drawable.GradientDrawable
 import android.annotation.SuppressLint
 import android.content.ActivityNotFoundException
 import android.content.Context
@@ -175,6 +181,15 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
     private var customViewCallback: WebChromeClient.CustomViewCallback? = null
     private var customViewHost: ViewGroup? = null
     private var previousOrientation: Int = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+    private var fullscreenPipButton: TextView? = null
+    /** PiP menu request completes only after WebChromeClient actually attaches the fullscreen surface. */
+    private var pipPendingFromBrowserMenu = false
+    private var pipRequestResult: ((Boolean) -> Unit)? = null
+    private fun resolvePipRequest(success: Boolean) {
+        val result = pipRequestResult ?: return
+        pipRequestResult = null
+        result(success)
+    }
 
     private val bridge = PageScanBridge { json -> onScanReport(json) }
 
@@ -1515,30 +1530,208 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
 
     // region Fullscreen video
 
+    /** Requests the page player's fullscreen video surface from the browser PiP menu. */
+    private fun requestFullscreenVideoForPipInternal(requestedAspectRatio: Double, onResult: (Boolean) -> Unit) {
+        if (destroyed || !active) { onResult(false); return }
+        if (requestedAspectRatio.isFinite() && requestedAspectRatio in 0.42..2.39) {
+            activeVideoAspectRatio = requestedAspectRatio
+            activeVideoAspectRatioKnown = true
+        }
+        pipRequestResult?.invoke(false)
+        pipRequestResult = onResult
+        pipPendingFromBrowserMenu = true
+        mainHandler.postDelayed({
+            if (pipRequestResult != null) {
+                pipPendingFromBrowserMenu = false
+                resolvePipRequest(false)
+            }
+        }, 5_000L)
+        val script = """
+            (function() {
+              var videos = Array.prototype.slice.call(document.querySelectorAll('video'));
+              videos = videos.filter(function(v) {
+                var s = window.getComputedStyle(v);
+                return !v.paused && !v.ended && v.readyState >= 2 && v.videoWidth > 0 && v.videoHeight > 0 &&
+                  v.getClientRects().length > 0 && s.display !== 'none' && s.visibility !== 'hidden' &&
+                  v.clientWidth > 0 && v.clientHeight > 0;
+              });
+              videos.sort(function(a,b){return (b.clientWidth*b.clientHeight)-(a.clientWidth*a.clientHeight);});
+              var v=videos[0]; if(!v)return 0;
+              var ratio=v.videoWidth/v.videoHeight;if(!isFinite(ratio)||ratio<0.42||ratio>2.39)return 0;
+              var root=v;
+              for(var d=0;d<7&&root.parentElement;d++){root=root.parentElement;if(root.querySelector&&root.querySelector('.ytp-fullscreen-button'))break;}
+              var selectors=['.ytp-fullscreen-button','[aria-label*="fullscreen" i]','[title*="fullscreen" i]','.fullscreen-button'];
+              for(var i=0;i<selectors.length;i++){var b=root.querySelector?root.querySelector(selectors[i]):null;if(b&&b.getClientRects().length&&!b.disabled){try{b.click();return ratio;}catch(e){}}}
+              try{if(v.requestFullscreen){var p=v.requestFullscreen();if(p&&p.catch)p.catch(function(){});return ratio;}}catch(e){}
+              try{if(v.webkitEnterFullscreen){v.webkitEnterFullscreen();return ratio;}}catch(e){}
+              return 0;
+            })()
+        """.trimIndent()
+        webView.evaluateJavascript(script) { raw ->
+            val ratio = raw?.trim()?.removeSurrounding("\"")?.toDoubleOrNull()
+            val accepted = ratio != null && ratio.isFinite() && ratio in 0.42..2.39
+            if (accepted) {
+                activeVideoAspectRatio = ratio!!
+                activeVideoAspectRatioKnown = true
+                // Do not report success yet: requestFullscreen() can be rejected or ignored.
+                // Success is resolved only from onShowCustomView after the surface is attached.
+            } else {
+                pipPendingFromBrowserMenu = false
+                resolvePipRequest(false)
+            }
+        }
+    }
+
     private fun showFullscreen(view: View, callback: WebChromeClient.CustomViewCallback) {
         if (destroyed || customView != null) {
             callback.onCustomViewHidden()
             return
         }
-        customView = view
-        customViewCallback = callback
+        val container = FrameLayout(context).apply { setBackgroundColor(Color.BLACK) }
         view.setBackgroundColor(Color.BLACK)
+        container.addView(view, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
+        customView = container
+        customViewCallback = callback
+        fullscreenVideoActive = true
+        activeVideoAspectRatioKnown = false
+        activeVideoAspectRatio = 16.0 / 9.0
+
         val activity = appContext.currentActivity
+        val pipButton = TextView(context).apply {
+            text = "PiP"
+            textSize = 14f
+            setTextColor(Color.WHITE)
+            gravity = Gravity.CENTER
+            contentDescription = "Picture in picture"
+            val density = resources.displayMetrics.density
+            setPadding((12 * density).toInt(), (8 * density).toInt(), (12 * density).toInt(), (8 * density).toInt())
+            background = GradientDrawable().apply {
+                setColor(0xCC202124.toInt())
+                cornerRadius = 12f * density
+            }
+            elevation = 8f * density
+            setOnClickListener {
+                if (activity != null) enterFullscreenPictureInPicture(activity, this)
+            }
+        }
+        fullscreenPipButton = pipButton
+        val density = resources.displayMetrics.density
+        container.addView(
+            pipButton,
+            FrameLayout.LayoutParams((56 * density).toInt(), (40 * density).toInt(), Gravity.TOP or Gravity.END).apply {
+                setMargins(0, (16 * density).toInt(), (16 * density).toInt(), 0)
+            }
+        )
+
         if (activity != null) {
-            // Over the whole screen, system bars hidden; landscape allowed while it lasts.
+            // Fullscreen custom video is placed above the app chrome; PiP therefore captures the video surface,
+            // not the browser page and its toolbar. FULL_SENSOR permits both portrait and landscape video.
             val decor = activity.window.decorView as ViewGroup
-            decor.addView(view, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
+            decor.addView(container, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
             customViewHost = decor
             previousOrientation = activity.requestedOrientation
             activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR
             val controller = WindowCompat.getInsetsController(activity.window, decor)
             controller.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
             controller.hide(WindowInsetsCompat.Type.systemBars())
+            if (pipPendingFromBrowserMenu) {
+                pipPendingFromBrowserMenu = false
+                // Do not enter PiP in the same frame as onShowCustomView.
+                // The pending request is resolved only after Android accepts PiP below. WebView's fullscreen
+                // video surface is attached/reparented here; entering immediately can snapshot
+                // the old SurfaceView geometry (black PiP with the video left at the bottom).
+                // Wait for layout + orientation changes to settle, then request a fresh layout
+                // and update the PiP aspect ratio from the active HTML video.
+                container.post {
+                    container.requestLayout()
+                    view.requestLayout()
+                    mainHandler.postDelayed({
+                        if (destroyed || customView !== container || !container.isAttachedToWindow) return@postDelayed
+                        container.requestLayout()
+                        view.requestLayout()
+                        updateFullscreenPipParams(activity, autoEnter = true) {
+                            mainHandler.postDelayed({
+                                if (destroyed || customView !== container || !container.isAttachedToWindow) return@postDelayed
+                                enterFullscreenPictureInPicture(activity, pipButton)
+                            }, 250L)
+                        }
+                    }, 350L)
+                }
+            } else {
+                updateFullscreenPipParams(activity, autoEnter = true)
+            }
         } else {
-            addView(view, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
+            addView(container, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
             customViewHost = this
         }
         emitPage()
+    }
+
+    private fun buildPipParams(ratio: Double, autoEnter: Boolean): PictureInPictureParams {
+        val safeRatio = if (ratio.isFinite()) ratio.coerceIn(0.42, 2.39) else (16.0 / 9.0)
+        val numerator = (safeRatio * 1000.0).toInt().coerceAtLeast(1)
+        val builder = PictureInPictureParams.Builder().setAspectRatio(Rational(numerator, 1000))
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            builder.setAutoEnterEnabled(autoEnter)
+            builder.setSeamlessResizeEnabled(true)
+        }
+        return builder.build()
+    }
+
+    private fun updateFullscreenPipParams(activity: Activity, autoEnter: Boolean, onReady: ((Double) -> Unit)? = null) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
+        val script = """
+            (function() {
+              var videos = Array.prototype.slice.call(document.querySelectorAll('video'));
+              videos = videos.filter(function(v) { var s=window.getComputedStyle(v); return v.videoWidth>0&&v.videoHeight>0&&v.getClientRects().length>0&&s.display!=='none'&&s.visibility!=='hidden'&&v.clientWidth>0&&v.clientHeight>0; });
+              var playing=videos.filter(function(v){return !v.paused&&!v.ended&&v.readyState>=2;});
+              function area(v){return Math.max(0,v.clientWidth)*Math.max(0,v.clientHeight);}
+              playing.sort(function(a,b){return area(b)-area(a);});videos.sort(function(a,b){return area(b)-area(a);});
+              var v=playing[0]||videos[0];return v?String(v.videoWidth/v.videoHeight):'';
+            })()
+        """.trimIndent()
+        webView.evaluateJavascript(script) { raw ->
+            val parsed = raw?.trim()?.removeSurrounding("\"")?.toDoubleOrNull()
+            if (parsed != null && parsed.isFinite() && parsed in 0.42..2.39) {
+                activeVideoAspectRatio = parsed
+                activeVideoAspectRatioKnown = true
+            }
+            val ratio = if (activeVideoAspectRatioKnown) activeVideoAspectRatio else (16.0 / 9.0)
+            try {
+                activity.setPictureInPictureParams(buildPipParams(ratio, autoEnter))
+            } catch (_: Throwable) {
+            }
+            onReady?.invoke(ratio)
+        }
+    }
+
+    private fun enterFullscreenPictureInPicture(activity: Activity, button: TextView) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
+        button.visibility = View.INVISIBLE
+        updateFullscreenPipParams(activity, autoEnter = true) { ratio ->
+            try {
+                val entered = activity.enterPictureInPictureMode(buildPipParams(ratio, autoEnter = true))
+                if (!entered) {
+                    button.visibility = View.VISIBLE
+                    resolvePipRequest(false)
+                } else {
+                    resolvePipRequest(true)
+                }
+            } catch (_: Throwable) {
+                button.visibility = View.VISIBLE
+                resolvePipRequest(false)
+            }
+        }
+    }
+
+    override fun onWindowFocusChanged(hasWindowFocus: Boolean) {
+        super.onWindowFocusChanged(hasWindowFocus)
+        val activity = appContext.currentActivity ?: return
+        if (activity.isInPictureInPictureMode) {
+            fullscreenPipButton?.visibility = View.INVISIBLE
+        } else if (hasWindowFocus) {
+            fullscreenPipButton?.visibility = View.VISIBLE
+        }
     }
 
     private fun exitFullscreen() {
@@ -1549,8 +1742,15 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
         customViewCallback = null
         customViewHost = null
         host?.removeView(view)
+        fullscreenPipButton = null
+        fullscreenVideoActive = false
+        activeVideoAspectRatioKnown = false
+        activeVideoAspectRatio = 16.0 / 9.0
         val activity = appContext.currentActivity
         if (activity != null && host != null && host !== this) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                runCatching { activity.setPictureInPictureParams(PictureInPictureParams.Builder().setAutoEnterEnabled(false).build()) }
+            }
             activity.requestedOrientation = previousOrientation
             WindowCompat.getInsetsController(activity.window, activity.window.decorView)
                 .show(WindowInsetsCompat.Type.systemBars())
