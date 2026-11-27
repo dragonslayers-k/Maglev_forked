@@ -81,18 +81,21 @@ object WireGuardController {
         }
 
         val hasSaved = WireGuardProfileStore.hasOriginalProxy(context)
+        // Remove the WebView route before restoring the downloader's original proxy. If restore
+        // fails, put the browser route back so the still-enabled tunnel cannot silently go direct.
+        if (!clearBrowserProxy()) return@synchronized Json.failure(
+            "APP_WIREGUARD_BROWSER_PROXY_CLEAR_FAILED",
+            "앱 브라우저 프록시를 안전하게 해제하지 못했습니다. 연결 상태를 유지했습니다.")
         if (running || hasSaved) {
             val restore = if (hasSaved) WireGuardProfileStore.loadOriginalProxy(context) else null
             val applied = EngineHost.setAppWireGuardProxy(restore)
             if (applied["ok"] != true && EngineHost.isEngineInitialized()) {
+                if (proxyPort in 1..65535) installBrowserProxy(proxyPort)
                 return@synchronized Json.failure(
                     "APP_WIREGUARD_RESTORE_FAILED",
                     "기존 다운로드 프록시를 복원하지 못했습니다. 다운로드를 시작하지 마세요.")
             }
         }
-        if (!clearBrowserProxy()) return@synchronized Json.failure(
-            "APP_WIREGUARD_BROWSER_PROXY_CLEAR_FAILED",
-            "앱 브라우저 프록시를 안전하게 해제하지 못했습니다. 연결 상태를 유지했습니다.")
         runCatching { NativeTunnel.stop() }
         running = false
         localProxy = null
@@ -265,7 +268,7 @@ object WireGuardController {
     }
 
     fun status(context: Context): Map<String, Any?> {
-        if (isEnabled(context) && (!running || proxyPort == 0)) {
+        if (isEnabled(context) && (!running || proxyPort == 0 || !browserProxyApplied)) {
             val restored = ensureBrowserProxy(context)
             if (restored["ok"] != true) return restored
         }
