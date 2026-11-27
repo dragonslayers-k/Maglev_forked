@@ -19,7 +19,7 @@ object WireGuardController {
     private const val PREFS = "maglev_app_wireguard"
     private const val ENABLED = "enabled"
     private const val USER = "maglev"
-    private const val CLOSED_PROXY = "http://maglev:blocked@127.0.0.1:9"
+    internal const val CLOSED_PROXY = "http://maglev:blocked@127.0.0.1:9"
     private val lock = Any()
     @Volatile private var running = false
     @Volatile private var localProxy: String? = null
