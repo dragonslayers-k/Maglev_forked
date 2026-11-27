@@ -4118,6 +4118,37 @@ mod tests {
     }
 
     #[test]
+    fn engine_session_initializes_with_network_disabled() {
+        let nonce = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_nanos();
+        let root = std::env::temp_dir().join(format!(
+            "maglev-engine-startup-smoke-{}-{nonce}",
+            std::process::id()
+        ));
+        let session_dir = root.join("session");
+        let download_dir = root.join("downloads");
+
+        // Avoid opening a peer listener or contacting DHT/tracker infrastructure in CI.
+        set_network_off(true);
+        let result = MaglevEngine::new(
+            "",
+            session_dir.to_str().expect("session path is UTF-8"),
+            download_dir.to_str().expect("download path is UTF-8"),
+        );
+        set_network_off(false);
+
+        let engine = result.unwrap_or_else(|e| {
+            panic!("native engine startup smoke test failed: {}", e.message)
+        });
+        engine
+            .shutdown()
+            .unwrap_or_else(|e| panic!("native engine shutdown failed: {}", e.message));
+        let _ = std::fs::remove_dir_all(root);
+    }
+
+    #[test]
     fn session_start_error_keeps_busy_port_message_and_surfaces_other_causes() {
         let e = session_start_error("Address already in use");
         assert!(e.message.contains("already in use"));

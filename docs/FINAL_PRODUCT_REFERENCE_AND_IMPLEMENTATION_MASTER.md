@@ -159,3 +159,14 @@ For each entry show name, short role, source link, and optionally license/notice
 ## 7. Latest workflow state at time of this document
 Workflow #647: https://github.com/dragonslayers-k/Maglev_forked/actions/runs/45944019383
 Last checked: JS checks, contract tests, Rust tests, Rust Android arm64 library build all succeeded; **Build APK job was still running at Gradle release APK build**. This is not yet a successful final APK and no artifact should be claimed until the workflow completes and artifact/signing/version checks pass.
+
+
+## 8. #648 실기기 실패 복기 및 후속 구현 (2026-11-27)
+
+- #648 workflow run `45944878988`는 APK 빌드/서명/아티팩트 단계까지 성공했지만, 사용자가 설치 후 확인한 실제 기능은 실패: WireGuard enable에서 `The download engine couldn't start`, PiP 실제 영상 표시/유지 실패, 사이트 동영상 인식 실패. #648은 runtime 기능 완료나 최종본으로 인정하지 않는다.
+- 정확한 오류 문자열은 `native/maglev-core/src/engine.rs`의 `session_start_error()`에서 생성됐다. `Session::new_with_opts`의 구체적인 원인을 generic message로 숨기고 있었다. 후속 코드에서 bounded sanitized native cause를 반환하고 URL user-info를 redact하도록 수정했다. 실제 기기 원인은 다음 진단 메시지/로그에서 확인해야 하며 아직 특정 원인으로 단정하지 않는다.
+- MSE/SourceBuffer 관찰 hook을 `PageScan.kt`에 추가하고 browser note event로 전달한다. fetch/XHR 응답 MIME 또는 manifest/segment URL이 식별되는 경우 기존 Found list/stream path로 들어갈 수 있다. MSE byte capture, arbitrary blob byte extraction, full site extractor coverage는 여전히 미완료다.
+- PiP API에 detected video aspect ratio를 전달하고 Android-supported range로 clamp한다. 이것은 ratio/transition parameter 개선일 뿐, actual WebView video surface continuity, background playback, real device PiP acceptance를 증명하지 않는다.
+- Settings → Information already has a references section; update Barrel Smart Connect and Laya/BitChord source entries and keep each feature status honest.
+- Add native engine session startup smoke test with network disabled to Rust CI. It does not replace Android device validation.
+- **Do not ask the user to reinstall another APK until CI passes and internal validation gates are run.** Never call a build final unless peer handshake + tunneled HTTPS/egress, site media recognition + download, and actual PiP video continuity have evidence.
