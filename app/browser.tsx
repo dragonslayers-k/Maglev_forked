@@ -91,7 +91,8 @@ export default function BrowserScreen({ inTab = false }: { inTab?: boolean }) {
   const { colors, dark } = useTheme();
   const { width: viewportWidth, height: viewportHeight } = useWindowDimensions();
   // Android resizes the activity to the PiP window. Hide browser chrome/overlays there so the video viewport is unobstructed.
-  const pipCompact = viewportHeight < 260 || viewportWidth < 280;
+  // PiP can be resized larger than the old 260dp cutoff on Samsung. Detect the landscape, compact Activity shape too.
+  const pipCompact = viewportWidth > viewportHeight * 1.35 && viewportHeight < 500;
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const router = useRouter();
   const params = useLocalSearchParams<{ url?: string; prefill?: string; open?: string; newTab?: string }>();
@@ -1114,11 +1115,13 @@ export default function BrowserScreen({ inTab = false }: { inTab?: boolean }) {
           }}
         />
 
-        <ListRow
-          title="화면 속 화면(PiP)"
-          subtitle="동영상을 작은 창으로 계속 재생"
-          onPress={() => void enterPictureInPicture()}
-        />
+        {found.some((item) => item.kind === 'video' || item.kind === 'audio') ? (
+          <ListRow
+            title="화면 속 화면(PiP)"
+            subtitle="현재 페이지에서 감지된 영상·음악을 작은 창으로 계속 재생"
+            onPress={() => void enterPictureInPicture()}
+          />
+        ) : null}
         <BookmarkToggle url={page?.url ?? tab?.url ?? ''} title={page?.title ?? tab?.title ?? ''} onDone={() => setMenuOpen(false)} />
         {/^https?:\/\//i.test(page?.url ?? '') ? (
           <ListRow
