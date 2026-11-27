@@ -23,6 +23,6 @@ if (!browser.includes('if (report.mse)') || !browser.includes('onPageNote(mapOf(
   throw new Error('Browser UI event path does not surface MSE detection');
 }
 if (!pipNative.includes('requestedAspectRatio: Double') || !pipNative.includes('ratio.coerceIn(0.42, 2.39)')) throw new Error('Native PiP does not accept/clamp video aspect ratio');
-if (!pipUi.includes('enterBrowserPictureInPicture(aspectRatio)') || !pipUi.includes('item.width! / item.height!')) throw new Error('Browser PiP does not pass detected video aspect ratio');
+if (!pipUi.includes('enterBrowserPictureInPicture(aspectRatio)') || !pipUi.includes('video.width! / video.height!')) throw new Error('Browser PiP does not pass detected video aspect ratio');
 if (!pipTypes.includes('enterBrowserPictureInPicture(aspectRatio: number)')) throw new Error('PiP aspect ratio is missing from native TypeScript contract');
 console.log('PASS: MSE observation and video-aspect PiP contract');
