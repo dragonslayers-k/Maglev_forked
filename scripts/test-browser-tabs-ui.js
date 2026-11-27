@@ -126,7 +126,7 @@ check('the test is chained after test-browser-tabs.js', /node scripts\/test-brow
 const tabRoute = read('app/(tabs)/browse.tsx');
 check('in the tab bar the screen skips the bottom inset (the tab bar already pads for it)', /<BrowserScreen inTab \/>/.test(tabRoute) && /pipCompact \? \[\] : inTab \? \['top', 'left', 'right'\] : \['top', 'left', 'right', 'bottom'\]/.test(scr));
 check('PiP compact viewport hides browser chrome and found-file overlays', /pipRequested && \(viewportWidth < screenWidth \* 0\.9 \|\| !appForeground\)/.test(scr) && /!pipCompact && \(findOpen \?/.test(scr) && /!pipCompact && hasPage \? \(/.test(scr));
-check('PiP request waits for sheet dismissal and passes the detected aspect ratio', /afterSheetCloses\(\(\) => \{\s*const video = found\.find[\s\S]*?void maglevEngine\.enterBrowserPictureInPicture\(aspectRatio\)/.test(scr));
+check('PiP request waits for sheet dismissal and passes the largest detected aspect ratio', /afterSheetCloses\(\(\) => \{\s*const videos = found\.filter[\s\S]*?videos\.sort\(\(a, b\) => \(\(b\.width \?\? 0\) \* \(b\.height \?\? 0\)\) - \(\(a\.width \?\? 0\) \* \(a\.height \?\? 0\)\)\)[\s\S]*?const video = videos\[0\][\s\S]*?void maglevEngine\.enterBrowserPictureInPicture\(aspectRatio\)/.test(scr));
 check('PiP keeps the active WebView alive during background transition', /active=\{focused && \(appForeground \|\| pipRequested\) && t\.id === activeId\}/.test(scr));
 check('PiP compact state resets when the Activity returns to full width', /setTimeout\(\(\) => setPipRequested\(false\), 5000\)/.test(scr));
 
