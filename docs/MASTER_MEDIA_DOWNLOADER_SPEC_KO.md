@@ -179,3 +179,18 @@ CI artifact in #707 was debug-signed. Do not distribute it as Release. Version s
 ## 10. Source reference and full research report
 
 The detailed research report delivered separately is the supporting research record. This file is the shorter implementation baseline and current acceptance authority. Update this document and Issue #8 together whenever status changes.
+
+
+## 11. Implementation update — native player first (2026-11-27)
+
+A native playback path has been added on the active PR #1 branch, pending exact-commit CI:
+- AndroidX Media3 1.11.1 dependencies: ExoPlayer, UI, HLS, DASH, OkHttp DataSource.
+- Native MaglevMediaPlayerActivity and typed Expo bridge; direct URL, content/file URI, HLS and DASH source factory.
+- Browser long-press media menu adds “앱에서 재생” for resolvable direct/HLS/DASH URLs. Request cookies, Referer/Origin and page User-Agent are forwarded when available.
+- Native PiP uses actual Media3 player/video size, activity PiP and auto-enter support. This is distinct from WebView's existing fullscreen-PiP path.
+- Media3 requests use the app-local WireGuard authenticated proxy when enabled; enabled-but-not-ready returns a closed proxy instead of direct routing.
+- This is a code-level prototype. No Galaxy playback/PiP test has passed. Background MediaSession service, media queue, MSE byte capture, and browser-native capture remain unimplemented.
+- CI #720 typecheck failed due two syntax mistakes; #722 player source contract failed because the test expected a different proxy call form; both were corrected. #723 JS/contract jobs passed but the run was cancelled by the next push before Rust/Android/APK completion. CI #724 for the latest commit is in progress.
+- Do not mark playback/PiP complete until a test file and a direct URL/HLS/DASH are played on Galaxy, PiP video remains visible, return-to-app works, and app-local WG egress is verified separately.
+
+Media3 version reference: https://developer.android.com/jetpack/androidx/releases/media3 (stable 1.11.1 as checked 2026-11-27).
