@@ -6,6 +6,7 @@ import android.util.Base64
 import com.maglev.engine.EngineHost
 import com.maglev.engine.util.Json
 import java.security.SecureRandom
+import org.json.JSONObject
 
 /** App-local HTTP(S) download tunnel; no VpnService and no device route changes. */
 object WireGuardController {
@@ -145,6 +146,27 @@ object WireGuardController {
         localProxy = url
         running = true
         mapOf("ok" to true, "proxy_url" to url)
+    }
+
+    /** Forces traffic through the userspace tunnel and reports the observed exit country/IP. */
+    fun testConnection(): Map<String, Any?> {
+        if (!running) return Json.failure("APP_WIREGUARD_NOT_RUNNING", "WireGuard 터널이 실행 중이 아닙니다.")
+        return try {
+            val raw = NativeTunnel.checkConnection()
+            val result = JSONObject(raw)
+            if (result.optBoolean("ok")) mapOf(
+                "ok" to true,
+                "ip" to result.optString("ip"),
+                "country" to result.optString("country"),
+                "country_code" to result.optString("country_code"),
+                "message" to "터널을 통과한 HTTPS 연결이 확인되었습니다."
+            ) else Json.failure(
+                "APP_WIREGUARD_EGRESS_FAILED",
+                "WireGuard 원격 연결 또는 터널을 통한 인터넷 접속을 확인하지 못했습니다. Endpoint, AllowedIPs, DNS와 서버 상태를 확인하세요."
+            )
+        } catch (_: Throwable) {
+            Json.failure("APP_WIREGUARD_EGRESS_FAILED", "WireGuard 연결 테스트에 실패했습니다. Endpoint와 서버 상태를 확인하세요.")
+        }
     }
 
     fun isRunning(): Boolean = running
