@@ -125,8 +125,8 @@ check('the test is chained after test-browser-tabs.js', /node scripts\/test-brow
 
 const tabRoute = read('app/(tabs)/browse.tsx');
 check('in the tab bar the screen skips the bottom inset (the tab bar already pads for it)', /<BrowserScreen inTab \/>/.test(tabRoute) && /pipCompact \? \[\] : inTab \? \['top', 'left', 'right'\] : \['top', 'left', 'right', 'bottom'\]/.test(scr));
-check('PiP compact viewport hides browser chrome and found-file overlays', /viewportWidth > viewportHeight \* 1\.35/.test(scr) && /!pipCompact && \(findOpen \?/.test(scr) && /!pipCompact && hasPage \? \(/.test(scr));
-check('PiP request waits for sheet dismissal', /afterSheetCloses\(\(\) => \{\s*void maglevEngine\.enterBrowserPictureInPicture\(\)/.test(scr));
+check('PiP compact mode is requested and activates on resized/background viewport; chrome and found overlays are hidden', /pipCompact = pipRequested && \(viewportWidth < screenWidth \* 0\.9 \|\| !appForeground\)/.test(scr) && /!pipCompact && \(findOpen \?/.test(scr) && /!pipCompact && hasPage \? \(/.test(scr));
+check('PiP native request is deferred until sheets dismiss, then uses selected video aspect ratio', /afterSheetCloses\(\(\) => \{[\s\S]{0,500}enterBrowserPictureInPicture\(aspectRatio\)/.test(scr) && /const aspectRatio = video \? \(video\.width! \/ video\.height!\) : 16 \/ 9/.test(scr));
 
 // 24.11 history from a blank tab
 const recent = read('components/browser/StartPage.tsx'); // the Recent list now lives in StartPage (RecentHistory.tsx is gone)
