@@ -186,6 +186,13 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
     private var previousOrientation: Int = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
     /** Set when the browser menu requests PiP while the page video is still inline. */
     private var pipPendingFromBrowserMenu = false
+    /** PiP menu request completes only after WebChromeClient actually attaches the fullscreen surface. */
+    private var pipRequestResult: ((Boolean) -> Unit)? = null
+    private fun resolvePipRequest(success: Boolean) {
+        val result = pipRequestResult ?: return
+        pipRequestResult = null
+        result(success)
+    }
 
     private val bridge = PageScanBridge { json -> onScanReport(json) }
 
@@ -206,6 +213,8 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
     private val youtubeAdScript = """
       (function(){
         var sid='__mg_yt_ads';
+        if(window.__mgYtAdObserverInstalled)return;
+        window.__mgYtAdObserverInstalled=true;
         var css='ytd-display-ad-renderer,ytd-promoted-sparkles-web-renderer,ytd-in-feed-ad-layout-renderer,ytd-ad-slot-renderer,ytd-video-masthead-ad-v3,ytd-banner-promo-renderer,ytd-promoted-video-renderer,ytd-action-companion-ad-renderer,ytd-companion-slot-renderer,#player-ads,#masthead-ad,.ytp-ad-module,.ytp-ad-overlay-container,.ytp-ad-player-overlay,.ytp-ad-image-overlay,.ytp-ad-text-overlay,.ytp-ad-overlay-slot{display:none!important}';
         function install(){if(document.getElementById(sid))return;var root=document.head||document.documentElement;if(!root)return;var s=document.createElement('style');s.id=sid;s.textContent=css;root.appendChild(s);}
         function skip(){var p=document.querySelector('.html5-video-player.ad-showing');if(!p)return;var bs=p.querySelectorAll('.ytp-ad-skip-button,.ytp-ad-skip-button-modern,button[aria-label*="Skip ad" i]');for(var i=0;i<bs.length;i++){var b=bs[i];if(b&&b.getClientRects().length&&!b.disabled&&b.getAttribute('aria-disabled')!=='true'){try{b.click();return;}catch(e){}}}}
@@ -1565,8 +1574,15 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
             activeVideoAspectRatio = requestedAspectRatio
             activeVideoAspectRatioKnown = true
         }
+        pipRequestResult?.invoke(false)
+        pipRequestResult = onResult
         pipPendingFromBrowserMenu = true
-        mainHandler.postDelayed({ if (pipPendingFromBrowserMenu && !fullscreenVideoActive) pipPendingFromBrowserMenu = false }, 5_000L)
+        mainHandler.postDelayed({
+            if (pipRequestResult != null && !fullscreenVideoActive) {
+                pipPendingFromBrowserMenu = false
+                resolvePipRequest(false)
+            }
+        }, 5_000L)
         val script = """
             (function() {
               var videos = Array.prototype.slice.call(document.querySelectorAll('video'));
@@ -1591,9 +1607,15 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
         webView.evaluateJavascript(script) { raw ->
             val ratio = raw?.trim()?.removeSurrounding("\"")?.toDoubleOrNull()
             val accepted = ratio != null && ratio.isFinite() && ratio in 0.42..2.39
-            if (accepted) { activeVideoAspectRatio = ratio!!; activeVideoAspectRatioKnown = true }
-            else pipPendingFromBrowserMenu = false
-            onResult(accepted)
+            if (accepted) {
+                activeVideoAspectRatio = ratio!!
+                activeVideoAspectRatioKnown = true
+                // Do not report success yet: requestFullscreen() can be rejected or ignored.
+                // Success is resolved only from onShowCustomView after the surface is attached.
+            } else {
+                pipPendingFromBrowserMenu = false
+                resolvePipRequest(false)
+            }
         }
     }
 
@@ -1651,6 +1673,7 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
             controller.hide(WindowInsetsCompat.Type.systemBars())
             if (pipPendingFromBrowserMenu) {
                 pipPendingFromBrowserMenu = false
+                resolvePipRequest(true)
                 // Do not enter PiP in the same frame as onShowCustomView. WebView's fullscreen
                 // video surface is attached/reparented here; entering immediately can snapshot
                 // the old SurfaceView geometry (black PiP with the video left at the bottom).
