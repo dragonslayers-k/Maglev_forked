@@ -53,9 +53,15 @@ object WireGuardController {
             // Start it from the saved config before reading or replacing its proxy settings.
             if (!EngineHost.isEngineInitialized()) {
                 val engineStarted = EngineHost.ensureStarted()
-                if (engineStarted["ok"] != true) return@synchronized Json.failure(
-                    "APP_WIREGUARD_ENGINE_START_FAILED",
-                    engineStarted["message"]?.toString() ?: "다운로드 엔진을 시작하지 못했습니다.")
+                if (engineStarted["ok"] != true) {
+                    val engineCode = engineStarted["code"]?.toString()?.take(80) ?: "UNKNOWN"
+                    val engineMessage = engineStarted["message"]?.toString()?.take(500)
+                        ?: "다운로드 엔진을 시작하지 못했습니다."
+                    Log.e("MaglevWireGuard", "EngineHost.ensureStarted failed: code=$engineCode message=$engineMessage")
+                    return@synchronized Json.failure(
+                        "APP_WIREGUARD_ENGINE_START_FAILED",
+                        "다운로드 엔진 초기화 실패 [$engineCode]: $engineMessage")
+                }
             }
             if (EngineHost.isEngineInitialized()) {
                 val paused = EngineHost.pauseTorrentsForAppWireGuard()
