@@ -67,7 +67,7 @@ export default function AppWireGuardSettings() {
       const result = await maglevEngine.testAppWireGuardConnection();
       if (result.ok) {
         Alert.alert('WireGuard 연결 확인',
-          '실제 HTTPS 요청이 WireGuard 터널을 통과했습니다.\n\n출구 국가: ' + (result.country || '확인 불가') + ' (' + (result.country_code || '?') + ')\n출구 IP: ' + (result.ip || '확인 불가') + '\n\n이 검사는 앱 내부 WireGuard 프록시의 실제 HTTPS 출구를 확인합니다.');
+          '실제 인증된 다운로드 HTTP CONNECT 프록시를 통한 HTTPS 요청이 성공했습니다.\n\n출구 국가: ' + (result.country || '확인 불가') + ' (' + (result.country_code || '?') + ')\n출구 IP: ' + (result.ip || '확인 불가') + '\n\n앱 브라우저에는 같은 loopback 프록시가 설정되어 있습니다. 브라우저 연결은 실제 페이지에서 별도로 확인할 수 있습니다.');
       } else {
         Alert.alert('WireGuard 연결 확인 실패', result.message || '원격 연결 또는 터널 인터넷 접속을 확인하지 못했습니다.');
       }
@@ -105,7 +105,7 @@ export default function AppWireGuardSettings() {
         />
         <ListRow
           title={testing ? '실제 터널 연결 확인 중…' : '실제 터널 연결 테스트'}
-          subtitle="다운로더와 앱 브라우저가 같은 WireGuard 출구를 사용하는지 확인합니다."
+          subtitle="실제 인증된 다운로드 HTTP CONNECT 프록시를 통해 HTTPS 출구 IP·국가를 확인합니다. 브라우저 프록시 적용 여부는 별도 상태로 표시합니다."
           onPress={() => { void testConnection(); }}
         />
         <FocusAnchor anchorKey={rowKey("앱 브라우저 + HTTP/HTTPS 다운로드")}>
