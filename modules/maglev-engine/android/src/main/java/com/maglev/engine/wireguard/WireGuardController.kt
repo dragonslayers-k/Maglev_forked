@@ -9,9 +9,14 @@ import androidx.webkit.WebViewFeature
 import com.maglev.engine.EngineHost
 import com.maglev.engine.util.Json
 import java.security.SecureRandom
+import java.net.InetSocketAddress
+import java.net.Proxy
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executor
 import java.util.concurrent.TimeUnit
+import okhttp3.Credentials
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import org.json.JSONObject
 
 /** App-local HTTP(S) download tunnel; no VpnService and no device route changes. */
@@ -277,26 +282,57 @@ object WireGuardController {
     }
 
     /** Forces traffic through the userspace tunnel and reports the observed exit country/IP. */
+    /** Verifies the actual authenticated HTTP CONNECT proxy used by app downloads. */
     fun testConnection(context: Context): Map<String, Any?> {
         if (!isEnabled(context)) return Json.failure("APP_WIREGUARD_NOT_ENABLED", "WireGuard를 먼저 켜세요.")
-        // Recreate the userspace tunnel after process death before attempting the probe.
         val prepared = prepareDownload(context)
         if (prepared["ok"] != true) return prepared
+        val port = proxyPort
+        val password = proxyPassword
+        if (port !in 1..65535 || password.isNullOrEmpty()) return Json.failure(
+            "APP_WIREGUARD_PROXY_NOT_READY", "앱 WireGuard 프록시가 준비되지 않았습니다.")
         return try {
-            val raw = NativeTunnel.checkConnection()
-            val result = JSONObject(raw)
-            if (result.optBoolean("ok")) mapOf(
-                "ok" to true,
-                "ip" to result.optString("ip"),
-                "country" to result.optString("country"),
-                "country_code" to result.optString("country_code"),
-                "message" to "터널을 통과한 HTTPS 연결이 확인되었습니다."
-            ) else Json.failure(
-                "APP_WIREGUARD_EGRESS_FAILED",
-                "WireGuard 원격 연결 또는 터널을 통한 인터넷 접속을 확인하지 못했습니다. Endpoint, AllowedIPs, DNS와 서버 상태를 확인하세요."
-            )
+            val proxy = Proxy(Proxy.Type.HTTP, InetSocketAddress("127.0.0.1", port))
+            val client = OkHttpClient.Builder()
+                .proxy(proxy)
+                .proxyAuthenticator { _, response ->
+                    if (response.request.header("Proxy-Authorization") != null) null
+                    else response.request.newBuilder()
+                        .header("Proxy-Authorization", Credentials.basic(USER, password))
+                        .build()
+                }
+                .connectTimeout(15, TimeUnit.SECONDS)
+                .readTimeout(15, TimeUnit.SECONDS)
+                .callTimeout(25, TimeUnit.SECONDS)
+                .build()
+            val request = Request.Builder()
+                .url("https://ipwho.is/")
+                .header("Accept", "application/json")
+                .build()
+            client.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) return Json.failure(
+                    "APP_WIREGUARD_PROXY_EGRESS_FAILED",
+                    "WireGuard 다운로드 프록시 HTTPS 요청이 HTTP ${response.code}로 실패했습니다.")
+                val body = response.body?.string().orEmpty()
+                val result = JSONObject(body)
+                val ip = result.optString("ip")
+                val country = result.optString("country")
+                val countryCode = result.optString("country_code")
+                if (!result.optBoolean("success") || ip.isBlank() || countryCode.isBlank()) return Json.failure(
+                    "APP_WIREGUARD_PROXY_EGRESS_FAILED",
+                    "WireGuard 프록시 응답에서 출구 IP와 국가를 확인하지 못했습니다.")
+                mapOf(
+                    "ok" to true,
+                    "ip" to ip,
+                    "country" to country,
+                    "country_code" to countryCode,
+                    "message" to "인증된 로컬 HTTP CONNECT 프록시를 통한 HTTPS 요청이 성공했습니다."
+                )
+            }
         } catch (_: Throwable) {
-            Json.failure("APP_WIREGUARD_EGRESS_FAILED", "WireGuard 연결 테스트에 실패했습니다. Endpoint와 서버 상태를 확인하세요.")
+            Json.failure(
+                "APP_WIREGUARD_PROXY_EGRESS_FAILED",
+                "실제 앱 다운로드 프록시를 통한 HTTPS 요청에 실패했습니다. peer handshake, Endpoint, AllowedIPs와 DNS를 확인하세요.")
         }
     }
 
