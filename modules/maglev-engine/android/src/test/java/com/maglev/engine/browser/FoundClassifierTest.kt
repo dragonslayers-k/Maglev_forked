@@ -83,6 +83,14 @@ class FoundClassifierTest {
         assertNull(net("https://cdn.example.com/stream/12345", accept = "*/*", range = true))
     }
 
+    @Test fun networkRecognizesExplicitMseMediaEndpointSignals() {
+        assertEquals("video", net("https://cdn.example.com/api/chunk?id=4&mime=video%2Fmp4")!!.kind)
+        assertEquals("audio", net("https://cdn.example.com/videoplayback?mime=audio%2Fwebm")!!.kind)
+        assertEquals("video", net("https://cdn.example.com/get?type=video&token=abc")!!.kind)
+        assertNull(net("https://cdn.example.com/api/chunk?id=4&mime=application%2Fjson"))
+        assertNull(net("https://cdn.example.com/api/chunk?id=4"))
+    }
+
     @Test fun networkSkipsBlobDataAndOtherSchemes() {
         assertNull(net("blob:https://example.com/3f2a"))
         assertNull(net("data:video/mp4;base64,AAAA"))
