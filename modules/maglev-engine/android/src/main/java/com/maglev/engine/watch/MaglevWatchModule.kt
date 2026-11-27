@@ -35,7 +35,7 @@ class MaglevWatchModule : Module() {
                 // surface until their fullscreen control is invoked. Request that transition from
                 // the active WebView; showFullscreen will enter PiP after measuring the video ratio.
                 activity.runOnUiThread {
-                    MaglevBrowserView.requestFullscreenVideoForPip { accepted ->
+                    MaglevBrowserView.requestFullscreenVideoForPip(requestedAspectRatio) { accepted ->
                         if (accepted) {
                             promise.resolve(mapOf("ok" to true, "pending" to true))
                         } else {
