@@ -65,7 +65,7 @@
 9. MPMux 비교 결과 static Range/HLS VOD는 기존 엔진을 재사용하고, HLS Live 및 MediaSource byte capture를 신규 갭으로 분리했습니다.
 10. 브라우저의 blob/DRM/보호 스트림 거절 시 PC MPMux 안내를 제공하되, 비암호화 MSE/HLS만 대상으로 하고 DRM 우회 불가를 한국어로 고지하도록 수정 중입니다.
 
-아직 최종 APK나 실기기 기능 합격을 선언하지 않습니다. 2026-11-27 현재 PR #1 HEAD `5fb9af93c13f7397f745639f2b9776ece5eaae20`의 Actions #621은 전체 CI와 APK 빌드에 성공했으며 `apks` artifact가 생성되었습니다(artifact 59,141,418 bytes). 이것은 빌드 성공일 뿐, Galaxy 기능 승인이나 최신 PR #7 변경의 APK를 의미하지 않습니다. PR #7의 Actions #706은 새 WireGuard Go 통합 테스트 `TestConcurrentTrafficAndLifecycle` 2분 timeout으로 실패했고 APK 빌드가 skip됐습니다. 테스트 부하/Keep-Alive를 조정한 PR #9 commit `2ed8d64`의 Actions #707은 Go 통합 테스트·JS checks·contract tests가 통과했고 나머지 Rust tests/native build가 진행 중인 시점입니다. 사용자가 설치했던 #594의 WireGuard, PiP, 미디어 감지/다운로드 실패 보고는 최신 소스에서 실기기 재검증되지 않았습니다. HLS Live, 실제 MSE byte capture, 전체 한국어화 및 Galaxy E2E는 여전히 미완료/미승인입니다.
+**2026-11-27 최신 사용자 검증: CI #707은 성공했지만 설치 APK의 기능은 불합격입니다.** 사용자는 브라우저 녹화 미지원 안내, 직접 URL/HLS/DASH 수동 경로만 제공, PiP 미작동, 미디어 재생 실패, WireGuard 개선 없음으로 보고했습니다. CI #707 APK는 ARM64 63,671,711 bytes, SHA-256 `5de8fbdfab25e5bb5de55001b07cbd5b331ae9526c2489f497df304701fdbf9d`; debug certificate이며 정식 Release가 아닙니다. CI success는 빌드/자동 테스트 결과일 뿐 Galaxy 기능 승인으로 계산하지 않습니다. MSE 감지 hook은 미디어 byte capture를 수행하지 않습니다. PiP는 WebView fullscreen/player surface에 의존하며 universal playback/PiP 합격 증거가 없습니다.
 
 ## 빌드 및 테스트
 
@@ -96,6 +96,8 @@
 - [원본 Maglev 월간 업데이트 정책](docs/UPSTREAM_SYNC_POLICY_KO.md)
 - [MPMux 기능 벤치마크 및 Maglev 이식 설계](docs/MPMUX_BENCHMARK_INTEGRATION_KO.md)\n- [기능 보존·다중 엔진 통합·보호 미디어 처리 기준](docs/FEATURE_PRESERVATION_AND_PROTECTED_MEDIA_KO.md)
 - [통합 개발 기준 및 현재 검증 게이트](docs/INTEGRATED_PRODUCT_PLAN_KO.md)
+- [종합 미디어 다운로더 실행 기준서](docs/MASTER_MEDIA_DOWNLOADER_SPEC_KO.md)
+- [CI #707 / Galaxy 기능 실패 분석 및 저장소 정리](docs/CI707_RUNTIME_FAILURE_TRIAGE_KO.md)
 
 ## 라이선스와 출처
 
