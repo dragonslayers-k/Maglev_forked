@@ -361,6 +361,17 @@ mod tests {
     }
 
     #[test]
+    fn http_download_proxy_is_separate_from_torrent_proxy_and_applies_live() {
+        let base = NativeConfig::default();
+        let mut next = base.clone();
+        next.http_download_proxy_url = Some("http://maglev:token@127.0.0.1:36163".into());
+        assert!(!base.restart_required(&next));
+        assert!(NativeConfig::from_json(
+            r#"{"proxy_url":"socks5://user:pass@127.0.0.1:9050","http_download_proxy_url":"http://maglev:token@127.0.0.1:36163"}"#
+        ).is_ok());
+    }
+
+    #[test]
     fn restart_required_only_for_session_level_fields() {
         let base = NativeConfig::default();
         let mut c = base.clone();
