@@ -101,3 +101,13 @@ For each change report: exact baseline/head SHA, files changed, reason, preserve
 
 ## 9. Next immediate action
 Start R1 against the recovery branch snapshot and #707 reference: create a file-by-file change ledger for all 230 PR #1 files and a commit-level ledger for the 740 listed commits; identify the minimal set of known-good code paths and exact regressions. Do not write application code until this ledger and golden tests exist.
+
+## 10. Latest user-provided Galaxy screen recording — direct evidence
+
+Materialized and inspected the Library video `Screen_Recording_20261127_183013_Maglev+.mp4`:
+- Duration: 22.274156 seconds; 1080×2340.
+- SHA-256: `12f931f2c9577ab56a03094bd35856382d80a43a85c42dfb7d2f1ea9b9243f2d`.
+- The recording shows YouTube page in the app browser and the media candidate tray. During PiP transition around 16 s, the video appears in an oversized black PiP surface with large black regions and incorrect content layout. At around 18–20 s on the launcher, the PiP surface is black with no visible video frame. This is direct evidence that the recorded build fails video PiP continuity; it is not a pass.
+- A user-library ARM64 APK `app-arm64-v8a-release(1).apk` was also materialized: 63,655,235 bytes, SHA-256 `31e48a24219bad8b3d56f9aef4e8f4b44a11369174cf7618b216da9f1a1c8b66`. Its run/commit identity was not independently established from the APK, so do not label it as #737 or any other CI run without matching metadata.
+
+This screen recording should be attached to the PiP golden test as a failing reference. Acceptance requires video frames continuing in the PiP window on home screen, correct aspect/crop, no black surface, rotate/return, and a playback state tied to the same active video.
