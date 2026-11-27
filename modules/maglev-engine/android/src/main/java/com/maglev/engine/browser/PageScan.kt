@@ -7,7 +7,7 @@ import org.json.JSONObject
 data class ScanEntry(val url: String, val type: String, val width: Int, val height: Int, val mime: String?)
 
 /** What one report from the page holds. */
-data class ScanReport(val entries: List<ScanEntry>, val eme: Boolean, val blob: Boolean)
+data class ScanReport(val entries: List<ScanEntry>, val eme: Boolean, val blob: Boolean, val mse: Boolean)
 
 /**
  * The page scan (docs/NATIVE_CONTRACT.md section 24.3 rule 2): the script we inject and the parser for what it sends back.
@@ -35,7 +35,7 @@ object PageScan {
   if (!B) return;
   if (window.__maglevN === N) { if (window.__maglevScanNow) window.__maglevScanNow(false); return; }
   window.__maglevN = N;
-  var sent = {}, count = 0, MAX = 500, timer = 0, last = 0, emeSent = false, blobSeen = false, blobSent = false, streamSeen = false;
+  var sent = {}, count = 0, MAX = 500, timer = 0, last = 0, emeSent = false, blobSeen = false, blobSent = false, streamSeen = false, mseSeen = false, mseSent = false;
   var FILE = /\.(pdf|epub|mobi|djvu|docx?|xlsx?|pptx?|od[tsp]|txt|rtf|csv|md|zip|rar|7z|tar|gz|bz2|xz|iso|apk|exe|msi|dmg|bat|cmd|scr|torrent|srt|vtt|ass|mp4|m4v|webm|mkv|mov|avi|mp3|m4a|aac|flac|ogg|opus|wav|m3u8|mpd)([?#]|${'$'})/i;
   function post(o){ try { o.n = N; B.report(JSON.stringify(o)); } catch (e) {} }
   function abs(u){ try { return new URL(u, document.baseURI).href; } catch (e) { return ''; } }
@@ -92,7 +92,8 @@ object PageScan {
   function reportResource(u, mime){
     var list = [];
     resourceCandidate(list, u, mime);
-    if (list.length) post({ items: list });
+    if (list.length) post({ items: list, mse: mseSeen && !mseSent });
+    if (list.length && mseSeen) mseSent = true;
   }
   function best(s){
     var out = '', bw = 0;
@@ -164,13 +165,33 @@ object PageScan {
     }
     var blob = blobSeen && !blobSent;
     if (blob) blobSent = true;
-    if (list.length || blob) post({ items: list, blob: blob });
+    var mse = mseSeen && !mseSent;
+    if (mse) mseSent = true;
+    if (list.length || blob || mse) post({ items: list, blob: blob, mse: mse });
   }
   function schedule(){
     if (timer) return;
     timer = setTimeout(scan, Math.max(0, 1000 - (Date.now() - last)));
   }
   window.__maglevScanNow = function(reset){ if (reset) { sent = {}; count = 0; } if (timer) { clearTimeout(timer); timer = 0; } scan(); };
+  // Observe MSE without consuming or replacing media bytes.
+  function markMse(){ if (mseSeen) return; mseSeen = true; schedule(); }
+  try {
+    var ms = window.MediaSource && window.MediaSource.prototype;
+    if (ms && ms.addSourceBuffer && !ms.addSourceBuffer.__mg) {
+      var nativeAddSourceBuffer = ms.addSourceBuffer;
+      var wrappedAddSourceBuffer = function(type){ markMse(); return nativeAddSourceBuffer.apply(this, arguments); };
+      wrappedAddSourceBuffer.__mg = 1;
+      ms.addSourceBuffer = wrappedAddSourceBuffer;
+    }
+    var vs = window.SourceBuffer && window.SourceBuffer.prototype;
+    if (vs && vs.appendBuffer && !vs.appendBuffer.__mg) {
+      var nativeAppendBuffer = vs.appendBuffer;
+      var wrappedAppendBuffer = function(data){ markMse(); return nativeAppendBuffer.apply(this, arguments); };
+      wrappedAppendBuffer.__mg = 1;
+      vs.appendBuffer = wrappedAppendBuffer;
+    }
+  } catch(e) {}
   // Observe script-initiated media requests without consuming or replacing their response bodies.
   try {
     var nativeFetch = window.fetch;
@@ -229,6 +250,8 @@ object PageScan {
   try {
     document.addEventListener('encrypted', eme, true);
     document.addEventListener('loadedmetadata', schedule, true);
+    document.addEventListener('playing', schedule, true);
+    document.addEventListener('sourceopen', markMse, true);
     window.addEventListener('load', schedule);
     if (document.documentElement) new MutationObserver(schedule).observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ['src', 'href', 'srcset', 'data-src', 'data-url', 'data-video', 'data'] });
   } catch (e) {}
@@ -276,7 +299,7 @@ object PageScan {
                 out.add(ScanEntry(url, type, clamp(e.optInt("w", 0)), clamp(e.optInt("h", 0)), mime))
             }
         }
-        return ScanReport(out, o.optBoolean("eme", false), o.optBoolean("blob", false))
+        return ScanReport(out, o.optBoolean("eme", false), o.optBoolean("blob", false), o.optBoolean("mse", false))
     }
 
     /** Turns a scan entry into an item, or null when it doesn't qualify. */
