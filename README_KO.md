@@ -31,7 +31,7 @@
 
 - 표시 이름: **Maglev+**
 - Android applicationId: `com.maglev.plus` (원본 `com.maglev`과 다름)
-- Android versionCode: `34` / app version: `0.34`
+- Android versionCode: `33` / app version: `0.33` (현재 `app.json` / `package.json` 기준)
 - 원본 Maglev과 별도 설치·데이터 공간을 사용합니다. 원본 앱을 덮어쓰지 않습니다.
 - Release APK는 포크의 전용 서명 키로 서명하여 업데이트 체인을 분리합니다. CI의 테스트 APK는 debug 서명일 수 있으므로 정식 배포 APK와 구분하십시오.
 
