@@ -11,6 +11,7 @@ export default function AppWireGuardSettings() {
   const [hasProfile, setHasProfile] = useState(false);
   const [running, setRunning] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [testing, setTesting] = useState(false);
 
   const refresh = useCallback(async () => {
     const result = await maglevEngine.getAppWireGuardStatus();
@@ -46,6 +47,24 @@ export default function AppWireGuardSettings() {
     }
   }, [refresh]);
 
+  const testConnection = useCallback(async () => {
+    if (testing || busy) return;
+    setTesting(true);
+    try {
+      const result = await maglevEngine.testAppWireGuardConnection();
+      if (result.ok) {
+        Alert.alert('WireGuard 연결 확인',
+          '실제 HTTPS 요청이 WireGuard 터널을 통과했습니다.\n\n출구 국가: ' + (result.country || '확인 불가') + ' (' + (result.country_code || '?') + ')\n출구 IP: ' + (result.ip || '확인 불가') + '\n\n이 검사는 다운로드 프록시 연결 확인이며, 브라우저 전체 트래픽이 터널링된다는 뜻은 아닙니다.');
+      } else {
+        Alert.alert('WireGuard 연결 확인 실패', result.message || '원격 연결 또는 터널 인터넷 접속을 확인하지 못했습니다.');
+      }
+    } catch (error) {
+      Alert.alert('WireGuard 연결 확인 실패', error instanceof Error ? error.message : '터널 연결을 확인하지 못했습니다.');
+    } finally {
+      setTesting(false);
+    }
+  }, [busy, testing]);
+
   const changeEnabled = useCallback(async (value: boolean) => {
     setBusy(true);
     try {
@@ -72,6 +91,11 @@ export default function AppWireGuardSettings() {
           onPress={() => { if (!busy) void importProfile(); }}
         />
         <ListRow
+        <ListRow
+          title={testing ? '실제 터널 연결 확인 중…' : '실제 터널 연결 테스트'}
+          subtitle="외부 HTTPS 요청으로 출구 국가·IP와 원격 연결을 확인합니다."
+          onPress={() => { void testConnection(); }}
+        />
           title="HTTP/HTTPS 다운로드에 사용"
           subtitle={enabled ? (running ? '로컬 프록시 실행 중 · 원격 peer handshake 미확인' : '앱 내부 터널을 시작하는 중') : '꺼짐'}
           accessory={<Toggle value={enabled} onValueChange={(v) => void changeEnabled(v)} accessibilityLabel="앱 내부 WireGuard" />}
