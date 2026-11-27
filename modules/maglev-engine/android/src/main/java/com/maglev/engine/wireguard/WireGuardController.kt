@@ -26,6 +26,7 @@ object WireGuardController {
     @Volatile private var proxyPort: Int = 0
     @Volatile private var proxyUsername: String? = null
     @Volatile private var proxyPassword: String? = null
+    @Volatile private var browserProxyApplied: Boolean = false
 
     fun isEnabled(context: Context): Boolean =
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean(ENABLED, false)
@@ -63,9 +64,13 @@ object WireGuardController {
                     WireGuardProfileStore.loadOriginalProxy(context)
                 } else null
                 if (EngineHost.isEngineInitialized()) EngineHost.setAppWireGuardProxy(savedProxy)
+                clearBrowserProxy()
                 runCatching { NativeTunnel.stop() }
                 running = false
                 localProxy = null
+                proxyPort = 0
+                proxyUsername = null
+                proxyPassword = null
                 WireGuardProfileStore.clearOriginalProxy(context)
                 context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putBoolean(ENABLED, false).apply()
                 return@synchronized started
@@ -195,7 +200,9 @@ object WireGuardController {
                 Executor { command -> command.run() },
                 Runnable { applied = true; latch.countDown() },
             )
-            latch.await(5, TimeUnit.SECONDS) && applied
+            val result = latch.await(5, TimeUnit.SECONDS) && applied
+            browserProxyApplied = result
+            result
         } catch (_: Throwable) {
             false
         }
@@ -210,7 +217,9 @@ object WireGuardController {
                 Executor { command -> command.run() },
                 Runnable { cleared = true; latch.countDown() },
             )
-            latch.await(5, TimeUnit.SECONDS) && cleared
+            val result = latch.await(5, TimeUnit.SECONDS) && cleared
+            if (result) browserProxyApplied = false
+            result
         } catch (_: Throwable) {
             false
         }
@@ -218,14 +227,12 @@ object WireGuardController {
 
     /** Credentials are returned only for this app's loopback proxy challenge. */
     fun browserProxyCredentials(host: String, realm: String): Pair<String, String>? {
-        if (!running || !isEnabledFromProcess() || realm != "App WireGuard") return null
+        if (!running || !browserProxyApplied || realm != "App WireGuard") return null
         if (host != "127.0.0.1" && host != "localhost") return null
         val user = proxyUsername ?: return null
         val pass = proxyPassword ?: return null
         return user to pass
     }
-
-    private fun isEnabledFromProcess(): Boolean = running
 
     /** Rehydrates the process-local tunnel/proxy after process death when the saved switch is on. */
     fun ensureBrowserProxy(context: Context): Map<String, Any?> {
@@ -267,6 +274,7 @@ object WireGuardController {
             "enabled" to isEnabled(context),
             "has_profile" to hasProfile(context),
             "running" to running,
+            "browser_proxy_applied" to browserProxyApplied,
             "peer_handshake" to false,
             "peer_rx_bytes" to 0L,
             "peer_tx_bytes" to 0L,
