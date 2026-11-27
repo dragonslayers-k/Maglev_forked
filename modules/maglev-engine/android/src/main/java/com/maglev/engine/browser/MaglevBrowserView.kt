@@ -27,6 +27,7 @@ import android.view.inputmethod.InputConnectionWrapper
 import android.view.ViewGroup
 import android.webkit.CookieManager
 import android.webkit.GeolocationPermissions
+import android.webkit.HttpAuthHandler
 import android.webkit.JsPromptResult
 import android.webkit.JsResult
 import android.webkit.PermissionRequest
@@ -54,6 +55,7 @@ import expo.modules.kotlin.AppContext
 import expo.modules.kotlin.Promise
 import expo.modules.kotlin.viewevent.EventDispatcher
 import expo.modules.kotlin.views.ExpoView
+import com.maglev.engine.wireguard.WireGuardController
 import java.io.ByteArrayInputStream
 import java.net.URISyntaxException
 import java.util.concurrent.atomic.AtomicBoolean
@@ -194,6 +196,12 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
 
     init {
         BlocklistStore.warm(context)
+        if (WireGuardController.isEnabled(context)) {
+            Thread({ runCatching { WireGuardController.ensureBrowserProxy(context) } }, "maglev-wg-browser-proxy").apply {
+                isDaemon = true
+                start()
+            }
+        }
         // Require a deliberate downward pull and avoid stealing upward page-scroll gestures.
         val refreshDensity = context.resources.displayMetrics.density
         // setDistanceToTriggerSync takes dp (not px); multiplying by density made the pull threshold
@@ -1252,6 +1260,14 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
                 }
             }
             return false
+        }
+
+        override fun onReceivedHttpAuthRequest(view: WebView, handler: HttpAuthHandler, host: String, realm: String) {
+            // Only answer the dedicated loopback WireGuard proxy challenge. Never reuse
+            // proxy credentials for the website's own HTTP authentication.
+            val credentials = WireGuardController.browserProxyCredentials(host, realm)
+            if (credentials != null) handler.proceed(credentials.first, credentials.second)
+            else handler.cancel()
         }
 
         override fun onReceivedError(view: WebView, request: WebResourceRequest, error: WebResourceError) {
