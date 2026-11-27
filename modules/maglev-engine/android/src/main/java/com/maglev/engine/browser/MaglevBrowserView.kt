@@ -1765,6 +1765,24 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
     // endregion
 
     companion object {
+        @Volatile var fullscreenVideoActive: Boolean = false
+            private set
+        @Volatile var activeVideoAspectRatio: Double = 16.0 / 9.0
+            private set
+        @Volatile var activeVideoAspectRatioKnown: Boolean = false
+            private set
+
+        /** Used by the PiP menu to request fullscreen on the active tab's current HTML video. */
+        fun requestFullscreenVideoForPip(requestedAspectRatio: Double, onResult: (Boolean) -> Unit) {
+            val view = serviceWorkerObserver.get()
+            if (view == null || view.destroyed) {
+                onResult(false)
+                return
+            }
+            view.requestFullscreenVideoForPipInternal(requestedAspectRatio, onResult)
+        }
+
+
         // ServiceWorkerController is process-wide. Keep one dispatcher and point it at the active browser tab only.
         private val serviceWorkerObserver = AtomicReference<MaglevBrowserView?>(null)
         private val serviceWorkerInstallLock = Any()
