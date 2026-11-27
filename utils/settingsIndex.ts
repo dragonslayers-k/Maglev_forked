@@ -933,14 +933,14 @@ export const SETTINGS_INDEX: SettingEntry[] = [
   ),
   e(
     "app-wireguard-enabled",
-    "HTTP/HTTPS 다운로드에 사용",
+    "앱 브라우저 + HTTP/HTTPS 다운로드",
     "wireguard",
     "앱 내부 WireGuard",
     ["wireguard", "http proxy", "https proxy", "download only", "local tunnel", "enable", "disable"],
   ),
   e(
     "app-wireguard-status",
-    "로컬 프록시 상태",
+    "앱 브라우저 터널 상태",
     "wireguard",
     "앱 내부 WireGuard",
     ["wireguard", "local proxy", "running", "status", "handshake"],
