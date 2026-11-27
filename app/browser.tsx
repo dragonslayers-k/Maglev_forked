@@ -49,7 +49,7 @@ import { dismissAllVisible, dismissIds, restoreIds, visibleFound } from '../comp
 import { getBrowserPrefs, updateBrowserPrefs, useBrowserPrefs } from '../utils/prefs/browser';
 import { keepHosts, privateSession } from '../utils/browser/privateSession';
 import { hostsToWipe } from '../utils/browser/privateHosts';
-import { buildMediaMenu, hasMenu, parseMediaHit, type MediaHit } from '../utils/browser/mediaHit';
+import { buildMediaMenu, guessMediaMime, hasMenu, parseMediaHit, type MediaHit } from '../utils/browser/mediaHit';
 import { parseNaverClipMediaId } from '../utils/browser/naverClip';
 import { flushTabs, recordVisit } from '../utils/history';
 import { activeTab, backTarget, getTab, isBlank, liveTabs, switcherOrder } from '../utils/browser/tabs';
@@ -1041,7 +1041,19 @@ export default function BrowserScreen({ inTab = false }: { inTab?: boolean }) {
         onClose={() => setMediaHit(null)}
         onSave={(_h, u) => downloadLink(u)}
         onStream={streamFromHit}
-        onOpenNewTab={(u) => openLinkInTab(u, false)}
+        onPlay={async (hit, u) => {
+          try {
+            const pageUrl = hit.pageUrl || page?.url || tab?.url || '';
+            const rawHeaders = await downloadHeaders({ url: u, pageUrl, userAgent: '' });
+            const headers = Object.fromEntries(Object.entries(rawHeaders).filter(([, value]) => typeof value === 'string')) as Record<string, string>;
+            const title = hit.alt || page?.title || nameFromUrl(u);
+            const result = await maglevEngine.playInAppMedia(u, guessMediaMime(u), title, headers);
+            if (!result.ok) showNotice({ message: result.message || '앱 내 미디어 플레이어를 열지 못했습니다.' });
+          } catch (error) {
+            showNotice({ message: String((error as Error)?.message || '앱 내 미디어 플레이어를 열지 못했습니다.') });
+          }
+        }}
+        onOpenNewTab={(u) => openLinkInTab(u, false)
         onCopy={(u) => void copy(u)}
         onShare={(u) => {
           Share.share({ message: u }).catch(() => {});
