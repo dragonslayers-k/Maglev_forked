@@ -103,6 +103,7 @@ export const notices = {
     drm: 'DRM 보호 영상은 저장할 수 없습니다.',
     blob: '이 플레이어의 스트림은 직접 저장할 수 없습니다.',
     mseCaptureUnavailable: '브라우저 녹화는 아직 지원되지 않습니다. 직접 미디어 주소나 HLS/DASH를 확인하세요.',
+    mseDetected: 'MSE 기반 동영상 재생을 감지했습니다. 네트워크에서 확인된 미디어 주소는 감지 파일 목록에 표시됩니다.',
     mpmuxGuideOpenFailed: 'MPMux 안내를 열지 못했습니다.',
     mpmuxExtensionOpenFailed: 'MPMux 확장 프로그램 안내를 열지 못했습니다.',
     linkCopied: '링크를 복사했습니다.',
