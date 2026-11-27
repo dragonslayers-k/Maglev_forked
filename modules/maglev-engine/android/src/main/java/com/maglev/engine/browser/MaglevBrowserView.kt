@@ -1553,15 +1553,27 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
         }, 5_000L)
         val script = """
             (function() {
+              // PiP must never be entered for a merely loaded/paused video: that produces an empty
+              // system window and looks like playback failed. Require a genuinely playing frame.
               var videos = Array.prototype.slice.call(document.querySelectorAll('video'));
-              videos = videos.filter(function(v) { return v.readyState >= 1 && v.videoWidth > 0 && v.videoHeight > 0; });
+              videos = videos.filter(function(v) {
+                return !v.paused && !v.ended && v.readyState >= 2 && v.videoWidth > 0 && v.videoHeight > 0;
+              });
               videos.sort(function(a, b) {
-                var ap = (!a.paused && !a.ended) ? 1 : 0, bp = (!b.paused && !b.ended) ? 1 : 0;
-                if (ap !== bp) return bp - ap;
                 return (b.clientWidth * b.clientHeight) - (a.clientWidth * a.clientHeight);
               });
               var v = videos[0];
               if (!v) return false;
+
+              // Resolve controls from the selected video's own player container. A global selector can
+              // accidentally click a hidden/other video player's fullscreen button.
+              var root = v;
+              for (var depth = 0; depth < 7 && root.parentElement; depth++) {
+                root = root.parentElement;
+                if (root.querySelector && (root.querySelector('.ytp-fullscreen-button') ||
+                    root.querySelector('[aria-label*="fullscreen" i]') ||
+                    root.querySelector('[title*="fullscreen" i]'))) break;
+              }
               var selectors = [
                 '.ytp-fullscreen-button',
                 '[aria-label*="full screen" i]',
@@ -1571,8 +1583,8 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
                 '.fullscreen-button'
               ];
               for (var i = 0; i < selectors.length; i++) {
-                var button = document.querySelector(selectors[i]);
-                if (button && button.getClientRects().length) {
+                var button = root.querySelector ? root.querySelector(selectors[i]) : null;
+                if (button && button.getClientRects().length && !button.disabled) {
                   try { button.click(); return true; } catch (e) {}
                 }
               }
