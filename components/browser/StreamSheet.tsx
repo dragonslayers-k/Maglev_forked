@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Linking, StyleSheet, Text, View } from 'react-native';
-import { sanitizeFileName, type FoundItem, type StreamProbe } from 'maglev-engine';
+import { maglevEngine, sanitizeFileName, type FoundItem, type StreamProbe } from 'maglev-engine';
 import { useTheme } from '../../context/ThemeContext';
 import { useMaglevEngine } from '../../context/EngineContext';
 import { ThemeColors, spacing, type } from '../../constants/theme';
@@ -9,6 +9,7 @@ import { banners, mobileDataLine, notices, streamSheet } from '../../constants/c
 import { probeErrorView } from '../../utils/downloadCopy';
 import { useDownloadAdmission } from '../../utils/useDownloadAdmission';
 import { hostOf } from '../../utils/browserUrl';
+import { guessMediaMime } from '../../utils/browser/mediaHit';
 import { Banner, Button, LoadingDots, RadioCard, TextField } from '../ui';
 import { FloatingSheet, afterSheetCloses, NoteRow } from './FloatingSheet';
 import { useSettings } from '../../context/SettingsContext';
@@ -204,6 +205,34 @@ export function StreamSheet({ item, pageTitle, userAgent = '', pageUrl = '', onC
 
         <View style={styles.actions}>
           <Button label="링크 복사" icon="copy" variant="ghost" onPress={() => onCopyLink(it.url)} disabled={adding} />
+          {!protectedStream ? (
+            <Button
+              label="앱에서 재생"
+              icon="play"
+              variant="secondary"
+              disabled={phase === 'probing' || adding}
+              onPress={() => {
+                void (async () => {
+                  try {
+                    const headers = await downloadHeaders({ url: it.url, pageUrl: it.pageUrl || pageUrl, userAgent });
+                    const cleanHeaders = Object.fromEntries(
+                      Object.entries(headers).filter(([, value]) => typeof value === 'string'),
+                    ) as Record<string, string>;
+                    const result = await maglevEngine.playInAppMedia(
+                      it.url,
+                      guessMediaMime(it.url),
+                      pageTitle || it.name || hostOf(it.url),
+                      cleanHeaders,
+                    );
+                    if (result.ok) onClose();
+                    else showNotice({ message: result.message || '앱 내 플레이어를 열지 못했습니다.' });
+                  } catch (error) {
+                    showNotice({ message: String((error as Error)?.message || '앱 내 플레이어를 열지 못했습니다.') });
+                  }
+                })();
+              }}
+            />
+          ) : null}
           {protectedStream ? (
             <Text style={styles.meta}>보호되거나 브라우저 버퍼 기반인 스트림은 현재 Android 앱 내 녹화가 지원되지 않습니다. DRM 복호화·보호 우회는 수행하지 않습니다.</Text>
           ) : null}
