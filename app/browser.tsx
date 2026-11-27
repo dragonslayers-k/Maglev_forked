@@ -769,7 +769,7 @@ export default function BrowserScreen({ inTab = false }: { inTab?: boolean }) {
     // The menu is a modal sheet. Wait for its close animation before asking Android to resize
     // the Activity into PiP; otherwise the dim/scrim layer can be captured in the PiP window.
     afterSheetCloses(() => {
-      void maglevEngine.enterBrowserPictureInPicture().then((result) => {
+      const video = found.find((item) => item.kind === 'video' && (item.width ?? 0) > 0 && (item.height ?? 0) > 0);\n      const aspectRatio = video ? (video.width! / video.height!) : 16 / 9;\n      void maglevEngine.enterBrowserPictureInPicture(aspectRatio).then((result) => {
         if (result.ok) {
           showNotice({ message: notices.browser.pipStarted }, 2500);
         } else {
