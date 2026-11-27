@@ -297,6 +297,16 @@ func TestIPv6ConfigAndAllowedIPs(t *testing.T) {
 func testHTTPDNSAndTLS(t *testing.T, peer *testPeer) {
 	engine := peer.start(t)
 	client := proxyClient(t, engine, peer.certificates)
+	// The in-memory gVisor ChannelBind test must not leave HTTP keep-alive
+	// endpoints in FIN_WAIT2: Stack.Close in the pinned gVisor revision can
+	// deadlock while aborting those endpoints. The real-UDP test keeps normal
+	// keep-alive behavior; memory-bind coverage closes each connection eagerly.
+	if peer.clientBind != nil {
+		if transport, ok := client.Transport.(*http.Transport); ok {
+			transport.DisableKeepAlives = true
+		}
+	}
+	defer client.CloseIdleConnections()
 	if got := readResponse(t, client, "http://media.test:"+peer.httpPort+"/"); got != "hello over encrypted WireGuard" {
 		t.Fatalf("unexpected HTTP body: %q", got)
 	}
