@@ -666,12 +666,12 @@ export class MaglevEngineBridge implements MaglevEngineApi {
   public addYouTubeDownload(url: string, formatId: string, playerClient: string, formatKind: 'video' | 'audio', audioBitrateKbps?: number | null, outputContainer = 'original'): Promise<EngineResult<{ id: string }>> {
     return this.route('addYouTubeDownload', url, formatId, playerClient, formatKind, audioBitrateKbps ?? null, outputContainer);
   }
-  public async enterBrowserPictureInPicture(): Promise<EngineResult> {
+  public async enterBrowserPictureInPicture(aspectRatio: number): Promise<EngineResult> {
     if (Platform.OS !== 'android' || !PictureInPictureModule?.enterBrowserPictureInPicture) {
       return { ok: false, code: 'UNSUPPORTED', message: 'Picture-in-picture is available on Android only.' };
     }
     try {
-      return await PictureInPictureModule.enterBrowserPictureInPicture();
+      return await PictureInPictureModule.enterBrowserPictureInPicture(aspectRatio);
     } catch (e: any) {
       return { ok: false, code: 'INTERNAL', message: String(e?.message ?? e) };
     }
