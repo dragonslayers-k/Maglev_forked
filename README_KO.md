@@ -65,7 +65,7 @@
 9. MPMux 비교 결과 static Range/HLS VOD는 기존 엔진을 재사용하고, HLS Live 및 MediaSource byte capture를 신규 갭으로 분리했습니다.
 10. 브라우저의 blob/DRM/보호 스트림 거절 시 PC MPMux 안내를 제공하되, 비암호화 MSE/HLS만 대상으로 하고 DRM 우회 불가를 한국어로 고지하도록 수정 중입니다.
 
-**2026-11-27 최신 사용자 검증: CI #707은 성공했지만 설치 APK의 기능은 불합격입니다.** 사용자는 브라우저 녹화 미지원 안내, 직접 URL/HLS/DASH 수동 경로만 제공, PiP 미작동, 미디어 재생 실패, WireGuard 개선 없음으로 보고했습니다. CI #707 APK는 ARM64 63,671,711 bytes, SHA-256 `5de8fbdfab25e5bb5de55001b07cbd5b331ae9526c2489f497df304701fdbf9d`; debug certificate이며 정식 Release가 아닙니다. CI success는 빌드/자동 테스트 결과일 뿐 Galaxy 기능 승인으로 계산하지 않습니다. MSE 감지 hook은 미디어 byte capture를 수행하지 않습니다. PiP는 WebView fullscreen/player surface에 의존하며 universal playback/PiP 합격 증거가 없습니다.
+**2026-11-27 latest user acceptance: CI #707 success but installed APK functionality FAIL.** User reports browser recording unsupported (direct URL/HLS/DASH manual route only), PiP still broken, media playback unavailable and WireGuard no improvement. This supersedes CI green. Native Media3 player prototype is now being implemented on PR #1: browser long-press direct/HLS/DASH → in-app Player, PiP on player surface, request headers and app-local WG proxy. It has not yet passed Android build or Galaxy runtime. MSE byte capture remains unimplemented.
 
 ## 빌드 및 테스트
 
