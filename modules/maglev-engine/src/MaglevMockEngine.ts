@@ -865,8 +865,8 @@ export class MaglevMockEngine implements MaglevEngineApi {
   public addYouTubeDownload(_url: string, _formatId: string): Promise<EngineResult<{ id: string }>> {
     return Promise.resolve({ ok: false, code: 'UNSUPPORTED', message: 'YouTube downloads are available on Android only.' });
   }
-  public getAppWireGuardStatus(): Promise<EngineResult<{ enabled: boolean; hasProfile: boolean; running: boolean }>> {
-    return Promise.resolve({ ok: true, enabled: false, hasProfile: false, running: false });
+  public getAppWireGuardStatus(): Promise<EngineResult<{ enabled: boolean; hasProfile: boolean; running: boolean; peerHandshake: boolean; peerRxBytes: number; peerTxBytes: number; lastHandshakeUnix: number; handshakeAgeSeconds?: number }>> {
+    return Promise.resolve({ ok: true, enabled: false, hasProfile: false, running: false, peerHandshake: false, peerRxBytes: 0, peerTxBytes: 0, lastHandshakeUnix: 0 });
   }
   public testAppWireGuardConnection(): Promise<EngineResult<{ ip: string; country: string; country_code: string; message: string }>> {
     return Promise.resolve({ ok: false, code: 'UNSUPPORTED', message: 'WireGuard exit verification is available on Android only.' });
