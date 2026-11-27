@@ -1375,6 +1375,10 @@ export class MaglevMockEngine implements MaglevEngineApi {
     return ok();
   }
 
+  public async playInAppMedia(_url: string, _mime: string, _title: string, _headers?: Record<string, string>): Promise<EngineResult> {
+    return { ok: false, code: 'UNSUPPORTED', message: '앱 내 미디어 재생은 Android에서 지원됩니다.' };
+  }
+
   private schedule: ScheduleConfig = { enabled: false, rules: [] };
   private feedAutomation: FeedAutomationConfig = { enabled: false, intervalMins: 30, feeds: [], rules: [] };
 
