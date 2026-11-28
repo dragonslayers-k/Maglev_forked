@@ -74,4 +74,13 @@ if (!mediaMenu.includes("case 'analyze-page'") || !mediaHit.includes("id: 'analy
     !pipUi.includes("onAnalyzePage={(pageUrl) => router.push({ pathname: '/youtube-download', params: { url: pageUrl } })}")) {
   throw new Error('Blob/MSE page analysis is not connected to the extractor route');
 }
+const pipBrowserNative = fs.readFileSync(path.join(root, 'modules/maglev-engine/android/src/main/java/com/maglev/engine/browser/MaglevBrowserView.kt'), 'utf8');
+const measureStart = pipBrowserNative.indexOf('private fun measureActiveVideoForPipInternal');
+const measureEnd = pipBrowserNative.indexOf('private fun requestFullscreenVideoForPipInternal', measureStart);
+const measureBody = measureStart >= 0 && measureEnd > measureStart ? pipBrowserNative.slice(measureStart, measureEnd) : '';
+if (!measureBody.includes('webView.post {') ||
+    !measureBody.includes('webView.evaluateJavascript(script)') ||
+    measureBody.indexOf('webView.post {') > measureBody.indexOf('webView.evaluateJavascript(script)')) {
+  throw new Error('PiP active-video measurement must dispatch evaluateJavascript through WebView.post on the main thread');
+}
 console.log('PASS: MSE observation and fullscreen-video PiP contract');
