@@ -49,9 +49,11 @@ if ((!browser.includes('v.getClientRects().length > 0') && !browser.includes('v.
   throw new Error('PiP must validate visible video, return a diagnostic reason, and wait for the native fullscreen surface before reporting success');
 }
 const pipModule = fs.readFileSync(path.join(root, 'modules/maglev-engine/android/src/main/java/com/maglev/engine/MaglevEngineModule.kt'), 'utf8');
-if (!pipModule.includes('accepted, reason') || !pipModule.includes('reason == "NO_VIDEO"') ||
-    !pipModule.includes('"FULLSCREEN_REQUIRED"') || !pipModule.includes('"VIDEO_NOT_FOUND"')) {
-  throw new Error('PiP native bridge must preserve the reason for fullscreen handoff refusal');
+if (!pipModule.includes('accepted, reason') || !pipModule.includes('when (reason)') ||
+    !pipModule.includes('"TAB_NOT_ACTIVE"') || !pipModule.includes('"BAD_VIDEO_RATIO"') ||
+    !pipModule.includes('"FULLSCREEN_UNAVAILABLE"') || !pipModule.includes('"FULLSCREEN_TIMEOUT"') ||
+    !pipModule.includes('"VIDEO_NOT_FOUND"') || !pipModule.includes('"FULLSCREEN_HANDOFF_FAILED"')) {
+  throw new Error('PiP native bridge must map fullscreen handoff refusal reasons to actionable diagnostics');
 }
 
 if (!pipUi.includes('videos.sort((a, b) => ((b.width ?? 0) * (b.height ?? 0))')) {
