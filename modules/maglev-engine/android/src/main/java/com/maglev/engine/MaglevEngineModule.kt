@@ -169,11 +169,18 @@ class MaglevEngineModule : Module() {
                 promise.resolve(mapOf("ok" to false, "code" to "NOT_READY", "message" to "The app screen is not available."))
             } else if (!MaglevBrowserView.fullscreenVideoActive) {
                 activity.runOnUiThread {
-                    MaglevBrowserView.requestFullscreenVideoForPip(requestedAspectRatio) { accepted ->
-                        promise.resolve(if (accepted) mapOf("ok" to true, "pending" to true) else mapOf(
-                            "ok" to false, "code" to "VIDEO_NOT_FOUND",
-                            "message" to "현재 페이지에서 재생 가능한 동영상을 찾지 못했습니다. 먼저 영상 재생을 시작하세요."
-                        ))
+                    MaglevBrowserView.requestFullscreenVideoForPip(requestedAspectRatio) { accepted, reason ->
+                        promise.resolve(if (accepted) mapOf("ok" to true, "pending" to true) else {
+                            val noVideo = reason == "NO_VIDEO"
+                            mapOf(
+                                "ok" to false,
+                                "code" to if (noVideo) "VIDEO_NOT_FOUND" else "FULLSCREEN_REQUIRED",
+                                "message" to if (noVideo)
+                                    "재생 중인 동영상을 찾지 못했습니다. 먼저 영상을 재생하세요."
+                                else
+                                    "이 웹 플레이어는 브라우저 메뉴에서 전체화면 전환을 허용하지 않습니다. 플레이어의 전체화면 버튼을 누른 뒤 화면 상단 PiP 버튼을 사용하세요."
+                            )
+                        })
                     }
                 }
             } else {
