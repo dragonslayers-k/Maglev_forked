@@ -39,3 +39,11 @@ https://github.com/dragonslayers-k/Maglev_forked/pull/10
 - [ ] PiP enters, continues playback, exits and returns to browser without stuck compact UI.
 - [ ] Korean strings and error messages are complete and accurate.
 - [ ] CI and release artifact are verified; no untested commit promoted to baseline.
+
+
+## Latest CI failure and correction (2026-11-28)
+
+- CI #774 run https://github.com/dragonslayers-k/Maglev_forked/actions/runs/46111565801: Rust tests, contract tests, ABI plan and ARM64 native build passed; JS unit/contract tests failed in `scripts/test-page-scan-mse.js`. APK build was skipped.
+- Root cause: the regression test still required the superseded synthetic fullscreen handoff (`requestFullscreenVideoForPip`, `pipPendingFromBrowserMenu`, and the old pending callback), while the current native path validates the active visible playing video and directly calls Android Activity PiP.
+- Corrected the regression contract in commit `b890479c51f8548c5c1d8facbba6aa349edb3a57`; it now checks direct Activity PiP entry and active-video validation. Awaiting a fresh CI run on this head.
+- This is a test-contract correction, not proof of Galaxy runtime PiP. Keep #702 baseline, PR #10 Draft, and release gate unchanged.
