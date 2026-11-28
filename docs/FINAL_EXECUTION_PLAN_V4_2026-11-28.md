@@ -56,3 +56,13 @@ Gate 6: Korean-first subtitle search/download/parse/attach/sync E2E and LRC/lyri
 
 ## Immediate next action
 Restore `scripts/test-page-scan-mse.js` and `scripts/test-wireguard-decoupled.js` from exact #702 into canonical PR #1 branch (or implement equivalent tests if incompatible), then run targeted tests and full CI. Do not stack audio/PiP/capture feature commits before this regression gate is green.
+
+
+## WP0 execution started — regression tests restored
+
+- Canonical PR #1 branch `feature/p1-video-detection-observer` was verified at head `2820b4dff15773ce835a43a3ea4936aa6e7b26ad`; both #702 regression tests were absent from its tree.
+- Restored exact #702 file contents from approved commit `45e685603a3a23507b61cb49398a78380d5db7a5`:
+  - `scripts/test-page-scan-mse.js` commit `3092a7349df13827344bfba5567cc89a5ae62837`
+  - `scripts/test-wireguard-decoupled.js` commit `7e64c1fe390969768c45ebbea51828a11454ae0b`
+- CI #802 started on latest PR #1 head `7e64c1fe390969768c45ebbea51828a11454ae0b`: https://github.com/dragonslayers-k/Maglev_forked/actions/runs/46134223904. At this note, Typecheck and native/contract jobs are running; no conclusion yet.
+- Important: the MSE test is a legacy #702 contract and may expose current PR #1 regression; do not weaken it just to make CI green. If source architecture intentionally changed, replace it with equivalent runtime/contract coverage, and document the reason.
