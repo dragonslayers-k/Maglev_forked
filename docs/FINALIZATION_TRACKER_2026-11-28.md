@@ -264,3 +264,10 @@ Do not continue document-only “feature progress.” Next source commits must f
 - #809 remains failed due the Kotlin syntax issue now corrected; #811 proves the correction builds. #808/#810 docs/regression CI passed; #806 was cancelled due branch movement, not test failure.
 - V3 vs current execution: V3 remains diagnostic reference; V4/master spec v1.0.1/Issue #8/WP0-WP1 define task sequence. Actual source improvement is now included and compiles. Segment count change alone is not confirmed to fix 20–30 KB/s; device runtime must collect `MaglevAudioDiag` and native range/probe/split fallback reason.
 - **Next action**: install/test #811 artifact on Galaxy, check audio speed and logcat; if still slow, instrument native transfer decision and address fallback/root cause. Then work through PiP black/frozen, MediaSession/background playback, browser media capture, and Korean subtitle source integration. Preserve known-working WireGuard/video, keep PR #10 Draft, no release or baseline promotion until acceptance.
+
+
+## PR #1 candidate APK retrieved and verified — 2026-11-28
+
+- Downloaded #811 artifact `apks` (artifact id `15262790510`) and verified ZIP digest `b02c1fc30037017139f4fb24a4a897e10a75d23efc9f107dec889912ebc2cb` matches Actions artifact metadata.
+- ZIP contains `app-arm64-v8a-release.apk` (64,671,164 bytes); extracted APK SHA-256: `2d37b09df73acd5c288a38123fd3ca88b7345a7540bdf6a87cdc417df4658014`.
+- This is an installable PR #1 build candidate with the 8-segment request + safe metadata diagnostic. It is not a final release and has not been Galaxy runtime accepted. Test for audio-only throughput, verify diagnostic logs and confirm known-good WireGuard/video still work.
