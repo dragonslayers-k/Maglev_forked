@@ -1569,84 +1569,47 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
         mainHandler.postDelayed({ if (pipPendingFromBrowserMenu && !fullscreenVideoActive) pipPendingFromBrowserMenu = false }, 5_000L)
         val script = """
             (function() {
-              var videos = [];
-              var roots=[document], seenRoots=[];
-              while(roots.length && seenRoots.length<128){
-                var current=roots.shift();
-                if(!current || seenRoots.indexOf(current)!==-1)continue;
-                seenRoots.push(current);
-                try{videos=videos.concat(Array.prototype.slice.call(current.querySelectorAll('video')));}catch(e){}
-                try{
-                  var elements=current.querySelectorAll('*');
-                  for(var ei=0;ei<elements.length;ei++){
-                    if(elements[ei].shadowRoot)roots.push(elements[ei].shadowRoot);
-                  }
-                }catch(e){}
+              var videos=[],roots=[document],seen=[];
+              while(roots.length&&seen.length<128){var cur=roots.shift();if(!cur||seen.indexOf(cur)!==-1)continue;seen.push(cur);
+                try{videos=videos.concat(Array.prototype.slice.call(cur.querySelectorAll('video')));}catch(e){}
+                try{var els=cur.querySelectorAll('*');for(var i=0;i<els.length;i++)if(els[i].shadowRoot)roots.push(els[i].shadowRoot);}catch(e){}
               }
-              videos=videos.filter(function(v,i){return videos.indexOf(v)===i;});
-              videos = videos.filter(function(v) {
-                var s = window.getComputedStyle(v);
-                return !v.paused && !v.ended && v.readyState >= 2 && v.videoWidth > 0 && v.videoHeight > 0 &&
-                  v.getClientRects().length > 0 && s.display !== 'none' && s.visibility !== 'hidden' &&
-                  v.clientWidth > 0 && v.clientHeight > 0;
+              videos=videos.filter(function(v,i){return videos.indexOf(v)===i;}).filter(function(v){
+                var s=window.getComputedStyle(v);return !v.paused&&!v.ended&&v.readyState>=2&&v.videoWidth>0&&v.videoHeight>0&&v.getClientRects().length>0&&s.display!=='none'&&s.visibility!=='hidden'&&v.clientWidth>0&&v.clientHeight>0;
               });
-              videos.sort(function(a,b){return (b.clientWidth*b.clientHeight)-(a.clientWidth*a.clientHeight);});
-              var v=videos[0]; if(!v)return 0;
-              var ratio=v.videoWidth/v.videoHeight;if(!isFinite(ratio)||ratio<0.42||ratio>2.39)return 0;
-              function fullscreen(){
-                try {
-                  var d=v.ownerDocument||document;
-                  return !!(d.fullscreenElement||d.webkitFullscreenElement||v.webkitDisplayingFullscreen||
-                    v.webkitPresentationMode==='fullscreen');
-                } catch(e) { return false; }
+              videos.sort(function(a,b){return b.clientWidth*b.clientHeight-a.clientWidth*a.clientHeight;});
+              var v=videos[0];if(!v)return 0;var ratio=v.videoWidth/v.videoHeight;if(!isFinite(ratio)||ratio<0.42||ratio>2.39)return 0;
+              var sels=['.ytp-fullscreen-button','[aria-label*="fullscreen" i]','[title*="fullscreen" i]','.fullscreen-button'],node=v,clicked=false;
+              for(var d=0;d<10&&node&&!clicked;d++){var root=null;try{root=node.getRootNode?node.getRootNode():null;}catch(e){}
+                var scope=root&&root.querySelector?root:(node.ownerDocument||document);
+                for(var j=0;j<sels.length;j++){var b=null;try{b=scope.querySelector(sels[j]);}catch(e){}if(b&&b.getClientRects().length&&!b.disabled){try{b.click();clicked=true;break;}catch(e){}}}
+                var parent=node.parentElement;if(!parent&&root&&root.host)parent=root.host;node=parent;
               }
-              return new Promise(function(resolve){
-                var done=false, timer=0, interval=0;
-                function finish(ok){
-                  if(done)return;done=true;
-                  if(timer)clearTimeout(timer);if(interval)clearInterval(interval);
-                  try{document.removeEventListener('fullscreenchange',check,true);document.removeEventListener('webkitfullscreenchange',check,true);v.removeEventListener('webkitbeginfullscreen',check,true);}catch(e){}
-                  resolve(ok&&fullscreen()?ratio:0);
-                }
-                function check(){if(fullscreen())finish(true);}
-                document.addEventListener('fullscreenchange',check,true);
-                document.addEventListener('webkitfullscreenchange',check,true);
-                v.addEventListener('webkitbeginfullscreen',check,true);
-                interval=setInterval(check,100);
-                timer=setTimeout(function(){finish(false);},2500);
-                var selectors=['.ytp-fullscreen-button','[aria-label*="fullscreen" i]','[title*="fullscreen" i]','.fullscreen-button'];
-                var node=v, clicked=false;
-                for(var d=0;d<10&&node&&!clicked;d++){
-                  var tree=null;try{tree=node.getRootNode?node.getRootNode():null;}catch(e){}
-                  var scope=tree&&tree.querySelector?tree:(node.ownerDocument||document);
-                  for(var i=0;i<selectors.length;i++){
-                    var b=null;try{b=scope.querySelector(selectors[i]);}catch(e){}
-                    if(b&&b.getClientRects().length&&!b.disabled){try{b.click();clicked=true;break;}catch(e){}}
-                  }
-                  var parent=node.parentElement;
-                  if(!parent&&tree&&tree.host)parent=tree.host;
-                  node=parent;
-                }
-                if(!clicked){
-                  try{
-                    if(v.requestFullscreen){
-                      var p=v.requestFullscreen();
-                      if(p&&p.then)p.then(check,function(){});
-                    } else if(v.webkitEnterFullscreen) {
-                      v.webkitEnterFullscreen();
-                    }
-                  }catch(e){}
-                }
-                check();
-              });
+              if(clicked)return ratio;
+              try{if(v.requestFullscreen){var p=v.requestFullscreen();if(p&&p.catch)p.catch(function(){});return ratio;}}catch(e){}
+              try{if(v.webkitEnterFullscreen){v.webkitEnterFullscreen();return ratio;}}catch(e){}
+              return 0;
             })()
         """.trimIndent()
         webView.evaluateJavascript(script) { raw ->
             val ratio = raw?.trim()?.removeSurrounding("\"")?.toDoubleOrNull()
             val accepted = ratio != null && ratio.isFinite() && ratio in 0.42..2.39
-            if (accepted) { activeVideoAspectRatio = ratio!!; activeVideoAspectRatioKnown = true }
-            else pipPendingFromBrowserMenu = false
-            onResult(accepted)
+            if (!accepted) {
+                pipPendingFromBrowserMenu = false
+                onResult(false)
+                return@evaluateJavascript
+            }
+            activeVideoAspectRatio = ratio!!
+            activeVideoAspectRatioKnown = true
+            val deadline = android.os.SystemClock.uptimeMillis() + 2500L
+            val checkFullscreen = object : Runnable {
+                override fun run() {
+                    if (fullscreenVideoActive) onResult(true)
+                    else if (pipPendingFromBrowserMenu && android.os.SystemClock.uptimeMillis() < deadline) mainHandler.postDelayed(this, 100L)
+                    else { pipPendingFromBrowserMenu = false; onResult(false) }
+                }
+            }
+            mainHandler.postDelayed(checkFullscreen, 100L)
         }
     }
 
