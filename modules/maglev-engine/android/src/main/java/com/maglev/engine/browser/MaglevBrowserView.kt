@@ -1585,11 +1585,20 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
               return isFinite(ratio)&&ratio>=0.42&&ratio<=2.39?String(ratio):'BAD_RATIO';
             })()
         """.trimIndent()
-        webView.evaluateJavascript(script) { raw ->
-            val value = raw?.trim()?.removeSurrounding("\"")
-            val ratio = value?.toDoubleOrNull()
-            if (ratio != null && ratio.isFinite() && ratio in 0.42..2.39) onResult(ratio, null)
-            else onResult(null, value ?: "NO_RESPONSE")
+        // Expo AsyncFunction handlers execute on AsyncFunctionQueue, not Android's main
+        // thread. WebView.evaluateJavascript is main-thread-only; post through the WebView
+        // itself so browser PiP measurement cannot fail with CalledFromWrongThreadException.
+        webView.post {
+            if (destroyed || !active) {
+                onResult(null, "TAB_NOT_ACTIVE")
+                return@post
+            }
+            webView.evaluateJavascript(script) { raw ->
+                val value = raw?.trim()?.removeSurrounding("\"")
+                val ratio = value?.toDoubleOrNull()
+                if (ratio != null && ratio.isFinite() && ratio in 0.42..2.39) onResult(ratio, null)
+                else onResult(null, value ?: "NO_RESPONSE")
+            }
         }
     }
 
