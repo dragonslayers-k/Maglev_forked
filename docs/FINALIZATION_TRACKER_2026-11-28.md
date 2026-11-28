@@ -57,3 +57,18 @@ https://github.com/dragonslayers-k/Maglev_forked/pull/10
 - Compared V2 with the Library's latest `통합 미디어 다운로더 총괄 개발 가이드.md` and `통합_미디어_다운로더_전수조사_종합_설계기준서.md`: V2 remains consistent on one shared MediaIntake/Candidate/Task pipeline, browser observer rather than unsupported “recording” placeholder, active video native PiP, Korean-first subtitle provider adapters, user-supplied/licensed lyrics, and strict release/device gates. The newer comprehensive guide expands unified media identity, shared queue, session/header scoping, engine-specific proxy adapters and Galaxy E2E acceptance; these are incorporated as execution priorities rather than claiming implemented.
 - Next execution order after CI: (1) get a fresh signed ARM64 APK and hash, (2) validate PiP native lifecycle and callbacks / no stale compact UI, (3) browser observer candidate refresh and candidate-to-existing-queue handoff for direct/HLS/DASH, (4) supported HLS live recording state/finalization/recovery, (5) Korean subtitle search/download/attach/play workflow, (6) Korean lyrics/LRC and metadata, (7) full localization and regression.
 - Keep PR #10 Draft, #702 baseline immutable, and no release until user device acceptance. CI green is not Galaxy runtime acceptance.
+
+
+## CI #778 completed — artifact verified (2026-11-28)
+
+- Run: https://github.com/dragonslayers-k/Maglev_forked/actions/runs/46113157116
+- Head: `5e4cedbe026f6e42171238023a94b43240cfff6b`
+- Contract tests, JS checks/typecheck/tests, Rust tests, ABI plan, ARM64 native build, Android APK build, CI APK signing verification and versionCode verification: **success**.
+- ARM64 APK artifact: `app-arm64-v8a-release.apk`; downloaded from artifact `apks` (ID `15250773316`). APK SHA-256: `877be6af72b4f34421dbd236938b7770b0accbebfeb1395ab468b5ef6a7fa052`. Artifact ZIP SHA-256: `670759538acded10a59ff2d3da121747444173bae18b72d4d2b03876fa146d7f`.
+- This is a CI/build candidate only. Galaxy PiP lifecycle, media detection/selection, transfer and playback acceptance remain pending. Keep PR #10 Draft and #702 baseline unchanged.
+
+## Latest master-guide comparison and next implementation gate
+
+Compared the 2026-11-28 V2 execution blueprint with the newer user Library master guide and comprehensive survey (both updated 2026-11-27). The master documents add/clarify a single MediaIntake → Normalize → Discovery → Candidate merge → Capability resolver → user choice → EngineRouter → TaskOrchestrator pipeline, metadata-rich candidate records, request-context-scoped headers, observer refresh/debounce/deduplication, manifest analysis, and separate live-recording task lifecycle. These are not completed by CI #778 or the existing long-press/shadow-DOM patch.
+
+Next code gate: browser observer/candidate pipeline. Implement bounded, debounced DOM/media/resource observation and refresh; classify direct/HLS/DASH and collect only safe metadata; merge/dedupe candidates; preserve page-scoped referer/user-agent/auth context without logging secrets; feed candidate selection into the existing FoundDownload/StreamSheet and shared Transfers queue. Treat blob/MSE as opaque unless a source/segment path is demonstrably extractable. Keep live HLS recording as a separate later task state machine. Add fixture/contract tests and full CI before claiming this gate; then verify on Galaxy.
