@@ -1,3 +1,5 @@
+> **SUPERSEDED BY USER MASTER V3 / 2026-11-28.** This V4 document is retained as historical execution evidence only. The authoritative product requirements, source responsibility, implementation gaps, P0–P5 phase order, and acceptance gates are now `docs/MASTER_INTEGRATED_REQUIREMENTS_GAP_ANALYSIS_PLAN_V3_2026-11-28.md`. Do not use any conflicting V4 instruction to override user V3. Preserve CI/action history below as audit evidence, not product priority.
+
 # MAGLEV+ 최종 실행계획 V4 — 최신 WP0/WP1 및 CI #799 대조
 작성: 2026-11-28 KST
 상태: 최신 상위 설계에 맞춘 작업 순서 정정. 최종 제품/릴리즈 아님.
