@@ -106,7 +106,8 @@ export default function BrowserScreen({ inTab = false }: { inTab?: boolean }) {
   const ready = tabsState != null;
 
   // Section 30: the Browse tab and the /browser stack route can both exist and share one tab set. Only the focused
-  // instance mounts native views (it takes the owner token on focus), and a blurred or backgrounded browser pauses them.
+  // instance mounts native views (it takes the owner token on focus). Blurred routes and nonselected tabs pause;
+  // the selected WebView remains active across Activity backgrounding so its user-started HTML media is not paused here.
   const instanceId = useId();
   const focused = useIsFocused();
   useEffect(() => {

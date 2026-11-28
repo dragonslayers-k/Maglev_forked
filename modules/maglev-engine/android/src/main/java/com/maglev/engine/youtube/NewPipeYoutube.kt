@@ -177,7 +177,7 @@ object NewPipeYoutube {
                 "name" to sourceName,
                 "headers" to mapOf("User-Agent" to USER_AGENT, "Referer" to url),
                 "pageUrl" to url,
-                // Native Range transfer uses four bounded parts after a 206/validator probe.
+                // Use the engine's maximum eight bounded Range parts after a 206/validator probe; invalid Range falls back safely.
                 "segments" to 8,
             )
             addPostProcess(options, "audio", sourceExt, targetExt, outputName, needsPostProcess, audioBitrateKbps)

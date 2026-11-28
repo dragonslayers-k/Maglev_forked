@@ -393,6 +393,13 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
 
     private fun pauseNow() {
         pausePending = false
+        // Android pauses the Activity during PiP entry. Keep the fullscreen WebChrome media surface
+        // and WebView alive when this view owns that PiP playback; pausing it here produces a frozen window.
+        val activity = appContext.currentActivity
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && activity?.isInPictureInPictureMode == true && customView != null) {
+            webView.onResume()
+            return
+        }
         webView.onPause()
         webView.evaluateJavascript(PAUSE_MEDIA_JS, null)
     }
