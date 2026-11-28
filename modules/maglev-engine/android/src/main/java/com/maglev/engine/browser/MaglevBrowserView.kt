@@ -1570,8 +1570,6 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
         val script = """
             (function() {
               var videos = [];
-              // Web players often place the real video element inside one or more open shadow roots.
-              // Walk those roots too; otherwise the browser reports no playing video and PiP never starts.
               var roots=[document], seenRoots=[];
               while(roots.length && seenRoots.length<128){
                 var current=roots.shift();
@@ -1595,23 +1593,52 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
               videos.sort(function(a,b){return (b.clientWidth*b.clientHeight)-(a.clientWidth*a.clientHeight);});
               var v=videos[0]; if(!v)return 0;
               var ratio=v.videoWidth/v.videoHeight;if(!isFinite(ratio)||ratio<0.42||ratio>2.39)return 0;
-              var selectors=['.ytp-fullscreen-button','[aria-label*="fullscreen" i]','[title*="fullscreen" i]','.fullscreen-button'];
-              var node=v, clicked=false;
-              for(var d=0;d<10&&node&&!clicked;d++){
-                var tree=null;try{tree=node.getRootNode?node.getRootNode():null;}catch(e){}
-                var scope=tree&&tree.querySelector?tree:(node.ownerDocument||document);
-                for(var i=0;i<selectors.length;i++){
-                  var b=null;try{b=scope.querySelector(selectors[i]);}catch(e){}
-                  if(b&&b.getClientRects().length&&!b.disabled){try{b.click();clicked=true;break;}catch(e){}}
-                }
-                var parent=node.parentElement;
-                if(!parent&&tree&&tree.host)parent=tree.host;
-                node=parent;
+              function fullscreen(){
+                try {
+                  var d=v.ownerDocument||document;
+                  return !!(d.fullscreenElement||d.webkitFullscreenElement||v.webkitDisplayingFullscreen||
+                    v.webkitPresentationMode==='fullscreen');
+                } catch(e) { return false; }
               }
-              if(clicked)return ratio;
-              try{if(v.requestFullscreen){var p=v.requestFullscreen();if(p&&p.catch)p.catch(function(){});return ratio;}}catch(e){}
-              try{if(v.webkitEnterFullscreen){v.webkitEnterFullscreen();return ratio;}}catch(e){}
-              return 0;
+              return new Promise(function(resolve){
+                var done=false, timer=0, interval=0;
+                function finish(ok){
+                  if(done)return;done=true;
+                  if(timer)clearTimeout(timer);if(interval)clearInterval(interval);
+                  try{document.removeEventListener('fullscreenchange',check,true);document.removeEventListener('webkitfullscreenchange',check,true);v.removeEventListener('webkitbeginfullscreen',check,true);}catch(e){}
+                  resolve(ok&&fullscreen()?ratio:0);
+                }
+                function check(){if(fullscreen())finish(true);}
+                document.addEventListener('fullscreenchange',check,true);
+                document.addEventListener('webkitfullscreenchange',check,true);
+                v.addEventListener('webkitbeginfullscreen',check,true);
+                interval=setInterval(check,100);
+                timer=setTimeout(function(){finish(false);},2500);
+                var selectors=['.ytp-fullscreen-button','[aria-label*="fullscreen" i]','[title*="fullscreen" i]','.fullscreen-button'];
+                var node=v, clicked=false;
+                for(var d=0;d<10&&node&&!clicked;d++){
+                  var tree=null;try{tree=node.getRootNode?node.getRootNode():null;}catch(e){}
+                  var scope=tree&&tree.querySelector?tree:(node.ownerDocument||document);
+                  for(var i=0;i<selectors.length;i++){
+                    var b=null;try{b=scope.querySelector(selectors[i]);}catch(e){}
+                    if(b&&b.getClientRects().length&&!b.disabled){try{b.click();clicked=true;break;}catch(e){}}
+                  }
+                  var parent=node.parentElement;
+                  if(!parent&&tree&&tree.host)parent=tree.host;
+                  node=parent;
+                }
+                if(!clicked){
+                  try{
+                    if(v.requestFullscreen){
+                      var p=v.requestFullscreen();
+                      if(p&&p.then)p.then(check,function(){});
+                    } else if(v.webkitEnterFullscreen) {
+                      v.webkitEnterFullscreen();
+                    }
+                  }catch(e){}
+                }
+                check();
+              });
             })()
         """.trimIndent()
         webView.evaluateJavascript(script) { raw ->
