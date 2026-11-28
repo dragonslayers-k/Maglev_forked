@@ -105,3 +105,12 @@ Next work is WP0/WP1 evidence only: inventory repository branches/PRs/workflows/
 2. Reuse `recovery/2026-11-27-rebaseline` audit and 230-file inventory; classify the 15-file PR #10 diff against #702 and check no baseline regressions.
 3. Verify exact upstream main/tag v0.33 SHA and compare current upstream changelog; record source license/provenance.
 4. Draft ADR-001..013 in the master spec's format; prioritize ADR-006 unified task DB/state, ADR-002 engine reuse, ADR-003/004 HLS/DASH provider, ADR-007 browser scope, ADR-009 playback/PiP, ADR-010/011 network routing. Feature coding remains blocked until WP0/WP1 review.
+
+
+## WP0/WP1 reconciliation document created
+
+- Detailed inventory, PR #10 file-by-file classification, upstream SHA proof and ADR-001..013 draft proposals: [`docs/WP0_WP1_RECONCILIATION_2026-11-28.md`](https://github.com/dragonslayers-k/Maglev_forked/blob/recovery/youtube-selection-reconcile-ci/docs/WP0_WP1_RECONCILIATION_2026-11-28.md)
+- Document commit: `f8210e4a770204eb0c03900a2aef2e84b419f7b3`.
+- Official upstream `Kaos599/Maglev` v0.33 SHA `baaf83f0f3afd65d2eac135cce8b8bbabea8fbb3` verified. Fork `main` and `dev` each compare **identical** to that exact upstream SHA (0 ahead/0 behind). This closes the upstream/main/dev identity check, not the full WP0/WP1 gate.
+- PR #10 description updated to reflect CI #781 and the newer master gate; PR remains Draft.
+- CI #781 APK signing verification, versionCode verification and 16 KB LOAD alignment all passed; exact APK SHA recorded above.
