@@ -73,7 +73,9 @@ pub(super) fn split_block_reason(f: &SplitFacts) -> Option<&'static str> {
 }
 
 pub(super) fn split_count(f: &SplitFacts) -> Option<u32> {
-    split_block_reason(f)?;
+    if split_block_reason(f).is_some() {
+        return None;
+    }
     Some(f.requested.min(MAX_PARTS))
 }
 
