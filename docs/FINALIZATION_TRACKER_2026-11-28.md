@@ -124,3 +124,13 @@ Next work is WP0/WP1 evidence only: inventory repository branches/PRs/workflows/
 - Repeated canceled runs #782–#785 were caused by workflow concurrency `cancel-in-progress: true` while rapid follow-up commits entered the same branch group. Changed `.github/workflows/ci.yml` in commit `3835f6f`: concurrency group v4 and `cancel-in-progress: false`. This lets active full builds finish; GitHub may still replace a pending queued run in the same group.
 - #786 also passed before the concurrency fix; #787 is the first full run on the corrected policy and is green.
 - Current next gate remains the master spec/Issue #8 ordered acceptance: complete baseline regression review and WP0/WP1 ADR approval, then WP2 core task/direct recovery. Do not add unrelated features, merge PR #10, alter #702, or release before Galaxy acceptance.
+
+
+## WP2-A core/direct automated gate — CI #788 reviewed (2026-11-28)
+
+- CI #788 run https://github.com/dragonslayers-k/Maglev_forked/actions/runs/46118938309 completed successfully on `b2c27cc63f86f3db695366fa98370decf67067e0`; all required contract/JS/Rust/ARM64/APK/signing/version/upload steps passed.
+- Audited native Direct code and its existing regression coverage in `http_dl/machine.rs`, `driver.rs`, `sidecar.rs`, and `driver/segments.rs`: state transitions, request headers/cookies, pause/resume, persistence/restore, validator/range behavior, exact segment layout, fallback, speed limiting and local HTTP integration tests are already present.
+- **WP2-A automated test portion: PASS on #788.** No duplicate test or engine code was added because the existing coverage is broad and passed.
+- Added `docs/WP2_DIRECT_CORE_GATE_2026-11-28.md` (commit `a79ae3c5be9ce06a5064aafa54c7def4f4cb7dc4`) with the precise automated evidence and Galaxy acceptance checklist.
+- **WP2-B Galaxy acceptance: OPEN.** Need exact APK hash + Samsung device tests for real file/hash, Range resume, ignored Range restart, redirect/auth headers, failure/retry, process restore, segmented transfer and Torrent/HLS/DASH regressions. CI is not device acceptance.
+- Keep #702 baseline immutable, PR #10 Draft, and no merge/release until WP2-B passes.
