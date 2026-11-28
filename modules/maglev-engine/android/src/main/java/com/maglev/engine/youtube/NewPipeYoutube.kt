@@ -178,7 +178,7 @@ object NewPipeYoutube {
                 "headers" to mapOf("User-Agent" to USER_AGENT, "Referer" to url),
                 "pageUrl" to url,
                 // Native Range transfer uses four bounded parts after a 206/validator probe.
-                "segments" to 4,
+                "segments" to 8,
             )
             addPostProcess(options, "audio", sourceExt, targetExt, outputName, needsPostProcess, audioBitrateKbps)
             return EngineHost.addDownload(stream.content, options)

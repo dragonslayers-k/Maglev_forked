@@ -941,7 +941,7 @@ export default function BrowserScreen({ inTab = false }: { inTab?: boolean }) {
                     key={t.id}
                     id={t.id}
                     url={initialUrls.get(t.id) ?? t.url}
-                    active={focused && (appForeground || pipRequested) && t.id === activeId}
+                    active={focused && t.id === activeId}
                     adBlock={prefs.adBlock}
                     allowAdsHosts={prefs.allowAdsHosts}
                     desktopMode={desktop}

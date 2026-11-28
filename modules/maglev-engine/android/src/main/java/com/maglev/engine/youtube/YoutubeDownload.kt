@@ -314,7 +314,7 @@ object YoutubeDownload {
                 "pageUrl" to sourceUrl,
                 // Parallel Range transfer for direct audio/progressive files; DASH/HLS
                 // remains on the stream-specific mux path and does not use this option.
-                "segments" to if (streamUrl == null) 4 else 1,
+                "segments" to if (streamUrl != null) 1 else if (audioOnly) 8 else 4,
             )
             if (needsPostProcess) options["postprocess"] = linkedMapOf(
                 "kind" to outputKind,
