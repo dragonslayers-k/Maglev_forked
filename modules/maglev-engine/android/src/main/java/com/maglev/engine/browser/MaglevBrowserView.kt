@@ -1718,8 +1718,16 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
         val script = """
             (function() {
-              var videos = Array.prototype.slice.call(document.querySelectorAll('video'));
-              videos = videos.filter(function(v) { var s=window.getComputedStyle(v); return v.videoWidth>0&&v.videoHeight>0&&v.getClientRects().length>0&&s.display!=='none'&&s.visibility!=='hidden'&&v.clientWidth>0&&v.clientHeight>0; });
+              var videos=[],roots=[document],seen=[];
+              while(roots.length&&seen.length<128){
+                var root=roots.shift();if(!root||seen.indexOf(root)!==-1)continue;seen.push(root);
+                try{videos=videos.concat(Array.prototype.slice.call(root.querySelectorAll('video')));}catch(e){}
+                try{var nodes=root.querySelectorAll('*');for(var i=0;i<nodes.length;i++)if(nodes[i].shadowRoot)roots.push(nodes[i].shadowRoot);}catch(e){}
+              }
+              videos=videos.filter(function(v,i){return videos.indexOf(v)===i;}).filter(function(v){
+                var s=window.getComputedStyle(v);
+                return v.videoWidth>0&&v.videoHeight>0&&v.getClientRects().length>0&&s.display!=='none'&&s.visibility!=='hidden'&&v.clientWidth>0&&v.clientHeight>0;
+              });
               var playing=videos.filter(function(v){return !v.paused&&!v.ended&&v.readyState>=2;});
               function area(v){return Math.max(0,v.clientWidth)*Math.max(0,v.clientHeight);}
               playing.sort(function(a,b){return area(b)-area(a);});videos.sort(function(a,b){return area(b)-area(a);});
