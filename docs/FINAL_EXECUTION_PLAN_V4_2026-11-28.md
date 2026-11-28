@@ -114,3 +114,17 @@ Restore `scripts/test-page-scan-mse.js` and `scripts/test-wireguard-decoupled.js
 - V4보다 상세한 최신 architecture/reconciliation record: https://github.com/dragonslayers-k/Maglev_forked/blob/recovery/youtube-selection-reconcile-ci/docs/WP0_WP1_RECONCILIATION_2026-11-28.md
 - Master product spec gate: https://github.com/dragonslayers-k/Maglev_forked/blob/recovery/youtube-selection-reconcile-ci/docs/MASTER_MEDIA_DOWNLOADER_SPEC_KO.md (v1.0.1) and Issue #8.
 - Implementation blueprint reference: https://github.com/dragonslayers-k/Maglev_forked/blob/recovery/youtube-selection-reconcile-ci/docs/FINAL_IMPLEMENTATION_BLUEPRINT_KO_2026-11-28_V2.md
+
+
+## Addendum — Galaxy #814/#815 + source audit + CI #816–#823 (2026-11-28)
+
+V4 remains the execution-order authority; V3 is symptom/reference only. More specific and later supporting gate: `docs/WP2_DIRECT_CORE_GATE_2026-11-28.md` (WP2-A automated core/direct, WP2-B exact Galaxy APK acceptance). Product/source truth is further detailed by `docs/FINAL_PRODUCT_REFERENCE_AND_IMPLEMENTATION_MASTER.md`, `docs/FINAL_SOURCE_IMPLEMENTATION_MATRIX_KO.md`, and new `docs/YTDLNIS_SOURCE_PORTING_AUDIT_2026-11-28.md`.
+
+- #816 canonical PR #1 audio preset alternate-client fallback CI PASS.
+- #817 recovery PiP WebView main-thread dispatch CI PASS.
+- #818–#822 cancelled during branch advancement; do not label as test failures.
+- #823 recovery PR #10 CI PASS and verified ARM64 APK candidate (artifact 15264708435; APK SHA-256 `acc9205615d4ae456d5533cbd3accd9cc0889e666ffe62a724bcef84b134077e`). It is not a release or accepted baseline.
+- The #814/#815 device reports supersede any optimistic source/CI status: audio preset and speed, PiP, background playback and browser recognition/capture still fail or are incomplete.
+- Root-cause audit: YTDLnis includes managed runtime packages, comprehensive format/task model and worker/postprocess chain; Maglev currently has partial adapters and its own queue. Manifest-only PiP enablement is not full PiP lifecycle. No dedicated MediaSession playback service or verified MSE/live recording path was found in audited source.
+- Immediate work: inspect native segmenter fallback reason and actual audio format/abr/client mapping; fix the 320 kbps ceiling lookup with regression coverage. Then separate implementation gates for native PiP lifecycle, playback/MediaSession, browser candidate→Transfers, supported HLS live recording and Korean subtitle E2E. Preserve WireGuard and existing video download.
+- No merge/release/baseline promotion. #702 remains immutable; PR #1 canonical; PR #10 recovery Draft.
