@@ -1619,8 +1619,9 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
             callback.onCustomViewHidden()
             return
         }
+        // Keep the WebChromeClient-provided media view untouched. Setting its background can
+        // cover Surface-backed video on some WebView/Samsung builds during PiP transition.
         val container = FrameLayout(context).apply { setBackgroundColor(Color.BLACK) }
-        view.setBackgroundColor(Color.BLACK)
         container.addView(view, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
         customView = container
         customViewCallback = callback
@@ -1662,15 +1663,13 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
         )
 
         if (activity != null) {
-            // Fullscreen custom video is placed above the app chrome; PiP therefore captures the video surface,
-            // not the browser page and its toolbar. FULL_SENSOR permits both portrait and landscape video.
-            // Attach the fullscreen media surface to the Activity content root, not the decor
-            // overlay. Surface-backed WebView video can be omitted from the PiP window when its
-            // custom view is parented directly to decorView on some Samsung/Android builds.
+            // WebChromeClient's fullscreen contract expects its custom media view to be attached
+            // to the Activity decor root. Keep the video surface at the window level so Android
+            // PiP captures the same Surface hierarchy used by the fullscreen player.
+            // FULL_SENSOR permits both portrait and landscape video.
             val decor = activity.window.decorView as ViewGroup
-            val contentRoot = activity.findViewById<ViewGroup>(android.R.id.content) ?: decor
-            contentRoot.addView(container, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
-            customViewHost = contentRoot
+            decor.addView(container, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
+            customViewHost = decor
             previousOrientation = activity.requestedOrientation
             activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR
             val controller = WindowCompat.getInsetsController(activity.window, decor)
