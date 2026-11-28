@@ -1624,8 +1624,14 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
         customView = container
         customViewCallback = callback
         fullscreenVideoActive = true
-        activeVideoAspectRatioKnown = false
-        activeVideoAspectRatio = 16.0 / 9.0
+        // Browser-menu PiP already measured the active playing HTML video before requesting
+        // fullscreen. Keep that ratio through WebChromeClient's custom-view handoff; resetting
+        // it here made the PiP window fall back to 16:9 even for portrait/ultrawide playback.
+        val requestedFromBrowserMenu = pipPendingFromBrowserMenu
+        if (!requestedFromBrowserMenu) {
+            activeVideoAspectRatioKnown = false
+            activeVideoAspectRatio = 16.0 / 9.0
+        }
 
         val activity = appContext.currentActivity
         val pipButton = TextView(context).apply {
