@@ -27,8 +27,9 @@ use crate::error::{
 pub const MAX_PLAYLIST_BYTES: u64 = 2 * 1024 * 1024;
 /// More segments than this in one track is refused.
 pub const MAX_SEGMENTS: usize = 20_000;
-/// Segments fetched at once; they are written strictly in order.
-pub const MAX_IN_FLIGHT: usize = 3;
+/// Bounded parallel segment window; four keeps DASH/HLS throughput responsive without unbounded buffering.
+/// Completed segments are still written strictly in order.
+pub const MAX_IN_FLIGHT: usize = 4;
 /// One segment is held in memory while it is fetched. A bigger one is refused (`STREAM_UNSUPPORTED`).
 pub const MAX_SEGMENT_BYTES: u64 = 48 * 1024 * 1024;
 
