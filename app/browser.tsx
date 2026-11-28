@@ -775,7 +775,8 @@ export default function BrowserScreen({ inTab = false }: { inTab?: boolean }) {
 
   const enterPictureInPicture = useCallback(() => {
     setMenuOpen(false);
-    setPipRequested(true);
+    // Do not switch the browser into its compact PiP layout until the native request is accepted.
+    // A missing native module or a page with no active video must leave the browser fully usable.
     // The menu is a modal sheet. Wait for its close animation before asking Android to resize
     // the Activity into PiP; otherwise the dim/scrim layer can be captured in the PiP window.
     afterSheetCloses(() => {
@@ -787,6 +788,7 @@ export default function BrowserScreen({ inTab = false }: { inTab?: boolean }) {
       const aspectRatio = video ? (video.width! / video.height!) : 16 / 9;
       void maglevEngine.enterBrowserPictureInPicture(aspectRatio).then((result) => {
         if (result.ok) {
+          setPipRequested(true);
           // A pending result means the active page is being promoted to fullscreen video first;
           // native PiP entry follows from onShowCustomView, so don't announce success prematurely.
           if ((result as any).pending !== true) showNotice({ message: notices.browser.pipStarted }, 2500);
