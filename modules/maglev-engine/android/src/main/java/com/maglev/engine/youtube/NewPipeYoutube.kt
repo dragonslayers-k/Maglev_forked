@@ -175,12 +175,12 @@ object NewPipeYoutube {
             val needsPostProcess = outputContainer != "original" && (outputExt != sourceExt || targetExt in setOf("alac", "vorbis"))
             val outputName = if (needsPostProcess) uniqueOutputName(context, baseName, outputExt, sourceName) else sourceName
             // Log stable format metadata only; never log signed URLs, cookies or headers.
-            Log.i("MaglevAudioDiag", "provider=newpipe itag=" + itag + " bitrateBps=" + stream.bitrate + " contentLength=" + stream.itagItem!!.contentLength + " ext=" + sourceExt + " requestedSegments=8)
+            Log.i("MaglevAudioDiag", "provider=newpipe itag=$itag bitrateBps=${stream.bitrate} contentLength=${stream.itagItem!!.contentLength} ext=$sourceExt requestedSegments=8")
             val options = linkedMapOf<String, Any?>(
                 "name" to sourceName,
                 "headers" to mapOf("User-Agent" to USER_AGENT, "Referer" to url),
                 "pageUrl" to url,
-                // Native Range transfer uses four bounded parts after a 206/validator probe.
+                // Native Range transfer uses up to eight bounded parts after a 206/validator probe.
                 "segments" to 8,
             )
             addPostProcess(options, "audio", sourceExt, targetExt, outputName, needsPostProcess, audioBitrateKbps)
