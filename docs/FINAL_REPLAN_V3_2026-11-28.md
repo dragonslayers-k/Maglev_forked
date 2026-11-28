@@ -73,3 +73,12 @@
 
 ## 5. Immediate next action
 Do not ask user to install #796 as a fix. Begin Gate B audio-only trace/repair, because #790's audio speed is reproducible user-visible failure and the current #796 change only corrected tests. In parallel inspect Gate C playback architecture only after the audio change is isolated. Once one actual runtime fix is committed, run full CI and report exact artifact + what is and is not fixed.
+
+
+## Source-level audio path audit — first Gate B finding
+
+- `NewPipeYoutube.add()` already passes `segments=8` for direct audio.
+- `YoutubeDownload.add()` already passes `segments=8` for yt-dlp direct audio and `segments=1` for HLS/DASH stream/mux path. This is intentional: segmented Range is for direct files; stream mux path is separate.
+- Native `native/maglev-core/src/http_dl/driver/segments.rs` caps at 8 parts and only enables splitting when file size is at least 8 MiB, range probe confirms 206/byte ranges, and a strong validator (ETag or Last-Modified) is available. Any unsupported/changed response permanently falls back to one connection.
+- Therefore simply raising `segments` or changing 8 to a larger number is not a valid fix. The 20–30 KB/s report needs a trace of the exact selected audio format/URL class, whether Range probe passed, split_count/fallback reason, transfer bytes/time, and any limiter/proxy state. Redact signed URL query, cookies and auth headers.
+- Gate B implementation must instrument this decision path or add a deterministic fixture that reproduces the fallback/limiter condition before changing concurrency. Compare same audio asset with direct download and current engine under same network; preserve normal range validation and server refusal behavior.
