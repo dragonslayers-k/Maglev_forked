@@ -203,3 +203,13 @@ Do not continue document-only “feature progress.” Next source commits must f
 - Accurate PR #1 vs #702 tree comparison: 1,588 identical / 39 modified / 4 added / 4 deleted (47 paths). Previous 187/36/4/0 calculation was incomplete and is invalid. Deleted paths include `scripts/test-page-scan-mse.js` and `scripts/test-wireguard-decoupled.js`; these regression tests must be restored or replaced with equivalent stronger coverage before broad feature work. Preserve the 2 deleted docs via history/reference.
 - V4 plan saved: `docs/FINAL_EXECUTION_PLAN_V4_2026-11-28.md`. Immediate next stage is WP0 regression restoration and targeted tests on canonical PR #1 branch, then complete WP1 ADR review; only then selectively reconcile PR #10 candidate code. V3 audio diagnosis remains a later runtime gate, not a license to bypass WP0/WP1.
 - User #790 acceptance remains unchanged: WireGuard and YouTube video work; audio 20–30 KB/s; PiP black/frozen; background playback and usable media detection/capture fail. Do not claim these resolved by #799.
+
+
+## WP0 test restoration execution — 2026-11-28
+
+- On canonical PR #1 branch `feature/p1-video-detection-observer`, restored exact #702 regression scripts from baseline commit `45e685603a3a23507b61cb49398a78380d5db7a5`:
+  - `scripts/test-page-scan-mse.js` — commit `3092a7349df13827344bfba5567cc89a5ae62837`.
+  - `scripts/test-wireguard-decoupled.js` — commit `7e64c1fe390969768c45ebbea51828a11454ae0b`.
+- CI #802 is running against head `7e64c1fe390969768c45ebbea51828a11454ae0b`: https://github.com/dragonslayers-k/Maglev_forked/actions/runs/46134223904. Latest checked jobs are in progress; result not yet known.
+- V4 plan was updated with exact commits and the warning not to weaken legacy MSE/WireGuard contracts without equivalent evidence: commit `91680ace1ac2033bd25a524fe0ec40e1df27dec0`.
+- Do not mark WP0 complete until #802 result and any exposed regression are resolved; no merge/release/baseline promotion.
