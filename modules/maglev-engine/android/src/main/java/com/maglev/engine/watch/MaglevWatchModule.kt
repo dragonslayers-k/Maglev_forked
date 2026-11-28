@@ -35,15 +35,27 @@ class MaglevWatchModule : Module() {
                 // surface until their fullscreen control is invoked. Request that transition from
                 // the active WebView; showFullscreen will enter PiP after measuring the video ratio.
                 activity.runOnUiThread {
-                    MaglevBrowserView.requestFullscreenVideoForPip(requestedAspectRatio) { accepted ->
+                    MaglevBrowserView.requestFullscreenVideoForPip(requestedAspectRatio) { accepted, reason ->
                         if (accepted) {
                             promise.resolve(mapOf("ok" to true, "pending" to true))
                         } else {
-                            promise.resolve(mapOf(
-                                "ok" to false,
-                                "code" to "VIDEO_NOT_FOUND",
-                                "message" to "현재 페이지에서 재생 가능한 동영상을 찾지 못했습니다. 먼저 영상 재생을 시작하세요."
-                            ))
+                            val code = when (reason) {
+                                "TAB_NOT_ACTIVE", "NO_ACTIVE_TAB" -> "TAB_NOT_ACTIVE"
+                                "NO_VIDEO", "NO_RESPONSE" -> "VIDEO_NOT_FOUND"
+                                "BAD_RATIO" -> "BAD_VIDEO_RATIO"
+                                "FULLSCREEN_UNAVAILABLE" -> "FULLSCREEN_UNAVAILABLE"
+                                "FULLSCREEN_TIMEOUT" -> "FULLSCREEN_TIMEOUT"
+                                else -> "FULLSCREEN_HANDOFF_FAILED"
+                            }
+                            val message = when (code) {
+                                "TAB_NOT_ACTIVE" -> "현재 탭이 활성 상태가 아닙니다. 영상이 재생 중인 탭으로 돌아와 다시 시도하세요."
+                                "VIDEO_NOT_FOUND" -> "현재 페이지에서 재생 중인 동영상을 찾지 못했습니다. 먼저 영상 재생을 시작하세요."
+                                "BAD_VIDEO_RATIO" -> "영상 화면 비율을 확인할 수 없습니다. 영상 플레이어의 전체 화면 버튼을 눌러 다시 시도하세요."
+                                "FULLSCREEN_UNAVAILABLE" -> "이 플레이어는 전체 화면 전환을 지원하지 않습니다. 플레이어의 전체 화면 버튼을 먼저 사용하세요."
+                                "FULLSCREEN_TIMEOUT" -> "전체 화면 전환 응답이 없습니다. 플레이어의 전체 화면 버튼을 누른 뒤 앱의 PiP 버튼을 다시 누르세요."
+                                else -> "브라우저에서 전체 화면 전환을 완료하지 못했습니다. 플레이어의 전체 화면 버튼을 누른 뒤 앱의 PiP 버튼을 다시 누르세요."
+                            }
+                            promise.resolve(mapOf("ok" to false, "code" to code, "message" to message))
                         }
                     }
                 }
