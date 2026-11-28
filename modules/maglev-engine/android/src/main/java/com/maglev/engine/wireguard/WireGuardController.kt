@@ -1,6 +1,7 @@
 package com.maglev.engine.wireguard
 
 import android.content.Context
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
@@ -521,6 +522,7 @@ object WireGuardController {
     }
 
     private fun webViewProviderSummary(): String = runCatching {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return@runCatching "android-api-${Build.VERSION.SDK_INT}"
         val info = WebView.getCurrentWebViewPackage()
         if (info == null) "unknown" else "${info.packageName}@${info.versionName}"
     }.getOrDefault("unknown")
