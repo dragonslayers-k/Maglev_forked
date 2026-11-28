@@ -31,19 +31,33 @@ class MaglevWatchModule : Module() {
             } else if (activity == null) {
                 promise.resolve(mapOf("ok" to false, "code" to "NOT_READY", "message" to "The app screen is not available."))
             } else if (!MaglevBrowserView.fullscreenVideoActive) {
-                // Inline players (including YouTube mobile Web) do not expose a native custom video
-                // surface until their fullscreen control is invoked. Request that transition from
-                // the active WebView; showFullscreen will enter PiP after measuring the video ratio.
-                activity.runOnUiThread {
-                    MaglevBrowserView.requestFullscreenVideoForPip(requestedAspectRatio) { accepted ->
-                        if (accepted) {
-                            promise.resolve(mapOf("ok" to true, "pending" to true))
+                // Validate the currently playing visible video in WebView first. Never enter
+                // PiP based only on stale media-scan dimensions or an arbitrary 16:9 fallback.
+                MaglevBrowserView.measureActiveVideoForPip { measuredRatio, reason ->
+                    if (measuredRatio == null) {
+                        val code = if (reason == "BAD_RATIO") "BAD_VIDEO_RATIO" else "VIDEO_NOT_FOUND"
+                        val message = if (code == "BAD_VIDEO_RATIO") {
+                            "영상 비율을 확인할 수 없습니다."
                         } else {
-                            promise.resolve(mapOf(
-                                "ok" to false,
-                                "code" to "VIDEO_NOT_FOUND",
-                                "message" to "현재 페이지에서 재생 가능한 동영상을 찾지 못했습니다. 먼저 영상 재생을 시작하세요."
-                            ))
+                            "현재 탭에서 재생 중인 동영상을 찾지 못했습니다. 영상을 재생한 뒤 다시 시도하세요."
+                        }
+                        promise.resolve(mapOf("ok" to false, "code" to code, "message" to message))
+                    } else {
+                        val ratio = measuredRatio.coerceIn(0.42, 2.39)
+                        val numerator = (ratio * 1000.0).toInt().coerceAtLeast(1)
+                        val params = PictureInPictureParams.Builder()
+                            .setAspectRatio(Rational(numerator, 1000))
+                            .build()
+                        activity.runOnUiThread {
+                            try {
+                                val entered = activity.enterPictureInPictureMode(params)
+                                promise.resolve(
+                                    if (entered) mapOf("ok" to true)
+                                    else mapOf("ok" to false, "code" to "PIP_DENIED", "message" to "Android에서 PiP 전환을 거부했습니다. 영상이 재생 중인지 확인하고 다시 시도하세요.")
+                                )
+                            } catch (_: Throwable) {
+                                promise.resolve(mapOf("ok" to false, "code" to "INTERNAL", "message" to "Android에서 PiP를 시작하지 못했습니다."))
+                            }
                         }
                     }
                 }
@@ -67,7 +81,7 @@ class MaglevWatchModule : Module() {
                 activity.runOnUiThread {
                     try {
                         val entered = activity.enterPictureInPictureMode(params)
-                        promise.resolve(mapOf("ok" to entered))
+                        promise.resolve(if (entered) mapOf("ok" to true) else mapOf("ok" to false, "code" to "PIP_DENIED", "message" to "Android에서 PiP 전환을 거부했습니다. 재생 중인 영상인지 확인하고 다시 시도하세요."))
                     } catch (_: Throwable) {
                         promise.resolve(mapOf("ok" to false, "code" to "INTERNAL", "message" to "Android could not start picture-in-picture."))
                     }

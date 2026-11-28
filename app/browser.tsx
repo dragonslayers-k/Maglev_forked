@@ -106,7 +106,8 @@ export default function BrowserScreen({ inTab = false }: { inTab?: boolean }) {
   const ready = tabsState != null;
 
   // Section 30: the Browse tab and the /browser stack route can both exist and share one tab set. Only the focused
-  // instance mounts native views (it takes the owner token on focus), and a blurred or backgrounded browser pauses them.
+  // instance mounts native views (it takes the owner token on focus). Blurred routes and nonselected tabs pause;
+  // the selected WebView remains active across Activity backgrounding so its user-started HTML media is not paused here.
   const instanceId = useId();
   const focused = useIsFocused();
   useEffect(() => {
@@ -775,7 +776,8 @@ export default function BrowserScreen({ inTab = false }: { inTab?: boolean }) {
 
   const enterPictureInPicture = useCallback(() => {
     setMenuOpen(false);
-    setPipRequested(true);
+    // Do not switch the browser into its compact PiP layout until the native request is accepted.
+    // A missing native module or a page with no active video must leave the browser fully usable.
     // The menu is a modal sheet. Wait for its close animation before asking Android to resize
     // the Activity into PiP; otherwise the dim/scrim layer can be captured in the PiP window.
     afterSheetCloses(() => {
@@ -787,9 +789,9 @@ export default function BrowserScreen({ inTab = false }: { inTab?: boolean }) {
       const aspectRatio = video ? (video.width! / video.height!) : 16 / 9;
       void maglevEngine.enterBrowserPictureInPicture(aspectRatio).then((result) => {
         if (result.ok) {
-          // A pending result means the active page is being promoted to fullscreen video first;
-          // native PiP entry follows from onShowCustomView, so don't announce success prematurely.
-          if ((result as any).pending !== true) showNotice({ message: notices.browser.pipStarted }, 2500);
+          setPipRequested(true);
+          // The native bridge resolves only after Android accepts Activity PiP.
+          showNotice({ message: notices.browser.pipStarted }, 2500);
         } else {
           setPipRequested(false);
           showNotice({ message: result.message || notices.browser.pipFailed }, 4000);
@@ -940,7 +942,7 @@ export default function BrowserScreen({ inTab = false }: { inTab?: boolean }) {
                     key={t.id}
                     id={t.id}
                     url={initialUrls.get(t.id) ?? t.url}
-                    active={focused && (appForeground || pipRequested) && t.id === activeId}
+                    active={focused && t.id === activeId}
                     adBlock={prefs.adBlock}
                     allowAdsHosts={prefs.allowAdsHosts}
                     desktopMode={desktop}

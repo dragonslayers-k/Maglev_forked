@@ -16,9 +16,10 @@ permissions:
   contents: read
 
 concurrency:
-  # v3 separates the final validation from stale pending runs left by earlier recovery attempts.
-  group: ci-${{ github.ref }}-v3
-  cancel-in-progress: true
+  # v4: never cancel a running full CI/APK build when another commit arrives.
+  # GitHub may replace an older pending run in this group, but the active build completes.
+  group: ci-${{ github.ref }}-v4
+  cancel-in-progress: false
 
 jobs:
   rust-test:

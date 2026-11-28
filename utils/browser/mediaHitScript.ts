@@ -60,13 +60,41 @@ const SOURCE = String.raw`
       return u ? abs(u) : '';
     }
 
+    // Walk parentElement and cross shadow-root boundaries via host. Element.closest() alone
+    // cannot see media nested inside custom-player shadow DOMs.
+    function parentAcrossShadow(el) {
+      if (el.parentElement) return el.parentElement;
+      try {
+        var root = el.getRootNode ? el.getRootNode() : null;
+        return root && root.host ? root.host : null;
+      } catch (e) { return null; }
+    }
+
     function mediaOf(el) {
       if (!el || el.nodeType !== 1) return null;
-      var m = el.closest ? el.closest('img,video,picture,source') : null;
-      if (!m) return null;
-      if (m.tagName === 'PICTURE') m = m.querySelector('img') || m;
-      else if (m.tagName === 'SOURCE') m = m.closest('video') || (m.parentNode && m.parentNode.querySelector('img')) || m;
-      return m && (m.tagName === 'IMG' || m.tagName === 'VIDEO') ? m : null;
+      var m = el, steps = 0;
+      while (m && steps++ < 64) {
+        var tag = s(m.tagName).toUpperCase();
+        if (tag === 'IMG' || tag === 'VIDEO') return m;
+        if (tag === 'PICTURE') {
+          var image = m.querySelector ? m.querySelector('img') : null;
+          if (image) return image;
+        }
+        if (tag === 'SOURCE') {
+          var parent = m.parentNode, nested = 0;
+          while (parent && nested++ < 64) {
+            var parentTag = s(parent.tagName).toUpperCase();
+            if (parentTag === 'VIDEO') return parent;
+            if (parentTag === 'PICTURE') {
+              var pictureImage = parent.querySelector ? parent.querySelector('img') : null;
+              if (pictureImage) return pictureImage;
+            }
+            parent = parentAcrossShadow(parent);
+          }
+        }
+        m = parentAcrossShadow(m);
+      }
+      return null;
     }
 
     function find(t, x, y) {

@@ -2,6 +2,8 @@ package com.maglev.engine
 
 import android.Manifest
 import android.app.Activity
+import android.app.PictureInPictureParams
+import android.util.Rational
 import android.content.Context
 import android.util.Log
 import android.content.Intent
@@ -157,6 +159,57 @@ class MaglevEngineModule : Module() {
 
     private fun ModuleDefinitionBuilder.defineModulePart0() {
         Name("MaglevEngine")
+        // PiP is also exposed on the primary native module as a fallback: some Expo builds
+        // omit separately autolinked auxiliary modules even though MaglevEngine is present.
+        AsyncFunction("enterBrowserPictureInPicture") { requestedAspectRatio: Double, promise: Promise ->
+            val activity = appContext.currentActivity
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+                promise.resolve(mapOf("ok" to false, "code" to "UNSUPPORTED", "message" to "Android 8.0 or later is required for PiP."))
+            } else if (activity == null) {
+                promise.resolve(mapOf("ok" to false, "code" to "NOT_READY", "message" to "The app screen is not available."))
+            } else if (!MaglevBrowserView.fullscreenVideoActive) {
+                activity.runOnUiThread {
+                    MaglevBrowserView.requestFullscreenVideoForPip(requestedAspectRatio) { accepted, reason ->
+                        if (accepted) {
+                            promise.resolve(mapOf("ok" to true, "pending" to true))
+                        } else {
+                            val code = when (reason) {
+                                "TAB_NOT_ACTIVE", "NO_ACTIVE_TAB" -> "TAB_NOT_ACTIVE"
+                                "NO_VIDEO", "NO_RESPONSE" -> "VIDEO_NOT_FOUND"
+                                "BAD_RATIO" -> "BAD_VIDEO_RATIO"
+                                "FULLSCREEN_UNAVAILABLE" -> "FULLSCREEN_UNAVAILABLE"
+                                "FULLSCREEN_TIMEOUT" -> "FULLSCREEN_TIMEOUT"
+                                else -> "FULLSCREEN_HANDOFF_FAILED"
+                            }
+                            val message = when (code) {
+                                "TAB_NOT_ACTIVE" -> "현재 탭이 활성 상태가 아닙니다. 영상이 재생 중인 탭으로 돌아와 다시 시도하세요."
+                                "VIDEO_NOT_FOUND" -> "현재 페이지에서 재생 중인 동영상을 찾지 못했습니다. 먼저 영상 재생을 시작하세요."
+                                "BAD_VIDEO_RATIO" -> "영상 화면 비율을 확인할 수 없습니다. 플레이어의 전체 화면 버튼을 눌러 다시 시도하세요."
+                                "FULLSCREEN_UNAVAILABLE" -> "이 플레이어는 전체 화면 전환을 지원하지 않습니다. 플레이어의 전체 화면 버튼을 먼저 사용하세요."
+                                "FULLSCREEN_TIMEOUT" -> "전체 화면 전환 응답이 없습니다. 플레이어의 전체 화면 버튼을 누른 뒤 앱의 PiP 버튼을 다시 누르세요."
+                                else -> "브라우저에서 전체 화면 전환을 완료하지 못했습니다. 플레이어의 전체 화면 버튼을 누른 뒤 앱의 PiP 버튼을 다시 누르세요."
+                            }
+                            promise.resolve(mapOf("ok" to false, "code" to code, "message" to message))
+                        }
+                    }
+                }
+            } else {
+                val active = MaglevBrowserView.activeVideoAspectRatio
+                val ratio = if (MaglevBrowserView.activeVideoAspectRatioKnown && active.isFinite()) active.coerceIn(0.42, 2.39)
+                    else if (requestedAspectRatio.isFinite()) requestedAspectRatio.coerceIn(0.42, 2.39) else 16.0 / 9.0
+                val params = PictureInPictureParams.Builder()
+                    .setAspectRatio(Rational((ratio * 1000.0).toInt().coerceAtLeast(1), 1000))
+                    .build()
+                activity.runOnUiThread {
+                    try {
+                        val entered = activity.enterPictureInPictureMode(params)
+                        promise.resolve(if (entered) mapOf("ok" to true) else mapOf("ok" to false, "code" to "PIP_DENIED", "message" to "Android에서 PiP 전환을 거부했습니다. 재생 중인 영상인지 확인하고 다시 시도하세요."))
+                    } catch (_: Throwable) {
+                        promise.resolve(mapOf("ok" to false, "code" to "INTERNAL", "message" to "Android could not start picture-in-picture."))
+                    }
+                }
+            }
+        }
         Events("onTelemetry", "onTorrentCompleted", "onNotificationAction", "onStorageStatus", "onUpdateProgress", "onUpdateResult", "onBlocksChanged")
         OnCreate {
             context?.let {

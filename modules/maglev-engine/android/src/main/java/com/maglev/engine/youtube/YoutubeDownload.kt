@@ -236,15 +236,15 @@ object YoutubeDownload {
         return try {
             val app = context.applicationContext
             prepareYtDlp(app)
-            val selected = YoutubeDL.getInstance().getInfo(requestFor(sourceUrl, playerClient))
+            var selected = YoutubeDL.getInstance().getInfo(requestFor(sourceUrl, playerClient))
             val audioOnly = outputKind == "audio"
             val maxAudioKbps = formatId.removePrefix("bestaudio").removePrefix("_").toDoubleOrNull()
-            val availableFormats = selected.formats.orEmpty()
-            val audioFormats = availableFormats.filter { format ->
+            var availableFormats = selected.formats.orEmpty()
+            var audioFormats = availableFormats.filter { format ->
                 !format.acodec.isNullOrBlank() && format.acodec != "none" &&
                     (format.vcodec.isNullOrBlank() || format.vcodec == "none")
             }
-            val requested = if (audioOnly) {
+            var requested = if (audioOnly) {
                 if (!formatId.startsWith("bestaudio")) {
                     audioFormats.firstOrNull { it.formatId == formatId }
                 } else if (maxAudioKbps != null) {
@@ -254,6 +254,38 @@ object YoutubeDownload {
                     audioFormats.maxByOrNull { it.abr }
                 }
             } else availableFormats.firstOrNull { it.formatId == formatId }
+
+            // Metadata is gathered across several player clients, but the preset row used
+            // android_vr unconditionally. That client may not expose the audio-only URL at
+            // add time even when web_safari/web_embedded do. Retry the other clients only
+            // for unresolved bestaudio presets; keep the requested ceiling strict.
+            if (audioOnly && requested == null && formatId.startsWith("bestaudio")) {
+                for (fallbackClient in PLAYER_CLIENTS) {
+                    if (fallbackClient == playerClient) continue
+                    val fallbackInfo = runCatching {
+                        YoutubeDL.getInstance().getInfo(requestFor(sourceUrl, fallbackClient))
+                    }.getOrNull() ?: continue
+                    val fallbackFormats = fallbackInfo.formats.orEmpty()
+                    val fallbackAudio = fallbackFormats.filter { format ->
+                        !format.acodec.isNullOrBlank() && format.acodec != "none" &&
+                            (format.vcodec.isNullOrBlank() || format.vcodec == "none")
+                    }
+                    val fallbackRequested = if (maxAudioKbps != null) {
+                        fallbackAudio.filter { it.abr > 0 && it.abr <= maxAudioKbps }.maxByOrNull { it.abr }
+                    } else {
+                        fallbackAudio.maxByOrNull { it.abr }
+                    }
+                    if (fallbackRequested?.url.isNullOrBlank()) continue
+                    selected = fallbackInfo
+                    availableFormats = fallbackFormats
+                    audioFormats = fallbackAudio
+                    requested = fallbackRequested
+                    Log.i(TAG, "Audio preset resolved with fallback client=" + fallbackClient +
+                        " ceilingKbps=" + (maxAudioKbps?.toInt() ?: 0) +
+                        " selectedKbps=" + fallbackRequested!!.abr)
+                    break
+                }
+            }
             if (audioOnly && requested == null) {
                 return Json.failure(
                     if (maxAudioKbps != null) "YOUTUBE_AUDIO_BITRATE_UNAVAILABLE" else "YOUTUBE_AUDIO_FORMAT_UNRESOLVED",
@@ -314,7 +346,7 @@ object YoutubeDownload {
                 "pageUrl" to sourceUrl,
                 // Parallel Range transfer for direct audio/progressive files; DASH/HLS
                 // remains on the stream-specific mux path and does not use this option.
-                "segments" to if (streamUrl == null) 4 else 1,
+                "segments" to if (streamUrl != null) 1 else if (audioOnly) 8 else 4,
             )
             if (needsPostProcess) options["postprocess"] = linkedMapOf(
                 "kind" to outputKind,

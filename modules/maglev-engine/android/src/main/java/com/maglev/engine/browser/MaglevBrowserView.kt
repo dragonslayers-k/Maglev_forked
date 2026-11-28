@@ -393,6 +393,13 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
 
     private fun pauseNow() {
         pausePending = false
+        // Android pauses the Activity during PiP entry. Keep the fullscreen WebChrome media surface
+        // and WebView alive when this view owns that PiP playback; pausing it here produces a frozen window.
+        val activity = appContext.currentActivity
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && activity?.isInPictureInPictureMode == true && customView != null) {
+            webView.onResume()
+            return
+        }
         webView.onPause()
         webView.evaluateJavascript(PAUSE_MEDIA_JS, null)
     }
@@ -1202,6 +1209,14 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
             val uri = request.url ?: return null
             val scheme = uri.scheme?.lowercase()
             if (scheme != "http" && scheme != "https") return null
+            // If app-local WireGuard is enabled but WebView has not confirmed the proxy route,
+            // block at the native request boundary rather than allowing a direct-network escape.
+            if (WireGuardController.shouldBlockBrowserTraffic(context)) {
+                blockedPage.incrementAndGet()
+                blockedTotal.incrementAndGet()
+                scheduleFlush()
+                return emptyResponse()
+            }
             val host = uri.host
             val page = pageHost
             if (adBlock && !request.isForMainFrame && host != null && !hostAllowsAds(page) &&
@@ -1226,6 +1241,12 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
         override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
             val uri = request.url ?: return true
             val scheme = uri.scheme?.lowercase()
+            if ((scheme == "http" || scheme == "https") && WireGuardController.shouldBlockBrowserTraffic(context)) {
+                blockedPage.incrementAndGet()
+                blockedTotal.incrementAndGet()
+                scheduleFlush()
+                return true
+            }
             if (scheme == "magnet") {
                 if (request.hasGesture()) onMagnet(mapOf("uri" to uri.toString())) else refuse(uri.toString(), "scheme")
                 return true
@@ -1559,8 +1580,44 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
     // region Fullscreen video
 
     /** Requests the page player's fullscreen video surface from the browser PiP menu. */
-    private fun requestFullscreenVideoForPipInternal(requestedAspectRatio: Double, onResult: (Boolean) -> Unit) {
-        if (destroyed || !active) { onResult(false); return }
+    private fun measureActiveVideoForPipInternal(onResult: (Double?, String?) -> Unit) {
+        if (destroyed || !active) { onResult(null, "TAB_NOT_ACTIVE"); return }
+        val script = """
+            (function(){
+              var roots=[document],seen=[],videos=[];
+              while(roots.length&&seen.length<128){
+                var r=roots.shift();if(!r||seen.indexOf(r)!==-1)continue;seen.push(r);
+                try{videos=videos.concat(Array.prototype.slice.call(r.querySelectorAll('video')));}catch(e){}
+                try{var els=r.querySelectorAll('*');for(var i=0;i<els.length;i++)if(els[i].shadowRoot)roots.push(els[i].shadowRoot);}catch(e){}
+              }
+              videos=videos.filter(function(v,i){return videos.indexOf(v)===i;}).filter(function(v){
+                try{var s=getComputedStyle(v);return !v.paused&&!v.ended&&v.readyState>=2&&v.videoWidth>0&&v.videoHeight>0&&v.getClientRects().length>0&&s.display!=='none'&&s.visibility!=='hidden'&&v.clientWidth>0&&v.clientHeight>0;}catch(e){return false;}
+              });
+              videos.sort(function(a,b){return b.clientWidth*b.clientHeight-a.clientWidth*a.clientHeight;});
+              var v=videos[0];if(!v)return 'NO_VIDEO';
+              var ratio=v.videoWidth/v.videoHeight;
+              return isFinite(ratio)&&ratio>=0.42&&ratio<=2.39?String(ratio):'BAD_RATIO';
+            })()
+        """.trimIndent()
+        // Expo AsyncFunction handlers execute on AsyncFunctionQueue, not Android's main
+        // thread. WebView.evaluateJavascript is main-thread-only; post through the WebView
+        // itself so browser PiP measurement cannot fail with CalledFromWrongThreadException.
+        webView.post {
+            if (destroyed || !active) {
+                onResult(null, "TAB_NOT_ACTIVE")
+                return@post
+            }
+            webView.evaluateJavascript(script) { raw ->
+                val value = raw?.trim()?.removeSurrounding("\"")
+                val ratio = value?.toDoubleOrNull()
+                if (ratio != null && ratio.isFinite() && ratio in 0.42..2.39) onResult(ratio, null)
+                else onResult(null, value ?: "NO_RESPONSE")
+            }
+        }
+    }
+
+    private fun requestFullscreenVideoForPipInternal(requestedAspectRatio: Double, onResult: (Boolean, String?) -> Unit) {
+        if (destroyed || !active) { onResult(false, "TAB_NOT_ACTIVE"); return }
         if (requestedAspectRatio.isFinite() && requestedAspectRatio in 0.42..2.39) {
             activeVideoAspectRatio = requestedAspectRatio
             activeVideoAspectRatioKnown = true
@@ -1569,31 +1626,48 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
         mainHandler.postDelayed({ if (pipPendingFromBrowserMenu && !fullscreenVideoActive) pipPendingFromBrowserMenu = false }, 5_000L)
         val script = """
             (function() {
-              var videos = Array.prototype.slice.call(document.querySelectorAll('video'));
-              videos = videos.filter(function(v) {
-                var s = window.getComputedStyle(v);
-                return !v.paused && !v.ended && v.readyState >= 2 && v.videoWidth > 0 && v.videoHeight > 0 &&
-                  v.getClientRects().length > 0 && s.display !== 'none' && s.visibility !== 'hidden' &&
-                  v.clientWidth > 0 && v.clientHeight > 0;
+              var videos=[],roots=[document],seen=[];
+              while(roots.length&&seen.length<128){var cur=roots.shift();if(!cur||seen.indexOf(cur)!==-1)continue;seen.push(cur);
+                try{videos=videos.concat(Array.prototype.slice.call(cur.querySelectorAll('video')));}catch(e){}
+                try{var els=cur.querySelectorAll('*');for(var i=0;i<els.length;i++)if(els[i].shadowRoot)roots.push(els[i].shadowRoot);}catch(e){}
+              }
+              videos=videos.filter(function(v,i){return videos.indexOf(v)===i;}).filter(function(v){
+                var s=window.getComputedStyle(v);return !v.paused&&!v.ended&&v.readyState>=2&&v.videoWidth>0&&v.videoHeight>0&&v.getClientRects().length>0&&s.display!=='none'&&s.visibility!=='hidden'&&v.clientWidth>0&&v.clientHeight>0;
               });
-              videos.sort(function(a,b){return (b.clientWidth*b.clientHeight)-(a.clientWidth*a.clientHeight);});
-              var v=videos[0]; if(!v)return 0;
-              var ratio=v.videoWidth/v.videoHeight;if(!isFinite(ratio)||ratio<0.42||ratio>2.39)return 0;
-              var root=v;
-              for(var d=0;d<7&&root.parentElement;d++){root=root.parentElement;if(root.querySelector&&root.querySelector('.ytp-fullscreen-button'))break;}
-              var selectors=['.ytp-fullscreen-button','[aria-label*="fullscreen" i]','[title*="fullscreen" i]','.fullscreen-button'];
-              for(var i=0;i<selectors.length;i++){var b=root.querySelector?root.querySelector(selectors[i]):null;if(b&&b.getClientRects().length&&!b.disabled){try{b.click();return ratio;}catch(e){}}}
-              try{if(v.requestFullscreen){var p=v.requestFullscreen();if(p&&p.catch)p.catch(function(){});return ratio;}}catch(e){}
-              try{if(v.webkitEnterFullscreen){v.webkitEnterFullscreen();return ratio;}}catch(e){}
-              return 0;
+              videos.sort(function(a,b){return b.clientWidth*b.clientHeight-a.clientWidth*a.clientHeight;});
+              var v=videos[0];if(!v)return 'NO_VIDEO';var ratio=v.videoWidth/v.videoHeight;if(!isFinite(ratio)||ratio<0.42||ratio>2.39)return 'BAD_RATIO';
+              var sels=['.ytp-fullscreen-button','[aria-label*="fullscreen" i]','[title*="fullscreen" i]','.fullscreen-button'],node=v,clicked=false;
+              for(var d=0;d<10&&node&&!clicked;d++){var root=null;try{root=node.getRootNode?node.getRootNode():null;}catch(e){}
+                var scope=root&&root.querySelector?root:(node.ownerDocument||document);
+                for(var j=0;j<sels.length;j++){var b=null;try{b=scope.querySelector(sels[j]);}catch(e){}if(b&&b.getClientRects().length&&!b.disabled){try{b.click();clicked=true;break;}catch(e){}}}
+                var parent=node.parentElement;if(!parent&&root&&root.host)parent=root.host;node=parent;
+              }
+              if(clicked)return 'OK:'+ratio;
+              try{if(v.requestFullscreen){var p=v.requestFullscreen();if(p&&p.catch)p.catch(function(){});return 'OK:'+ratio;}}catch(e){}
+              try{if(v.webkitEnterFullscreen){v.webkitEnterFullscreen();return 'OK:'+ratio;}}catch(e){}
+              return 'FULLSCREEN_UNAVAILABLE';
             })()
         """.trimIndent()
         webView.evaluateJavascript(script) { raw ->
-            val ratio = raw?.trim()?.removeSurrounding("\"")?.toDoubleOrNull()
+            val response = raw?.trim()?.removeSurrounding("\"")
+            val ratio = response?.removePrefix("OK:")?.toDoubleOrNull()
             val accepted = ratio != null && ratio.isFinite() && ratio in 0.42..2.39
-            if (accepted) { activeVideoAspectRatio = ratio!!; activeVideoAspectRatioKnown = true }
-            else pipPendingFromBrowserMenu = false
-            onResult(accepted)
+            if (!accepted) {
+                pipPendingFromBrowserMenu = false
+                onResult(false, response ?: "NO_RESPONSE")
+                return@evaluateJavascript
+            }
+            activeVideoAspectRatio = ratio!!
+            activeVideoAspectRatioKnown = true
+            val deadline = android.os.SystemClock.uptimeMillis() + 2500L
+            val checkFullscreen = object : Runnable {
+                override fun run() {
+                    if (fullscreenVideoActive) onResult(true, null)
+                    else if (pipPendingFromBrowserMenu && android.os.SystemClock.uptimeMillis() < deadline) mainHandler.postDelayed(this, 100L)
+                    else { pipPendingFromBrowserMenu = false; onResult(false, "FULLSCREEN_TIMEOUT") }
+                }
+            }
+            mainHandler.postDelayed(checkFullscreen, 100L)
         }
     }
 
@@ -1602,14 +1676,21 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
             callback.onCustomViewHidden()
             return
         }
+        // Keep the WebChromeClient-provided media view untouched. Setting its background can
+        // cover Surface-backed video on some WebView/Samsung builds during PiP transition.
         val container = FrameLayout(context).apply { setBackgroundColor(Color.BLACK) }
-        view.setBackgroundColor(Color.BLACK)
         container.addView(view, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
         customView = container
         customViewCallback = callback
         fullscreenVideoActive = true
-        activeVideoAspectRatioKnown = false
-        activeVideoAspectRatio = 16.0 / 9.0
+        // Browser-menu PiP already measured the active playing HTML video before requesting
+        // fullscreen. Keep that ratio through WebChromeClient's custom-view handoff; resetting
+        // it here made the PiP window fall back to 16:9 even for portrait/ultrawide playback.
+        val requestedFromBrowserMenu = pipPendingFromBrowserMenu
+        if (!requestedFromBrowserMenu) {
+            activeVideoAspectRatioKnown = false
+            activeVideoAspectRatio = 16.0 / 9.0
+        }
 
         val activity = appContext.currentActivity
         val pipButton = TextView(context).apply {
@@ -1639,8 +1720,10 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
         )
 
         if (activity != null) {
-            // Fullscreen custom video is placed above the app chrome; PiP therefore captures the video surface,
-            // not the browser page and its toolbar. FULL_SENSOR permits both portrait and landscape video.
+            // WebChromeClient's fullscreen contract expects its custom media view to be attached
+            // to the Activity decor root. Keep the video surface at the window level so Android
+            // PiP captures the same Surface hierarchy used by the fullscreen player.
+            // FULL_SENSOR permits both portrait and landscape video.
             val decor = activity.window.decorView as ViewGroup
             decor.addView(container, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
             customViewHost = decor
@@ -1696,8 +1779,16 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
         val script = """
             (function() {
-              var videos = Array.prototype.slice.call(document.querySelectorAll('video'));
-              videos = videos.filter(function(v) { var s=window.getComputedStyle(v); return v.videoWidth>0&&v.videoHeight>0&&v.getClientRects().length>0&&s.display!=='none'&&s.visibility!=='hidden'&&v.clientWidth>0&&v.clientHeight>0; });
+              var videos=[],roots=[document],seen=[];
+              while(roots.length&&seen.length<128){
+                var root=roots.shift();if(!root||seen.indexOf(root)!==-1)continue;seen.push(root);
+                try{videos=videos.concat(Array.prototype.slice.call(root.querySelectorAll('video')));}catch(e){}
+                try{var nodes=root.querySelectorAll('*');for(var i=0;i<nodes.length;i++)if(nodes[i].shadowRoot)roots.push(nodes[i].shadowRoot);}catch(e){}
+              }
+              videos=videos.filter(function(v,i){return videos.indexOf(v)===i;}).filter(function(v){
+                var s=window.getComputedStyle(v);
+                return v.videoWidth>0&&v.videoHeight>0&&v.getClientRects().length>0&&s.display!=='none'&&s.visibility!=='hidden'&&v.clientWidth>0&&v.clientHeight>0;
+              });
               var playing=videos.filter(function(v){return !v.paused&&!v.ended&&v.readyState>=2;});
               function area(v){return Math.max(0,v.clientWidth)*Math.max(0,v.clientHeight);}
               playing.sort(function(a,b){return area(b)-area(a);});videos.sort(function(a,b){return area(b)-area(a);});
@@ -1780,11 +1871,21 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
         @Volatile var activeVideoAspectRatioKnown: Boolean = false
             private set
 
-        /** Used by the PiP menu to request fullscreen on the active tab's current HTML video. */
-        fun requestFullscreenVideoForPip(requestedAspectRatio: Double, onResult: (Boolean) -> Unit) {
+        /** Validate and measure the currently playing visible HTML video without synthesizing a fullscreen gesture. */
+        fun measureActiveVideoForPip(onResult: (Double?, String?) -> Unit) {
             val view = serviceWorkerObserver.get()
             if (view == null || view.destroyed) {
-                onResult(false)
+                onResult(null, "NO_ACTIVE_TAB")
+                return
+            }
+            view.measureActiveVideoForPipInternal(onResult)
+        }
+
+        /** Used by the PiP menu to request fullscreen on the active tab's current HTML video. */
+        fun requestFullscreenVideoForPip(requestedAspectRatio: Double, onResult: (Boolean, String?) -> Unit) {
+            val view = serviceWorkerObserver.get()
+            if (view == null || view.destroyed) {
+                onResult(false, "NO_ACTIVE_TAB")
                 return
             }
             view.requestFullscreenVideoForPipInternal(requestedAspectRatio, onResult)
@@ -1804,8 +1905,14 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
                 try {
                     ServiceWorkerController.getInstance().setServiceWorkerClient(object : ServiceWorkerClient() {
                         override fun shouldInterceptRequest(request: WebResourceRequest): WebResourceResponse? {
-                            serviceWorkerObserver.get()?.noteServiceWorkerRequest(request)
-                            // Observation only. Never consume or replace the Service Worker response.
+                            val view = serviceWorkerObserver.get() ?: return null
+                            if (WireGuardController.shouldBlockBrowserTraffic(view.context)) {
+                                // Service Worker traffic is process-wide and bypasses the WebViewClient hook.
+                                // Apply the same fail-closed gate before the service worker can reach network.
+                                return view.emptyResponse()
+                            }
+                            view.noteServiceWorkerRequest(request)
+                            // Observation only when the app-local route is confirmed.
                             return null
                         }
                     })

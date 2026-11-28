@@ -249,6 +249,27 @@ object PageScan {
       xp.send = wrappedSend;
     }
   } catch (e) {}
+  // Resource Timing observes browser-loaded media URLs without reading response bodies or
+  // replacing the page's fetch/XHR response. Restrict to explicit media/manifest extensions.
+  try {
+    if (window.PerformanceObserver && !window.__maglevResourceObserver) {
+      var resourceCount = 0;
+      var mediaResource = /\\.(m3u8|mpd|mp4|m4v|webm|mkv|mov|avi|mp3|m4a|aac|flac|ogg|opus|wav)(?:[?#]|$)/i;
+      function observeResource(entry){
+        if (!entry || resourceCount >= 300) return;
+        var name = String(entry.name || '');
+        if (!mediaResource.test(name)) return;
+        resourceCount++;
+        reportResource(name, '', entry.initiatorType || 'resource');
+      }
+      var resourceObserver = new PerformanceObserver(function(list){
+        try { list.getEntries().slice(0, 100).forEach(observeResource); } catch(e) {}
+      });
+      try { resourceObserver.observe({ type: 'resource', buffered: true }); }
+      catch(e) { resourceObserver.observe({ entryTypes: ['resource'] }); }
+      window.__maglevResourceObserver = resourceObserver;
+    }
+  } catch(e) {}
   try {
     var nav = navigator, orig = nav.requestMediaKeySystemAccess;
     if (orig && !orig.__mg) {

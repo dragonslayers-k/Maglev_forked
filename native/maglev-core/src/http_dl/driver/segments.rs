@@ -32,7 +32,7 @@ use crate::http_dl::rules::{parse_content_range, parse_retry_after, pick_validat
 use crate::http_dl::sidecar::{contiguous_prefix, held_of, Segment};
 
 /// Below this size a download is never split.
-pub(super) const MIN_SPLIT_BYTES: u64 = 8 * 1024 * 1024;
+pub(super) const MIN_SPLIT_BYTES: u64 = 2 * 1024 * 1024;
 /// The most connections one download may use (the options accept 1 to 8).
 pub(super) const MAX_PARTS: u32 = 8;
 
@@ -52,13 +52,30 @@ pub(super) struct SplitFacts<'a> {
 }
 
 /// How many connections to use, or `None` for one.
+pub(super) fn split_block_reason(f: &SplitFacts) -> Option<&'static str> {
+    if f.requested < 2 {
+        Some("requested_single_connection")
+    } else if f.split_off {
+        Some("split_disabled_after_prior_range_failure")
+    } else if !f.probe_ok {
+        Some("range_probe_not_206_or_not_byte_ranges")
+    } else if !f.resumable {
+        Some("not_resumable")
+    } else if f.size.is_none() {
+        Some("content_length_unknown")
+    } else if f.size.is_some_and(|size| size < MIN_SPLIT_BYTES) {
+        Some("below_minimum_split_size")
+    } else if !f.validator.is_some_and(|v| !v.trim().is_empty()) {
+        Some("strong_validator_missing")
+    } else {
+        None
+    }
+}
+
 pub(super) fn split_count(f: &SplitFacts) -> Option<u32> {
-    let size = f.size?;
-    if f.requested < 2 || f.split_off || !f.probe_ok || !f.resumable || size < MIN_SPLIT_BYTES {
+    if split_block_reason(f).is_some() {
         return None;
     }
-    // Only a validator we can put in `If-Range` proves that every segment is the same file.
-    f.validator.filter(|v| !v.trim().is_empty())?;
     Some(f.requested.min(MAX_PARTS))
 }
 
@@ -126,29 +143,41 @@ pub(super) enum PartReply {
     Fallback,
 }
 
-/// Judges the answer to `Range: bytes=start-end` + `If-Range: <validator>`.
-pub(super) fn judge_part(status: u16, h: &Headers, start: u64, end: u64, total: u64, validator: &str) -> PartReply {
+/// Judges a ranged response and provides a non-sensitive reason when splitting must stop.
+fn judge_part_with_reason(
+    status: u16,
+    h: &Headers,
+    start: u64,
+    end: u64,
+    total: u64,
+    validator: &str,
+) -> (PartReply, Option<&'static str>) {
     match status {
         206 => {
             let Some((Some(a), Some(b), got_total)) = h.content_range.as_deref().and_then(parse_content_range) else {
-                return PartReply::Fallback;
+                return (PartReply::Fallback, Some("missing_or_invalid_content_range"));
             };
             if a != start || b != end || got_total.map(|t| t != total).unwrap_or(false) {
-                return PartReply::Fallback;
+                return (PartReply::Fallback, Some("content_range_mismatch"));
             }
             if pick_validator(h.etag.as_deref(), h.last_modified.as_deref()).is_some_and(|v| v != validator) {
-                return PartReply::Fallback;
+                return (PartReply::Fallback, Some("validator_changed"));
             }
             let html = h.content_type.as_deref().map(|c| c.trim().to_ascii_lowercase().starts_with("text/html"));
             if html == Some(true) {
-                return PartReply::Fallback;
+                return (PartReply::Fallback, Some("html_instead_of_media"));
             }
-            PartReply::Body
+            (PartReply::Body, None)
         }
-        408 | 500 | 502 | 504 => PartReply::Retry { retry_after: parse_retry_after(h.retry_after.as_deref()) },
-        429 | 503 => PartReply::Refused { retry_after: parse_retry_after(h.retry_after.as_deref()) },
-        _ => PartReply::Fallback,
+        408 | 500 | 502 | 504 => (PartReply::Retry { retry_after: parse_retry_after(h.retry_after.as_deref()) }, None),
+        429 | 503 => (PartReply::Refused { retry_after: parse_retry_after(h.retry_after.as_deref()) }, None),
+        _ => (PartReply::Fallback, Some("unexpected_http_status")),
     }
+}
+
+/// Judges the answer to `Range: bytes=start-end` + `If-Range: <validator>`.
+pub(super) fn judge_part(status: u16, h: &Headers, start: u64, end: u64, total: u64, validator: &str) -> PartReply {
+    judge_part_with_reason(status, h, start, end, total, validator).0
 }
 
 // ---- shared state -----------------------------------------------------------------------------------------------
@@ -291,14 +320,37 @@ impl Downloads {
         }) else {
             return Parts::Single;
         };
-        let want = split_count(&SplitFacts {
+        let facts = SplitFacts {
             requested,
             size: total,
             validator: validator.as_deref(),
             resumable,
             probe_ok: parts_ok,
             split_off,
-        });
+        };
+        let want = split_count(&facts);
+        if requested >= 2 {
+            if let Some(reason) = split_block_reason(&facts) {
+                tracing::warn!(
+                    requested_connections = requested,
+                    size_bytes = total.unwrap_or(0),
+                    size_known = total.is_some(),
+                    resumable,
+                    range_probe_ok = parts_ok,
+                    validator_present = validator.as_deref().is_some_and(|v| !v.trim().is_empty()),
+                    split_disabled = split_off,
+                    reason,
+                    "segmented download not eligible; using one connection"
+                );
+            } else if let Some(parts) = want {
+                tracing::info!(
+                    requested_connections = requested,
+                    selected_connections = parts,
+                    size_bytes = total.unwrap_or(0),
+                    "segmented download eligible after Range/validator checks"
+                );
+            }
+        }
         let side_path = sidecar_path(&folder, &name);
         let part_len = std::fs::metadata(part_path(&folder, &name)).map(|m| m.len()).unwrap_or(0);
         let side = Sidecar::load(&side_path);
@@ -533,6 +585,11 @@ impl Downloads {
     /// single connection resumes from under the usual rules.
     fn fall_back(self: &Arc<Self>, id: &str, shared: &PartsShared, side: &mut Sidecar, side_path: &Path) -> PartsEnd {
         let prefix = contiguous_prefix(&shared.snapshot());
+        tracing::warn!(
+            contiguous_prefix_bytes = prefix,
+            total_bytes = shared.total,
+            "segmented transfer fell back; resuming safely with one connection"
+        );
         let alive = self.update(id, |rec, live| {
             rec.split_off = true;
             rec.held = prefix;
@@ -678,9 +735,21 @@ impl Downloads {
             };
             let status = resp.status().as_u16();
             let headers = read_headers(resp.headers());
-            match judge_part(status, &headers, pos, end, shared.total, &shared.validator) {
+            let (part_reply, fallback_reason) =
+                judge_part_with_reason(status, &headers, pos, end, shared.total, &shared.validator);
+            match part_reply {
                 PartReply::Body => {}
-                PartReply::Fallback => return SegEnd::Fallback,
+                PartReply::Fallback => {
+                    tracing::warn!(
+                        http_status = status,
+                        range_start = pos,
+                        range_end = end,
+                        total_bytes = shared.total,
+                        reason = fallback_reason.unwrap_or("unknown_range_response"),
+                        "range segment rejected; switching to safe single-connection fallback"
+                    );
+                    return SegEnd::Fallback;
+                },
                 PartReply::Retry { retry_after } => {
                     if !self.part_retry(&mut attempts, retry_after).await {
                         return SegEnd::Exhausted;
@@ -729,6 +798,12 @@ impl Downloads {
                 let len = chunk.len() as u64;
                 // More than the range asked for: not the server we probed. The held bytes are dropped.
                 if wb.received().saturating_add(len) > end.saturating_add(1) {
+                    tracing::warn!(
+                        segment_index = idx,
+                        range_end = end,
+                        total_bytes = shared.total,
+                        "range body exceeded requested segment; switching to safe single-connection fallback"
+                    );
                     return SegEnd::Fallback;
                 }
                 self.throttle_global(shared, chunk.len()).await;
@@ -816,6 +891,31 @@ mod tests {
     }
 
     #[test]
+    fn split_block_reason_explains_each_single_connection_gate() {
+        let mut f = facts(Some("\"strong\""));
+        assert_eq!(split_block_reason(&f), None);
+        f.requested = 1;
+        assert_eq!(split_block_reason(&f), Some("requested_single_connection"));
+        f.requested = 4;
+        f.split_off = true;
+        assert_eq!(split_block_reason(&f), Some("split_disabled_after_prior_range_failure"));
+        f.split_off = false;
+        f.probe_ok = false;
+        assert_eq!(split_block_reason(&f), Some("range_probe_not_206_or_not_byte_ranges"));
+        f.probe_ok = true;
+        f.resumable = false;
+        assert_eq!(split_block_reason(&f), Some("not_resumable"));
+        f.resumable = true;
+        f.size = None;
+        assert_eq!(split_block_reason(&f), Some("content_length_unknown"));
+        f.size = Some(MIN_SPLIT_BYTES - 1);
+        assert_eq!(split_block_reason(&f), Some("below_minimum_split_size"));
+        f.size = Some(MIN_SPLIT_BYTES);
+        f.validator = None;
+        assert_eq!(split_block_reason(&f), Some("strong_validator_missing"));
+    }
+
+    #[test]
     fn a_plan_adds_up_to_the_file_and_gives_the_remainder_to_the_first_ranges() {
         let total = 8 * 1024 * 1024 + 3;
         let plan = plan_split(total, 4);
@@ -843,11 +943,15 @@ mod tests {
     }
 
     #[test]
-    fn eight_mib_is_the_threshold() {
+    fn two_mib_is_the_threshold_and_small_youtube_audio_can_split() {
         let mut f = facts(Some("\"v\""));
         f.size = Some(MIN_SPLIT_BYTES - 1);
         assert_eq!(split_count(&f), None);
         f.size = Some(MIN_SPLIT_BYTES);
+        assert_eq!(split_count(&f), Some(4));
+        // The 2.7 MB audio download reported by the Galaxy user must be eligible
+        // for splitting when the server has passed the Range/validator checks.
+        f.size = Some(2_700_000);
         assert_eq!(split_count(&f), Some(4));
         f.size = None;
         assert_eq!(split_count(&f), None);

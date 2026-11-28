@@ -1,9 +1,13 @@
 package com.maglev.engine.wireguard
 
 import android.content.Context
+import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import android.net.Uri
 import android.util.Base64
+import android.webkit.WebView
 import androidx.webkit.ProxyConfig
 import androidx.webkit.ProxyController
 import androidx.webkit.WebViewFeature
@@ -15,6 +19,7 @@ import java.net.Proxy
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executor
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicReference
 import okhttp3.Credentials
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -33,10 +38,19 @@ object WireGuardController {
     @Volatile private var proxyUsername: String? = null
     @Volatile private var proxyPassword: String? = null
     @Volatile private var browserProxyApplied: Boolean = false
+    /** True after any process-wide WebView proxy override, including the temporary closed proxy. */
+    @Volatile private var browserProxyInstalled: Boolean = false
+    @Volatile private var browserTrafficBlocked: Boolean = false
+    @Volatile private var lastBrowserProxyError: String? = null
+    private val mainHandler = Handler(Looper.getMainLooper())
     private var pausedDownloadsForEnable: List<String> = emptyList()
 
     fun isEnabled(context: Context): Boolean =
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean(ENABLED, false)
+
+    /** Prevent browser requests from escaping directly while an enabled tunnel lacks an applied WebView route. */
+    fun shouldBlockBrowserTraffic(context: Context): Boolean =
+        browserTrafficBlocked || (isEnabled(context) && !browserProxyApplied)
 
     fun hasProfile(context: Context): Boolean = WireGuardProfileStore.hasProfile(context)
 
@@ -66,13 +80,9 @@ object WireGuardController {
                     return@synchronized saved
                 }
             }
-            // Block app WebView requests during startup; never leave them on direct networking.
-            if (!installBrowserProxy(9, active = false)) {
-                if (pausedDownloadsForEnable.isNotEmpty()) EngineHost.resumeDownloadsAfterAppWireGuard(pausedDownloadsForEnable)
-                pausedDownloadsForEnable = emptyList()
-                return@synchronized Json.failure(
-                    "APP_WIREGUARD_BROWSER_PROXY_FAILED", "앱 브라우저를 연결 전 차단 상태로 전환하지 못했습니다.")
-            }
+            // Close native WebView and ServiceWorker request gates before startup. The temporary
+            // deny state must not depend on WebView ProxyController availability.
+            browserTrafficBlocked = true
             context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putBoolean(ENABLED, true).apply()
             // Start the userspace tunnel and authenticated loopback proxy immediately when the
             // app-local switch is enabled; it is not deferred until the first download.
@@ -192,11 +202,12 @@ object WireGuardController {
             "APP_WIREGUARD_PROFILE_MISSING", "저장된 WireGuard 프로필이 없습니다. 직접 연결로 우회하지 않았습니다.")
         if (running && proxyPort in 1..65535 && !localProxy.isNullOrBlank()) {
             if (!browserProxyApplied && !installBrowserProxy(proxyPort)) return Json.failure(
-                "APP_WIREGUARD_BROWSER_PROXY_FAILED", "앱 브라우저의 WireGuard 프록시를 적용하지 못했습니다.")
+                "APP_WIREGUARD_BROWSER_PROXY_FAILED", "앱 브라우저의 WireGuard 프록시를 적용하지 못했습니다. " + browserProxyFailureSuffix())
             return mapOf("ok" to true, "proxy_url" to localProxy, "browser_proxy" to true)
         }
-        if (!browserProxyApplied && !installBrowserProxy(9, active = false)) return Json.failure(
-            "APP_WIREGUARD_BROWSER_PROXY_FAILED", "WireGuard 시작 전 앱 브라우저를 차단 상태로 전환하지 못했습니다.")
+        // Native WebView/ServiceWorker request hooks enforce deny-all until the real authenticated
+        // tunnel proxy has been installed and its callback confirmed.
+        browserTrafficBlocked = true
         val random = ByteArray(32).also { SecureRandom().nextBytes(it) }
         val password = Base64.encodeToString(random, Base64.URL_SAFE or Base64.NO_PADDING or Base64.NO_WRAP)
         random.fill(0)
@@ -231,10 +242,12 @@ object WireGuardController {
             proxyPort = 0
             proxyUsername = null
             proxyPassword = null
-            installBrowserProxy(9, active = false)
+            // Keep the native request gate closed; do not fall back to a process-wide temporary or
+            // direct proxy when the authenticated route was not accepted.
+            browserTrafficBlocked = true
             return Json.failure(
                 "APP_WIREGUARD_BROWSER_PROXY_FAILED",
-                "앱 브라우저의 WireGuard 프록시를 적용하지 못했습니다. WebView 프록시 기능을 확인하세요.")
+                "앱 브라우저의 인증 프록시 적용에 실패했습니다. 브라우저는 직접 연결되지 않도록 차단 중입니다. " + browserProxyFailureSuffix())
         }
         return mapOf("ok" to true, "proxy_url" to url, "browser_proxy" to true)
     }
@@ -248,7 +261,7 @@ object WireGuardController {
             "APP_WIREGUARD_ENGINE_APPLY_FAILED",
             applied["message"]?.toString() ?: "다운로드 엔진에 WireGuard 프록시를 적용하지 못했습니다.")
         if (!installBrowserProxy(proxyPort)) return Json.failure(
-            "APP_WIREGUARD_BROWSER_PROXY_FAILED", "앱 브라우저의 WireGuard 프록시를 적용하지 못했습니다.")
+            "APP_WIREGUARD_BROWSER_PROXY_FAILED", "앱 브라우저의 WireGuard 프록시를 적용하지 못했습니다. " + browserProxyFailureSuffix())
         val released = EngineHost.releaseAppWireGuardStartupHold()
         if (released["ok"] != true) return Json.failure(
             "APP_WIREGUARD_STARTUP_HOLD_RELEASE_FAILED",
@@ -285,7 +298,7 @@ object WireGuardController {
                 "WireGuard 프록시를 다운로드 엔진에 다시 적용하지 못했습니다. 연결을 껐다가 다시 켜세요.")
             if (!installBrowserProxy(proxyPort)) return@synchronized Json.failure(
                 "APP_WIREGUARD_BROWSER_PROXY_FAILED",
-                "앱 브라우저의 WireGuard 프록시를 적용하지 못했습니다. WebView 프록시 기능을 확인하세요.")
+                "앱 브라우저의 WireGuard 프록시를 적용하지 못했습니다. " + browserProxyFailureSuffix())
             val released = EngineHost.releaseAppWireGuardStartupHold()
             if (released["ok"] != true) return@synchronized Json.failure(
                 "APP_WIREGUARD_STARTUP_HOLD_RELEASE_FAILED",
@@ -360,43 +373,175 @@ object WireGuardController {
 
     /**
      * WebView ProxyController is scoped to this app's WebView process, not Android's device
-     * routing table. It routes browser HTTP/HTTPS requests through the same authenticated
-     * loopback WireGuard proxy used by the downloader. No VpnService, APN, or other-app route.
+     * routing table. Submit the override on WebView's main thread and marshal its completion
+     * callback back to that thread. This method is called from IO only; never block the main
+     * thread while waiting for the callback that must run there.
      */
     private fun installBrowserProxy(port: Int, active: Boolean = true): Boolean {
-        if (port !in 1..65535 || !WebViewFeature.isFeatureSupported(WebViewFeature.PROXY_OVERRIDE)) return false
+        // Until the callback confirms the new route, the native WebView request hook blocks HTTP(S).
+        browserTrafficBlocked = true
+        if (port !in 1..65535) {
+            lastBrowserProxyError = "code=INVALID_PROXY_PORT"
+            return false
+        }
+        val provider = webViewProviderSummary()
+        val supported = try {
+            WebViewFeature.isFeatureSupported(WebViewFeature.PROXY_OVERRIDE)
+        } catch (t: Throwable) {
+            lastBrowserProxyError = "code=FEATURE_CHECK_FAILED, provider=$provider, cause=${t.javaClass.simpleName}"
+            Log.e("MaglevWireGuard", "WebView proxy feature check failed: $lastBrowserProxyError", t)
+            return false
+        }
+        if (!supported) {
+            lastBrowserProxyError = "code=PROXY_OVERRIDE_UNSUPPORTED, provider=$provider"
+            Log.e("MaglevWireGuard", "WebView proxy override is not supported: $lastBrowserProxyError")
+            return false
+        }
+        if (Looper.myLooper() == Looper.getMainLooper()) {
+            lastBrowserProxyError = "code=MAIN_THREAD_BLOCKING_CALL, provider=$provider"
+            Log.e("MaglevWireGuard", "Refusing to wait for WebView proxy callback on the main thread")
+            return false
+        }
         return try {
             val latch = CountDownLatch(1)
-            var applied = false
-            ProxyController.getInstance().setProxyOverride(
-                ProxyConfig.Builder().addProxyRule("127.0.0.1:$port").build(),
-                Executor { command -> command.run() },
-                Runnable { applied = true; latch.countDown() },
-            )
-            val result = latch.await(5, TimeUnit.SECONDS) && applied
-            browserProxyApplied = result && active
+            val applied = AtomicReference(false)
+            val failure = AtomicReference<String?>(null)
+            val callbackExecutor = Executor { command ->
+                if (!mainHandler.post(command)) {
+                    failure.compareAndSet(null, "MAIN_EXECUTOR_REJECTED")
+                    latch.countDown()
+                }
+            }
+            val config = ProxyConfig.Builder().addProxyRule("127.0.0.1:$port").build()
+            val submitted = mainHandler.post {
+                try {
+                    ProxyController.getInstance().setProxyOverride(
+                        config,
+                        callbackExecutor,
+                        Runnable { applied.set(true); latch.countDown() },
+                    )
+                } catch (t: Throwable) {
+                    failure.set("SET_PROXY_THROWN:${t.javaClass.simpleName}")
+                    Log.e("MaglevWireGuard", "WebView setProxyOverride threw: ${t.javaClass.simpleName}", t)
+                    latch.countDown()
+                }
+            }
+            if (!submitted) {
+                lastBrowserProxyError = "code=MAIN_HANDLER_REJECTED, provider=$provider"
+                return false
+            }
+            val completed = latch.await(12, TimeUnit.SECONDS)
+            if (!completed) failure.compareAndSet(null, "SET_PROXY_CALLBACK_TIMEOUT")
+            val result = completed && applied.get()
+            if (result) {
+                browserProxyInstalled = true
+                browserProxyApplied = active
+                browserTrafficBlocked = !active
+                lastBrowserProxyError = null
+            } else {
+                browserProxyApplied = false
+                lastBrowserProxyError = "code=${failure.get() ?: "SET_PROXY_NOT_CONFIRMED"}, provider=$provider"
+                Log.e("MaglevWireGuard", "WebView proxy apply was not confirmed: $lastBrowserProxyError")
+            }
             result
-        } catch (_: Throwable) {
+        } catch (t: InterruptedException) {
+            Thread.currentThread().interrupt()
+            browserProxyApplied = false
+            lastBrowserProxyError = "code=INTERRUPTED, provider=$provider"
+            Log.e("MaglevWireGuard", "Interrupted while applying WebView proxy", t)
+            false
+        } catch (t: Throwable) {
+            browserProxyApplied = false
+            lastBrowserProxyError = "code=PROXY_APPLY_FAILED:${t.javaClass.simpleName}, provider=$provider"
+            Log.e("MaglevWireGuard", "WebView proxy apply failed", t)
             false
         }
     }
 
     private fun clearBrowserProxy(): Boolean {
-        if (!WebViewFeature.isFeatureSupported(WebViewFeature.PROXY_OVERRIDE)) return true
+        // Keep native request interception closed until WebView confirms the override is cleared.
+        browserTrafficBlocked = true
+        val provider = webViewProviderSummary()
+        val supported = try {
+            WebViewFeature.isFeatureSupported(WebViewFeature.PROXY_OVERRIDE)
+        } catch (t: Throwable) {
+            lastBrowserProxyError = "code=FEATURE_CHECK_FAILED, provider=$provider, cause=${t.javaClass.simpleName}"
+            Log.e("MaglevWireGuard", "WebView proxy feature check failed during clear", t)
+            return false
+        }
+        if (!supported) {
+            if (browserProxyInstalled || browserProxyApplied) {
+                lastBrowserProxyError = "code=PROXY_OVERRIDE_UNSUPPORTED_DURING_CLEAR, provider=$provider"
+                return false
+            }
+            // No process-wide proxy override was installed. Persisted enabled state remains
+            // independently fail-closed through shouldBlockBrowserTraffic(context).
+            browserTrafficBlocked = false
+            return true
+        }
+        if (Looper.myLooper() == Looper.getMainLooper()) {
+            lastBrowserProxyError = "code=MAIN_THREAD_BLOCKING_CALL, provider=$provider"
+            return false
+        }
         return try {
             val latch = CountDownLatch(1)
-            var cleared = false
-            ProxyController.getInstance().clearProxyOverride(
-                Executor { command -> command.run() },
-                Runnable { cleared = true; latch.countDown() },
-            )
-            val result = latch.await(5, TimeUnit.SECONDS) && cleared
-            if (result) browserProxyApplied = false
+            val cleared = AtomicReference(false)
+            val failure = AtomicReference<String?>(null)
+            val callbackExecutor = Executor { command ->
+                if (!mainHandler.post(command)) {
+                    failure.compareAndSet(null, "MAIN_EXECUTOR_REJECTED")
+                    latch.countDown()
+                }
+            }
+            val submitted = mainHandler.post {
+                try {
+                    ProxyController.getInstance().clearProxyOverride(
+                        callbackExecutor,
+                        Runnable { cleared.set(true); latch.countDown() },
+                    )
+                } catch (t: Throwable) {
+                    failure.set("CLEAR_PROXY_THROWN:${t.javaClass.simpleName}")
+                    Log.e("MaglevWireGuard", "WebView clearProxyOverride threw: ${t.javaClass.simpleName}", t)
+                    latch.countDown()
+                }
+            }
+            if (!submitted) {
+                lastBrowserProxyError = "code=MAIN_HANDLER_REJECTED_DURING_CLEAR, provider=$provider"
+                return false
+            }
+            val completed = latch.await(12, TimeUnit.SECONDS)
+            if (!completed) failure.compareAndSet(null, "CLEAR_PROXY_CALLBACK_TIMEOUT")
+            val result = completed && cleared.get()
+            if (result) {
+                browserProxyInstalled = false
+                browserProxyApplied = false
+                browserTrafficBlocked = false
+                lastBrowserProxyError = null
+            } else {
+                lastBrowserProxyError = "code=${failure.get() ?: "CLEAR_PROXY_NOT_CONFIRMED"}, provider=$provider"
+                Log.e("MaglevWireGuard", "WebView proxy clear was not confirmed: $lastBrowserProxyError")
+            }
             result
-        } catch (_: Throwable) {
+        } catch (t: InterruptedException) {
+            Thread.currentThread().interrupt()
+            lastBrowserProxyError = "code=INTERRUPTED_DURING_CLEAR, provider=$provider"
+            Log.e("MaglevWireGuard", "Interrupted while clearing WebView proxy", t)
+            false
+        } catch (t: Throwable) {
+            lastBrowserProxyError = "code=PROXY_CLEAR_FAILED:${t.javaClass.simpleName}, provider=$provider"
+            Log.e("MaglevWireGuard", "WebView proxy clear failed", t)
             false
         }
     }
+
+    private fun webViewProviderSummary(): String = runCatching {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return@runCatching "android-api-${Build.VERSION.SDK_INT}"
+        val info = WebView.getCurrentWebViewPackage()
+        if (info == null) "unknown" else "${info.packageName}@${info.versionName}"
+    }.getOrDefault("unknown")
+
+    private fun browserProxyFailureSuffix(): String =
+        lastBrowserProxyError?.let { "[$it]" } ?: "[WebView proxy callback was not confirmed]"
 
     /** Credentials are returned only for this app's loopback proxy challenge. */
     fun browserProxyCredentials(host: String, realm: String): Pair<String, String>? {
@@ -410,8 +555,9 @@ object WireGuardController {
     /** Rehydrates the process-local tunnel/proxy after process death when the saved switch is on. */
     fun ensureBrowserProxy(context: Context): Map<String, Any?> {
         if (!isEnabled(context)) return mapOf("ok" to true, "browser_proxy" to false)
-        if (!browserProxyApplied && !installBrowserProxy(9, active = false)) return Json.failure(
-            "APP_WIREGUARD_BROWSER_PROXY_FAILED", "앱 브라우저를 WireGuard 복구 전 차단 상태로 전환하지 못했습니다.")
+        // The enabled preference itself keeps every WebView/ServiceWorker request fail-closed
+        // until startTunnel applies the authenticated route.
+        browserTrafficBlocked = true
         val started = startTunnel(context)
         if (started["ok"] != true) return started
         if (EngineHost.isEngineInitialized()) {

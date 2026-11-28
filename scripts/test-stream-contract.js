@@ -156,7 +156,7 @@ check('Rust refuses what the contract refuses and never fetches a key by itself'
   assert(/StreamError::Live/.test(hls), 'no ENDLIST is live');
   assert(/MAX_PLAYLIST_BYTES: u64 = 2 \* 1024 \* 1024/.test(read('native/maglev-core/src/http_dl/stream/mod.rs')), 'playlist limit 2 MB');
   assert(/MAX_SEGMENTS: usize = 20_000/.test(read('native/maglev-core/src/http_dl/stream/mod.rs')), '20,000 segments');
-  assert(/MAX_IN_FLIGHT: usize = 3/.test(read('native/maglev-core/src/http_dl/stream/mod.rs')), '3 in flight');
+  assert(/MAX_IN_FLIGHT: usize = 4/.test(read('native/maglev-core/src/http_dl/stream/mod.rs')), '4 in flight (bounded parallel fetch window)');
 });
 
 check('AES-128: pinned crates, keys in memory only, 16 byte keys, PKCS#7 CBC', () => {

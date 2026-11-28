@@ -667,11 +667,21 @@ export class MaglevEngineBridge implements MaglevEngineApi {
     return this.route('addYouTubeDownload', url, formatId, playerClient, formatKind, audioBitrateKbps ?? null, outputContainer);
   }
   public async enterBrowserPictureInPicture(aspectRatio: number): Promise<EngineResult> {
-    if (Platform.OS !== 'android' || !PictureInPictureModule?.enterBrowserPictureInPicture) {
+    if (Platform.OS !== 'android') {
       return { ok: false, code: 'UNSUPPORTED', message: 'Picture-in-picture is available on Android only.' };
     }
+    // Prefer the auxiliary module, but fall back to MaglevEngine when Expo fails to register
+    // the optional module in a generated APK.
+    const pip = PictureInPictureModule?.enterBrowserPictureInPicture
+      ? PictureInPictureModule
+      : NativeModule?.enterBrowserPictureInPicture
+        ? NativeModule
+        : null;
+    if (!pip) {
+      return { ok: false, code: 'UNSUPPORTED', message: 'PiP native support is not linked in this APK. Rebuild the Android app.' };
+    }
     try {
-      return await PictureInPictureModule.enterBrowserPictureInPicture(aspectRatio);
+      return await pip.enterBrowserPictureInPicture(aspectRatio);
     } catch (e: any) {
       return { ok: false, code: 'INTERNAL', message: String(e?.message ?? e) };
     }

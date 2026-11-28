@@ -1,6 +1,7 @@
 const fs = require('fs');
 const assert = require('assert');
 const read = (p) => fs.readFileSync(p, 'utf8');
+
 const native = read('modules/maglev-engine/android/src/main/java/com/maglev/engine/wireguard/NativeTunnel.java');
 const store = read('modules/maglev-engine/android/src/main/java/com/maglev/engine/wireguard/WireGuardProfileStore.java');
 const controller = read('modules/maglev-engine/android/src/main/java/com/maglev/engine/wireguard/WireGuardController.kt');
@@ -12,10 +13,21 @@ const go = read('native/wireguard/engine.go');
 const proxy = read('native/wireguard/proxy.go');
 const jni = read('native/wireguard/cmd/jni/jni.c');
 const netstack = read('native/wireguard/netstack/tun.go');
-assert(!/import android\\.net\\.VpnService|extends\\s+VpnService/.test(native), 'native app-local WG bridge must not register Android VpnService');
+
+assert(!/import android\.net\.VpnService|extends\s+VpnService/.test(native), 'native app-local WG bridge must not register Android VpnService');
 assert(store.includes('AndroidKeyStore') && store.includes('AES/GCM/NoPadding') && store.includes('getNoBackupFilesDir'), 'profile must be AES-GCM encrypted in no-backup app storage');
-assert(controller.includes('installBrowserProxy(9, active = false)') && controller.includes('browserProxyApplied'), 'controller must fail-closed app WebView requests during tunnel startup');
+
+assert(controller.includes('browserTrafficBlocked = true') && controller.includes('browserProxyApplied'), 'controller must close the native browser request gate during startup');
 assert(controller.includes('ProxyController.getInstance().setProxyOverride') && controller.includes('127.0.0.1:$port') && controller.includes('browserProxyApplied'), 'app-local WireGuard must apply and report a process-scoped WebView proxy');
+assert(controller.includes('Handler(Looper.getMainLooper())') && controller.includes('mainHandler.post(command)'), 'WebView proxy completion must be dispatched on the WebView main executor');
+assert(controller.includes('MAIN_THREAD_BLOCKING_CALL') && controller.includes('SET_PROXY_CALLBACK_TIMEOUT') && controller.includes('PROXY_OVERRIDE_UNSUPPORTED'), 'WebView proxy failures must expose distinct actionable failure codes');
+assert(controller.includes('WebView.getCurrentWebViewPackage()') && controller.includes('browserProxyFailureSuffix()'), 'browser proxy failures must report WebView provider/version and sanitized failure reason');
+assert(controller.includes('browserProxyInstalled') && controller.includes('if (!browserProxyApplied && !installBrowserProxy(proxyPort))'), 'active authenticated proxy must be applied once after the native deny gate');
+assert(!controller.includes('installBrowserProxy(9'), 'startup deny state must not depend on a temporary global proxy at port 9');
+assert(controller.includes('shouldBlockBrowserTraffic(context)') && controller.includes('browserTrafficBlocked'), 'browser traffic must stay blocked while an enabled WireGuard route is not confirmed');
+assert(browser.includes('WireGuardController.shouldBlockBrowserTraffic(context)') && browser.includes('WireGuardController.shouldBlockBrowserTraffic(view.context)'), 'WebView and process-wide ServiceWorker requests must fail closed when the route is unavailable');
+assert(!controller.includes('Executor { command -> command.run() }'), 'proxy callback must not run inline on an unspecified WebView thread');
+
 assert(browser.includes('onReceivedHttpAuthRequest') && browser.includes('browserProxyCredentials(host, realm)'), 'browser must authenticate only the dedicated loopback WireGuard proxy challenge');
 assert(settings.includes('앱 브라우저 + HTTP/HTTPS 다운로드') && settings.includes('휴대전화의 다른 앱과 시스템 네트워크는 터널에 포함하지 않습니다.'), 'settings must state app-only browser/download routing and isolation');
 assert(host.includes('WireGuardController.prepareDownload') && host.includes('setAppWireGuardProxy') && host.includes('http_download_proxy_url') && host.includes('restart_required'), 'app-local HTTP proxy must be applied to the dedicated download field');
@@ -28,4 +40,5 @@ assert(go.includes('netstack.CreateNetTUN') && proxy.includes('127.0.0.1'), 'Wir
 assert(go.includes('"app.morphe/wireguard/netstack"') && netstack.includes('notifyMu       sync.RWMutex') && netstack.includes('done:           make(chan struct{})'), 'local netstack fork must serialize shutdown against packet notifications');
 assert(netstack.includes('case <-tun.done:') && !netstack.includes('close(tun.incomingPacket)'), 'netstack close must wake blocked readers without closing the channel used by WriteNotify');
 assert(jni.includes('Negative return codes are part of NativeTunnel.start') && !jni.includes('if (result == -1)'), 'JNI must preserve profile, duplicate-engine and endpoint-DNS error codes for Kotlin');
-console.log('PASS app-local WireGuard isolation contract');
+
+console.log('PASS app-local WireGuard isolation and fail-closed browser contract');

@@ -108,6 +108,28 @@ const read = (rel) => fs.readFileSync(path.join(__dirname, '..', rel), 'utf8');
   check('preventDefault only in contextmenu, after a hit', preventCalls.length === 1 && /if \(!o\) return;\s*last = o;\s*e\.preventDefault\(\);/.test(js));
   check('srcset largest candidate', js.includes('function largest') && js.includes('srcset'));
   check('handles picture, source and poster', js.includes('PICTURE') && js.includes('SOURCE') && js.includes('poster'));
+  check('walks nested media and shadow-root hosts without relying only on closest()', js.includes('function parentAcrossShadow') && js.includes('getRootNode') && js.includes('root.host'));
+
+  // Custom players may place video elements below wrapper nodes in their shadow tree.
+  const shadowPosts = [];
+  const shadowListeners = {};
+  const shadowVideo = {
+    nodeType: 1, tagName: 'VIDEO', currentSrc: 'https://cdn.test/shadow-player.mp4',
+    parentNode: null, parentElement: null, title: '',
+    getAttribute: (k) => k === 'poster' ? null : null,
+    querySelector: () => null, closest: () => null,
+  };
+  const shadowWrapper = {
+    nodeType: 1, tagName: 'DIV', parentNode: shadowVideo, parentElement: shadowVideo,
+    getAttribute: () => null, closest: () => null,
+  };
+  const shadowWin = { ReactNativeWebView: { postMessage: (m) => shadowPosts.push(JSON.parse(m)) } };
+  const shadowDoc = { baseURI: 'https://example.com/', addEventListener: (t, f) => (shadowListeners[t] = f), elementsFromPoint: () => [] };
+  new Function('window', 'document', 'location', 'Date', 'setTimeout', 'clearTimeout', 'URL', 'Object', 'JSON', 'Math', 'parseFloat', S.mediaHitScript('shadow'))(
+    shadowWin, shadowDoc, { href: 'https://example.com/player' }, Date, setTimeout, clearTimeout, URL, Object, JSON, Math, parseFloat,
+  );
+  shadowListeners.contextmenu({ target: shadowWrapper, clientX: 4, clientY: 4, preventDefault: () => {} });
+  check('nested custom-player video is detected from a pressed wrapper', shadowPosts.length === 1 && shadowPosts[0].kind === 'video' && shadowPosts[0].src === 'https://cdn.test/shadow-player.mp4', shadowPosts);
   check('no global leaks (only non-enumerable defineProperty)', (js.match(/window\.[A-Za-z_]+ =/g) || []).length === 0);
 
   // Run the script against a tiny fake DOM to prove behaviour.
