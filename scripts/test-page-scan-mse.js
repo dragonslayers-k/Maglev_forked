@@ -48,6 +48,15 @@ if ((!browser.includes('v.getClientRects().length > 0') && !browser.includes('v.
     !browser.includes('onResult(false, response ?: "NO_RESPONSE")')) {
   throw new Error('PiP must validate visible video, return a diagnostic reason, and wait for the native fullscreen surface before reporting success');
 }
+// Regression guard for Samsung/WebView black PiP: attach the untouched custom media
+// view at the Activity window root, not android.R.id.content, and do not paint over it.
+if (!browser.includes('val decor = activity.window.decorView as ViewGroup') ||
+    !browser.includes('decor.addView(container, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))') ||
+    !browser.includes('customViewHost = decor') ||
+    browser.includes('view.setBackgroundColor(Color.BLACK)') ||
+    browser.includes('val contentRoot = activity.findViewById<ViewGroup>(android.R.id.content)')) {
+  throw new Error('PiP custom video view must remain untouched and attached to the Activity decor root');
+}
 const pipModule = fs.readFileSync(path.join(root, 'modules/maglev-engine/android/src/main/java/com/maglev/engine/MaglevEngineModule.kt'), 'utf8');
 if (!pipModule.includes('accepted, reason') || !pipModule.includes('when (reason)') ||
     !pipModule.includes('"TAB_NOT_ACTIVE"') || !pipModule.includes('"BAD_VIDEO_RATIO"') ||
