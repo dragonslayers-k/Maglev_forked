@@ -185,7 +185,8 @@ class MaglevEngineModule : Module() {
                     .build()
                 activity.runOnUiThread {
                     try {
-                        promise.resolve(mapOf("ok" to activity.enterPictureInPictureMode(params)))
+                        val entered = activity.enterPictureInPictureMode(params)
+                        promise.resolve(if (entered) mapOf("ok" to true) else mapOf("ok" to false, "code" to "PIP_DENIED", "message" to "Android에서 PiP 전환을 거부했습니다. 재생 중인 영상인지 확인하고 다시 시도하세요."))
                     } catch (_: Throwable) {
                         promise.resolve(mapOf("ok" to false, "code" to "INTERNAL", "message" to "Android could not start picture-in-picture."))
                     }
