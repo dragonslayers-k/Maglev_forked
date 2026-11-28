@@ -1559,6 +1559,33 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
     // region Fullscreen video
 
     /** Requests the page player's fullscreen video surface from the browser PiP menu. */
+    private fun measureActiveVideoForPipInternal(onResult: (Double?, String?) -> Unit) {
+        if (destroyed || !active) { onResult(null, "TAB_NOT_ACTIVE"); return }
+        val script = """
+            (function(){
+              var roots=[document],seen=[],videos=[];
+              while(roots.length&&seen.length<128){
+                var r=roots.shift();if(!r||seen.indexOf(r)!==-1)continue;seen.push(r);
+                try{videos=videos.concat(Array.prototype.slice.call(r.querySelectorAll('video')));}catch(e){}
+                try{var els=r.querySelectorAll('*');for(var i=0;i<els.length;i++)if(els[i].shadowRoot)roots.push(els[i].shadowRoot);}catch(e){}
+              }
+              videos=videos.filter(function(v,i){return videos.indexOf(v)===i;}).filter(function(v){
+                try{var s=getComputedStyle(v);return !v.paused&&!v.ended&&v.readyState>=2&&v.videoWidth>0&&v.videoHeight>0&&v.getClientRects().length>0&&s.display!=='none'&&s.visibility!=='hidden'&&v.clientWidth>0&&v.clientHeight>0;}catch(e){return false;}
+              });
+              videos.sort(function(a,b){return b.clientWidth*b.clientHeight-a.clientWidth*a.clientHeight;});
+              var v=videos[0];if(!v)return 'NO_VIDEO';
+              var ratio=v.videoWidth/v.videoHeight;
+              return isFinite(ratio)&&ratio>=0.42&&ratio<=2.39?String(ratio):'BAD_RATIO';
+            })()
+        """.trimIndent()
+        webView.evaluateJavascript(script) { raw ->
+            val value = raw?.trim()?.removeSurrounding("\"")
+            val ratio = value?.toDoubleOrNull()
+            if (ratio != null && ratio.isFinite() && ratio in 0.42..2.39) onResult(ratio, null)
+            else onResult(null, value ?: "NO_RESPONSE")
+        }
+    }
+
     private fun requestFullscreenVideoForPipInternal(requestedAspectRatio: Double, onResult: (Boolean, String?) -> Unit) {
         if (destroyed || !active) { onResult(false, "TAB_NOT_ACTIVE"); return }
         if (requestedAspectRatio.isFinite() && requestedAspectRatio in 0.42..2.39) {
@@ -1813,6 +1840,16 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
             private set
         @Volatile var activeVideoAspectRatioKnown: Boolean = false
             private set
+
+        /** Validate and measure the currently playing visible HTML video without synthesizing a fullscreen gesture. */
+        fun measureActiveVideoForPip(onResult: (Double?, String?) -> Unit) {
+            val view = serviceWorkerObserver.get()
+            if (view == null || view.destroyed) {
+                onResult(null, "NO_ACTIVE_TAB")
+                return
+            }
+            view.measureActiveVideoForPipInternal(onResult)
+        }
 
         /** Used by the PiP menu to request fullscreen on the active tab's current HTML video. */
         fun requestFullscreenVideoForPip(requestedAspectRatio: Double, onResult: (Boolean, String?) -> Unit) {
