@@ -34,7 +34,7 @@ function check(name, cond) {
   o = R.outcomeFromRanked([row('fr', 'fits')], ['en']);
   check('results only in other languages: needs-pick with the language', o.phase === 'needs-pick' && o.otherLang === 'fr' && !o.pick);
   check('no results: none', R.outcomeFromRanked([], ['en']).phase === 'none');
-  check('"Found in {other} only" copy', copy.foundInOtherOnly('fr') === 'Found in French only');
+  check('"Found in {other} only" copy', copy.foundInOtherOnly('fr') === 'French에서만 찾음');
   const src = (state, message) => ({ providerId: 'x', state, count: 0, ms: 1, message });
   check('every source failed while the phone is offline: offline', R.outcomeFromSources([src('error', 'Network request failed'), src('timeout')], false) === 'offline');
   check('every source failed with the phone online: failed, not offline (D8)', R.outcomeFromSources([src('error', 'Network request failed'), src('timeout')], true) === 'failed');
@@ -124,7 +124,7 @@ function check(name, cond) {
   check('links count as video by their name; every search uses effectiveLanguages', /linkNameKind\(d\.name\)/.test(runner) && /effectiveLanguages\(sub\)/.test(runner));
 
   console.log('[copy and settings]');
-  check('the settings line', copy.AUTO_NEW_VIDEOS_SUBTITLE === 'In your languages, while Maglev is open');
+  check('the settings line', copy.AUTO_NEW_VIDEOS_SUBTITLE === 'Maglev 실행 중, 설정한 언어의 자막 자동 검색');
   const page = read('app/settings/subtitles.tsx');
   check('the Settings switch', /title="Get subtitles for new videos"/.test(page) && /AUTO_NEW_VIDEOS_SUBTITLE/.test(page) && /autoNewVideos/.test(page) && /useSubtitleConsent/.test(page));
   const { SETTINGS_INDEX } = await import('../utils/settingsIndex.ts');
@@ -141,10 +141,10 @@ function check(name, cond) {
   console.log('[card icon by shape, 44.8]');
   check(
     'labels say the state in words',
-    F.cardIconLabel({ state: 'getting', lang: 'en' }).startsWith('Getting subtitles') &&
-      F.cardIconLabel({ state: 'saved', lang: 'en' }).startsWith('Subtitles saved') &&
-      F.cardIconLabel({ state: 'needs-look', lang: 'en' }).startsWith('Subtitles: pick one') &&
-      F.cardIconLabel({ state: 'none', lang: 'en' }).startsWith('No subtitles found'),
+    F.cardIconLabel({ state: 'getting', lang: 'en' }).startsWith('자막 검색 중') &&
+      F.cardIconLabel({ state: 'saved', lang: 'en' }).startsWith('자막 저장됨') &&
+      F.cardIconLabel({ state: 'needs-look', lang: 'en' }).startsWith('자막 선택 필요') &&
+      F.cardIconLabel({ state: 'none', lang: 'en' }).startsWith('자막을 찾지 못함'),
   );
   const icon = read('components/subtitles/SubtitleCardIcon.tsx');
   check('no warning colour, no hex, theme roles only', !/colors\.warning/.test(icon) && !/#[0-9A-Fa-f]{3,6}\b/.test(icon) && /colors\.accentText/.test(icon) && /colors\.textMuted/.test(icon));
@@ -154,14 +154,14 @@ function check(name, cond) {
   check('a "none" state shows for 24 h like the others', prefs.stateVisible({ lang: 'en', file: '', savedAt: t0, state: 'none' }, t0 + 23 * 3600e3) && !prefs.stateVisible({ lang: 'en', file: '', savedAt: t0, state: 'none' }, t0 + 25 * 3600e3));
 
   console.log('[multi-video sheet, 44.9]');
-  check('title and button copy', copy.multiTitle(3) === 'Subtitles for 3 videos' && copy.multiButton(2) === 'Get subtitles for 2' && copy.multiButton(0) === 'Get subtitles' && copy.USES_YOUR_LANGUAGES === 'Uses your subtitle languages');
+  check('title and button copy', copy.multiTitle(3) === '3개 동영상 자막' && copy.multiButton(2) === '2개 자막 찾기' && copy.multiButton(0) === '자막 찾기' && copy.USES_YOUR_LANGUAGES === '설정한 자막 언어 사용');
   const a = { key: 'a', title: 'Show S01', detail: '1080p', addedAt: new Date(2026, 0, 1, 9, 5).getTime() };
   const b = { key: 'b', title: 'Show S01', detail: '1080p', addedAt: new Date(2026, 0, 1, 14, 30).getTime() };
   const c = { key: 'c', title: 'Other', detail: '720p', addedAt: a.addedAt };
   const t = R.rowTitles([a, b, c]);
   check('D6: identical rows get " · 2nd", the first and others stay', t[0] === 'Show S01' && t[1] === 'Show S01 · 2nd' && t[2] === 'Other');
-  check('footnotes', copy.nonVideoOne('Abbey Road') === 'Abbey Road is music, so it gets no subtitles.' && copy.nonVideoMany(3) === '3 other adds are not videos, so they get no subtitles.');
-  check('status words and summary', copy.PHASE_WORDS.queued === 'Waiting for the file' && copy.PHASE_WORDS['needs-pick'] === 'Close match · pick' && copy.statusSummary({ saved: 2, needsYou: 1, waiting: 0 }) === '2 saved · 1 needs you');
+  check('footnotes', copy.nonVideoOne('Abbey Road') === 'Abbey Road은 음악 파일이므로 자막을 검색하지 않습니다.' && copy.nonVideoMany(3) === '동영상이 아닌 항목 3개는 자막을 검색하지 않습니다.');
+  check('status words and summary', copy.PHASE_WORDS.queued === '파일 대기 중' && copy.PHASE_WORDS['needs-pick'] === '비슷한 자막 · 선택' && copy.statusSummary({ saved: 2, needsYou: 1, waiting: 0 }) === '2개 저장 · 1개 선택 필요');
   const sheet = read('components/subtitles/MultiSubtitleSheet.tsx');
   check('sheet: pencil, 44 dp checkbox, skip, no hex', /icon="pencil"/.test(sheet) && /width: (?:44|touch\.min), height: (?:44|touch\.min)/.test(sheet) && /skipSubtitles/.test(sheet) && !/#[0-9A-Fa-f]{6}\b/.test(sheet));
   check('the runner is mounted once in the layout', (read('app/_layout.tsx').match(/<SubtitleRequestRunner \/>/g) || []).length === 1);
@@ -236,7 +236,7 @@ function check(name, cond) {
     check('D7: the roll-up is written whenever an episode run changes', /packCardState/.test(runner) && /recordOwnerState/.test(runner));
     const packFacts = RM.torrentRowFacts({ finished: false, folder: '/x' }, [{ index: 0, path: 'a.mkv', length: 10, progressBytes: 5, included: true }, { index: 1, path: 'b.mkv', length: 10, progressBytes: 0, included: true }], { master: true, sourcesOn: 1 }, false);
     const packRow = RM.rowModel({ fileListKnown: false, started: true, canOpenSheet: false, canAskPack: packFacts.canAskPack });
-    check('D7: a pack page row with no request says "Not asked yet" with Get subtitles', packRow.line === 'Not asked yet' && packRow.button.label === 'Get subtitles' && packRow.button.action === 'ask-pack');
+    check('D7: a pack page row with no request says "Not asked yet" with Get subtitles', packRow.line === '아직 요청하지 않음' && packRow.button.label === '자막 찾기' && packRow.button.action === 'ask-pack');
 
     console.log('[44.15 D8 failures are not offline]');
     const T0 = 1_000_000;
@@ -250,7 +250,7 @@ function check(name, cond) {
     check('D8: offline never counts an attempt and has no timer', R.afterFailure('offline', { phase: 'searching', tries: 1, fails: 1 }, T0).fails === 1 && R.retryAt(R.afterFailure('offline', { phase: 'searching', tries: 0 }, T0)) === null);
     check('D8: a retry time in the future holds the run', R.planRun(r1, { started: true, complete: false, typed: false, now: T0 + 1000 }) === null && R.planRun(r1, { started: true, complete: false, typed: false, now: T0 + 120_000 }) === 'name');
     const failedRow = RM.rowModel({ phase: 'failed', fileListKnown: true, started: true, canOpenSheet: true });
-    check('D8: failed reads "Sources didn\'t answer" with Try again', failedRow.line === "Sources didn't answer" && failedRow.button.label === 'Try again' && failedRow.button.action === 'try-again');
+    check('D8: failed reads "Sources didn\'t answer" with Try again', failedRow.line === '검색 사이트 응답 없음' && failedRow.button.label === '다시 시도' && failedRow.button.action === 'try-again');
     R.resetRequestsForTests();
     R.askSubtitles([askOf('d:f1')], { auto: false });
     R.setRun('d:f1', null, { phase: 'failed', tries: 1, fails: 3 });
@@ -260,7 +260,7 @@ function check(name, cond) {
 
     console.log('[44.15 D9 cannot save here]');
     const unavailable = RM.rowModel({ phase: 'unavailable', fileListKnown: true, started: true, canOpenSheet: true });
-    check('D9: unavailable has its line and no button', unavailable.line === "Can't save subtitles in this folder" && unavailable.button === null);
+    check('D9: unavailable has its line and no button', unavailable.line === '이 폴더에 자막을 저장할 수 없음' && unavailable.button === null);
     check('D9: it is settled (the runner stops polling) and not "none"', R.runSettled({ phase: 'unavailable', tries: 0 }, { typed: false }) && R.rollUp(['unavailable']) === 'unavailable' && /phase: 'unavailable'/.test(runner));
 
     console.log('[44.15 D10 consent before asking]');
@@ -269,12 +269,12 @@ function check(name, cond) {
     check('D10: the runner never shows a notice', !/showNotice|privacyNotice|consentShown/.test(runner));
     check('D10: the runner makes no automatic request before the OK', /sub\.autoNewVideos && sub\.privacyAck/.test(runner));
     const heldRow = RM.rowModel({ phase: 'queued', needsOk: true, fileListKnown: true, started: true, canOpenSheet: true });
-    check('D10: a held request reads "Needs your OK" with Review', heldRow.line === 'Needs your OK' && heldRow.button.label === 'Review' && heldRow.button.action === 'review');
+    check('D10: a held request reads "Needs your OK" with Review', heldRow.line === '선택 필요' && heldRow.button.label === '검토' && heldRow.button.action === 'review');
     check('D10: the notice is shown at opt-in: Settings switch, Add switch, tray and row', /consent\.require/.test(read('app/settings/subtitles.tsx')) && /consent\.require/.test(read('components/search/SubtitlesAutoRow.tsx')) && /consent\.require/.test(read('components/search/AddedTray.tsx')) && /consent\.require/.test(read('components/subtitles/SubtitlesRow.tsx')));
     check('D10: it reuses the existing notice text and the single sheet accepts the same way', /privacyNotice\(names\)/.test(read('components/subtitles/useSubtitleConsent.tsx')) && /acceptPrivacy\(\)/.test(read('components/subtitles/SubtitleSheet.tsx')));
 
     console.log('[45.4 confirm before automatic mode turns on]');
-    check('45.4 copy: title, body and buttons', copy.AUTO_CONFIRM_TITLE === 'Get subtitles for new videos?' && copy.AUTO_CONFIRM_BODY === 'While Maglev is open, it sends the names of new videos you add to your subtitle sources, and saves a subtitle when one fits. Close matches wait for you.' && copy.AUTO_CONFIRM_TURN_ON === 'Turn on' && copy.AUTO_CONFIRM_NOT_NOW === 'Not now');
+    check('45.4 copy: title, body and buttons', copy.AUTO_CONFIRM_TITLE === '새 동영상의 자막을 자동으로 찾을까요?' && copy.AUTO_CONFIRM_BODY === 'Maglev가 실행 중이면 새로 추가한 동영상 이름을 자막 검색 사이트로 보내 일치하는 자막을 저장합니다. 비슷한 자막은 직접 선택할 수 있도록 대기합니다.' && copy.AUTO_CONFIRM_TURN_ON === '켜기' && copy.AUTO_CONFIRM_NOT_NOW === '나중에');
     check('45.4 notice already accepted: the sheet says only the confirm text', copy.autoConfirmBody(false, ['A']) === copy.AUTO_CONFIRM_BODY);
     check('45.4 notice never accepted: the privacy text comes first in the same sheet', copy.autoConfirmBody(true, ['A', 'B']) === `${copy.privacyNotice(['A', 'B'])}\n\n${copy.AUTO_CONFIRM_BODY}`);
     const hook = read('components/subtitles/useSubtitleConsent.tsx');

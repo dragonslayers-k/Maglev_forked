@@ -18,6 +18,8 @@ const MARKER = '# maglev-size-reduction';
 const KEEP_RULES = `
 ${MARKER}
 -keep class com.maglev.engine.** { *; }
+# Rhino's optional JavaBeans reflection path references a Java SE class absent on Android.
+-dontwarn java.beans.**
 -keepclassmembers class * {
     native <methods>;
 }
@@ -55,9 +57,19 @@ function applySizeProperties(props) {
 
 /** Pure transform for proguard-rules.pro text. Idempotent. */
 function applyKeepRules(src) {
-  if (src.includes(MARKER)) return src;
-  const base = src && !src.endsWith('\n') ? src + '\n' : src || '';
-  return base + KEEP_RULES;
+  const current = src || '';
+  if (!current.includes(MARKER)) {
+    const base = current && !current.endsWith('\n') ? current + '\n' : current;
+    return base + KEEP_RULES;
+  }
+  // Existing generated files may already contain MARKER but predate newly required rules.
+  // Backfill missing rules instead of treating the marker as proof the block is current.
+  const required = ['-dontwarn java.beans.**'];
+  let out = current;
+  for (const rule of required) {
+    if (!out.includes(rule)) out += (out && !out.endsWith('\n') ? '\n' : '') + rule + '\n';
+  }
+  return out;
 }
 
 function withSizeReduction(config) {

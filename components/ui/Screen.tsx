@@ -3,6 +3,7 @@ import { ScrollView, StyleSheet, Text, View, ViewStyle, StyleProp } from 'react-
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../../context/ThemeContext';
 import { ThemeColors, spacing, type } from '../../constants/theme';
+import { koUiText } from '../../constants/korean';
 import { IconButton } from './IconButton';
 
 export interface ScreenProps {
@@ -39,8 +40,8 @@ export function Screen({
       {hasHeader ? (
         <View style={styles.header}>
           {onBack ? <IconButton icon="back" onPress={onBack} accessibilityLabel="Go back" /> : null}
-          <Text style={[styles.title, !onBack && styles.titleNoBack]} numberOfLines={1} accessibilityRole="header" accessibilityLabel={titleAccessibilityLabel}>
-            {title}
+          <Text style={[styles.title, !onBack && styles.titleNoBack]} numberOfLines={1} accessibilityRole="header" accessibilityLabel={koUiText(titleAccessibilityLabel || title)}>
+            {koUiText(title)}
           </Text>
           <View style={styles.actions}>{actions}</View>
         </View>

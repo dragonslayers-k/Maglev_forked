@@ -12,6 +12,8 @@ import { formatBytes } from '../constants/format';
 import { haptic } from '../constants/haptics';
 import { StreamSheet } from '../components/browser/StreamSheet';
 import { streamKindOfLink } from '../components/browser/streamChoice';
+import { parseYouTubeLink } from '../utils/browser/youtube';
+import { parseNaverClipMediaId, resolveNaverClip } from '../utils/browser/naverClip';
 import type { FoundItem } from 'maglev-engine';
 import { Banner, Button, EmptyBlock, Screen, TextField } from '../components/ui';
 import { useDownloadAdmission } from '../utils/useDownloadAdmission';
@@ -67,6 +69,7 @@ export default function AddDownloadScreen() {
   const parts: DownloadParts = partsOverride ?? linkPrefs.downloadParts;
   const token = useRef(0);
   const urlRef = useRef('');
+  const pageUrlRef = useRef<string | null>(null);
   // NATIVE_CONTRACT 44.5 and 44.12: a video link gets the Subtitles row.
   const fullName = probe ? baseName.trim() + splitName(probe.name).ext : '';
   const subs = useSubtitlesAuto(!!probe && fileKind(fullName || probe.name) === 'video');
@@ -80,6 +83,11 @@ export default function AddDownloadScreen() {
   const submit = useCallback(
     async (raw: string, allowLan = false) => {
       const input = normalizeIncoming(raw);
+      const youtube = parseYouTubeLink(input);
+      if (youtube) {
+        router.replace({ pathname: '/youtube-download', params: { url: youtube.canonicalUrl } });
+        return;
+      }
       // A magnet or a .torrent link is a torrent: hand it to Add torrent instead of refusing it.
       if (isTorrentSource(input)) {
         router.replace({ pathname: '/add-torrent', params: { source: input } });
@@ -97,27 +105,51 @@ export default function AddDownloadScreen() {
         return;
       }
       const mine = ++token.current;
-      urlRef.current = input;
       allowLanRef.current = allowLan;
       setMessage(null);
       setAddError(null);
       setPhase('probing');
+
+      // NAVER Clip shares a feed page whose media is delivered as internal fragments.
+      // Resolve its playback response to a progressive video/mp4 BaseURL before queueing.
+      let downloadUrl = input;
+      const naverClipId = parseNaverClipMediaId(input);
+      pageUrlRef.current = naverClipId ? input : null;
+      if (naverClipId) {
+        setMessage('네이버 클립의 단일 MP4 주소를 확인하고 있습니다…');
+        try {
+          const resolved = await resolveNaverClip(input);
+          if (mine !== token.current) return;
+          downloadUrl = resolved.url;
+          setMessage(null);
+        } catch (error) {
+          if (mine !== token.current) return;
+          setMessage(error instanceof Error ? error.message : '네이버 클립의 MP4 주소를 찾지 못했습니다.');
+          setPhase('input');
+          return;
+        }
+      }
+      urlRef.current = downloadUrl;
       // An .m3u8 or .mpd link is a stream: offer the same quality sheet the browser uses.
       // When the probe says it is not a stream, carry on as a plain file.
-      const streamKind = streamKindOfLink(input);
+      const streamKind = streamKindOfLink(downloadUrl);
+      const requestOptions = {
+        ...(allowLan ? { allowLan: true } : {}),
+        ...(naverClipId ? { headers: { Referer: input }, pageUrl: input } : {}),
+      };
       if (streamKind) {
-        const sp = await probeStream(input, allowLan ? { allowLan: true } : {});
+        const sp = await probeStream(downloadUrl, requestOptions);
         if (mine !== token.current) return;
         if (sp.ok || (sp.code ?? '').toUpperCase().startsWith('STREAM_')) {
           setStreamItem({
-            id: input, url: input, kind: 'video', mime: null, ext: streamKind === 'hls' ? 'm3u8' : 'mpd',
-            name: '', size: null, width: null, height: null, source: 'page', stream: streamKind, pageUrl: '', pageTitle: '',
+            id: downloadUrl, url: downloadUrl, kind: 'video', mime: null, ext: streamKind === 'hls' ? 'm3u8' : 'mpd',
+            name: '', size: null, width: null, height: null, source: 'page', stream: streamKind, pageUrl: input, pageTitle: '',
           });
           setPhase('input');
           return;
         }
       }
-      const res = await probeUrl(input, allowLan ? { allowLan: true } : {});
+      const res = await probeUrl(downloadUrl, requestOptions);
       if (mine !== token.current) return;
       if (res.ok) {
         setProbe(res);
@@ -218,6 +250,7 @@ export default function AddDownloadScreen() {
       : null;
     const res = await startDownload(urlRef.current, {
       ...(allowLanRef.current ? { allowLan: true } : {}),
+      ...(pageUrlRef.current ? { headers: { Referer: pageUrlRef.current }, pageUrl: pageUrlRef.current } : {}),
       ...(renamed ? { name: renamed } : {}),
       ...(folderPath ? { folder: folderPath } : {}),
       segments: parts,
@@ -305,14 +338,14 @@ export default function AddDownloadScreen() {
           body={errorView?.body}
           primary={
             notAFile
-              ? { label: 'Open in browser', onPress: () => openBrowser(router, { url: urlRef.current }, 'replace') }
+              ? { label: 'yt-dlp로 페이지 분석', onPress: () => router.replace({ pathname: '/youtube-download', params: { url: urlRef.current } }) }
               : errorView?.primary === 'pasteAnother'
                 ? { label: 'Paste another link', onPress: () => { setText(''); void handlePaste(); } }
                 : { label: 'Try again', onPress: () => void submit(urlRef.current) }
           }
           secondary={
             notAFile
-              ? { label: 'Paste another link', onPress: () => { setText(''); void handlePaste(); } }
+              ? { label: '브라우저에서 열기', onPress: () => openBrowser(router, { url: urlRef.current }, 'replace') }
               : { label: 'Back', onPress: () => setPhase('input') }
           }
         />

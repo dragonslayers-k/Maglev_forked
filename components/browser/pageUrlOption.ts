@@ -1,4 +1,4 @@
-import { getBrowserPrefs } from '../../utils/prefs/browser';
+import { getBrowserPrefs } from '../../utils/prefs/browser.ts';
 
 /**
  * The `pageUrl` download option for a download started from the in-app browser (NATIVE_CONTRACT "Auto-refresh").

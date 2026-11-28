@@ -5,7 +5,7 @@ import { useSettings } from '../../context/SettingsContext';
 import { Banner, Button, ListRow, SectionHeader, Toggle } from '../../components/ui';
 import { Caption, Card, InputSheet, SettingsPage, parseIntIn } from '../../components/settings/SettingsParts';
 import { NetworkRestartBanner, useNetworkStatus } from '../../components/settings/NetworkRestartBanner';
-import { networkAdvancedCopy as copy, notices } from '../../constants/copy';
+import { notices } from '../../constants/copy';
 import { blocklistSubtitle } from '../../utils/networkStatus';
 
 type Field = 'port' | 'proxyHost' | 'proxyPort' | 'proxyUser' | 'proxyPass';
@@ -42,51 +42,51 @@ export default function NetworkAdvancedSettings() {
   const blocklistLine = blocklistSubtitle(blocklistName, n.ipFilterEnabled && n.ipFilterPath ? blocklist : null);
 
   return (
-    <SettingsPage title={copy.pageTitle}>
+    <SettingsPage title="고급 네트워크">
       <Stack.Screen options={{ headerShown: false }} />
       <NetworkRestartBanner restartPending={restartPending} busy={busy} onRestart={() => void restart()} />
 
-      <SectionHeader title="Connection" />
+      <SectionHeader title="연결" />
       <Card>
-        <ListRow title="Incoming port" value={String(n.listeningPort)} onPress={() => setField('port')} />
-        <ListRow title="UPnP" subtitle="Open the port on your router." accessory={sw('UPnP', n.upnpEnabled, (v) => set({ upnpEnabled: v }))} />
-        <ListRow title="DHT" subtitle="Find peers without a tracker." accessory={sw('DHT', n.dhtEnabled, (v) => set({ dhtEnabled: v }))} />
-        <ListRow title="Local peer discovery" subtitle="Find peers on your Wi-Fi." accessory={sw('Local peer discovery', n.lsdEnabled, (v) => set({ lsdEnabled: v }))} />
+        <ListRow title="수신 포트" value={String(n.listeningPort)} onPress={() => setField('port')} />
+        <ListRow title="UPnP" subtitle="공유기에서 수신 포트를 엽니다." accessory={sw('UPnP', n.upnpEnabled, (v) => set({ upnpEnabled: v }))} />
+        <ListRow title="DHT" subtitle="트래커 없이 피어를 찾습니다." accessory={sw('DHT', n.dhtEnabled, (v) => set({ dhtEnabled: v }))} />
+        <ListRow title="로컬 피어 검색" subtitle="같은 Wi-Fi에서 피어를 찾습니다." accessory={sw('로컬 피어 검색', n.lsdEnabled, (v) => set({ lsdEnabled: v }))} />
       </Card>
 
-      <SectionHeader title="Proxy" />
+      <SectionHeader title="프록시" />
       <Card>
-        <ListRow title="SOCKS5 proxy" accessory={sw('SOCKS5 proxy', n.proxy.enabled, (v) => setProxy({ enabled: v, type: 'SOCKS5' }))} />
+        <ListRow title="SOCKS5 프록시" accessory={sw('SOCKS5 프록시', n.proxy.enabled, (v) => setProxy({ enabled: v, type: 'SOCKS5' }))} />
         {n.proxy.enabled ? (
           <>
-            <ListRow title="Host" value={proxyHostValue} onPress={() => setField('proxyHost')} />
-            <ListRow title="Port" value={String(n.proxy.port)} onPress={() => setField('proxyPort')} />
-            <ListRow title="Username" value={n.proxy.username || 'None'} onPress={() => setField('proxyUser')} />
-            <ListRow title="Password" value={n.proxy.password ? '••••••' : 'None'} onPress={() => setField('proxyPass')} />
+            <ListRow title="호스트" value={proxyHostValue} onPress={() => setField('proxyHost')} />
+            <ListRow title="포트" value={String(n.proxy.port)} onPress={() => setField('proxyPort')} />
+            <ListRow title="사용자 이름" value={n.proxy.username || '없음'} onPress={() => setField('proxyUser')} />
+            <ListRow title="비밀번호" value={n.proxy.password ? '••••••' : '없음'} onPress={() => setField('proxyPass')} />
           </>
         ) : null}
       </Card>
-      <Caption>Peer and web traffic only</Caption>
+      <Caption>토렌트 피어 및 웹 요청에만 적용됩니다.</Caption>
 
-      <SectionHeader title="IP blocklist" />
+      <SectionHeader title="IP 차단 목록" />
       <Card>
         <ListRow
-          title="Block listed IPs"
+          title="목록의 IP 차단"
           subtitle={blocklistLine.text}
           subtitleTone={blocklistLine.danger ? 'danger' : undefined}
-          accessory={sw('Block listed IPs', n.ipFilterEnabled && !!n.ipFilterPath, (v) => set({ ipFilterEnabled: v && !!n.ipFilterPath }))}
+          accessory={sw('목록의 IP 차단', n.ipFilterEnabled && !!n.ipFilterPath, (v) => set({ ipFilterEnabled: v && !!n.ipFilterPath }))}
         />
       </Card>
-      {fileError ? <Banner tone="danger" title={fileError} actionLabel="Retry" onAction={pickBlocklist} /> : null}
-      <Button label={n.ipFilterPath ? 'Choose another file' : 'Choose blocklist file'} variant="secondary" onPress={pickBlocklist} />
+      {fileError ? <Banner tone="danger" title={fileError} actionLabel="다시 시도" onAction={pickBlocklist} /> : null}
+      <Button label={n.ipFilterPath ? '다른 파일 선택' : '차단 목록 파일 선택'} variant="secondary" onPress={pickBlocklist} />
 
       <InputSheet
         visible={field === 'port'}
         title="Incoming port"
-        subtitle="Enter a port from 1024 to 65535."
+        subtitle="1024~65535 사이의 포트를 입력하세요."
         initial={String(n.listeningPort)}
         numeric
-        validate={(r) => (parseIntIn(r, 1024, 65535) === null ? 'Enter a whole number from 1024 to 65535.' : null)}
+        validate={(r) => (parseIntIn(r, 1024, 65535) === null ? '1024~65535 사이의 정수를 입력하세요.' : null)}
         onClose={() => setField(null)}
         onSubmit={(r) => {
           const v = parseIntIn(r, 1024, 65535);
@@ -96,10 +96,10 @@ export default function NetworkAdvancedSettings() {
       />
       <InputSheet
         visible={field === 'proxyHost'}
-        title="Proxy host"
+        title="프록시 호스트"
         initial={n.proxy.host}
         placeholder="127.0.0.1"
-        validate={(r) => (/^[A-Za-z0-9.\-]+$/.test(r) ? null : 'Enter a host name or IP address.')}
+        validate={(r) => (/^[A-Za-z0-9.\-]+$/.test(r) ? null : '호스트 이름 또는 IP 주소를 입력하세요.')}
         onClose={() => setField(null)}
         onSubmit={(r) => {
           setProxy({ host: r });
@@ -108,11 +108,11 @@ export default function NetworkAdvancedSettings() {
       />
       <InputSheet
         visible={field === 'proxyPort'}
-        title="Proxy port"
-        subtitle="Enter a port from 1 to 65535."
+        title="프록시 포트"
+        subtitle="1~65535 사이의 포트를 입력하세요."
         initial={String(n.proxy.port)}
         numeric
-        validate={(r) => (parseIntIn(r, 1, 65535) === null ? 'Enter a whole number from 1 to 65535.' : null)}
+        validate={(r) => (parseIntIn(r, 1, 65535) === null ? '1~65535 사이의 정수를 입력하세요.' : null)}
         onClose={() => setField(null)}
         onSubmit={(r) => {
           const v = parseIntIn(r, 1, 65535);
@@ -122,8 +122,8 @@ export default function NetworkAdvancedSettings() {
       />
       <InputSheet
         visible={field === 'proxyUser'}
-        title="Proxy username"
-        subtitle="Leave empty for none."
+        title="프록시 사용자 이름"
+        subtitle="사용하지 않으려면 비워 두세요."
         initial={n.proxy.username ?? ''}
         validate={() => null}
         onClose={() => setField(null)}
@@ -134,7 +134,7 @@ export default function NetworkAdvancedSettings() {
       />
       <InputSheet
         visible={field === 'proxyPass'}
-        title="Proxy password"
+        title="프록시 비밀번호"
         subtitle="Leave empty for none."
         initial={n.proxy.password ?? ''}
         secure

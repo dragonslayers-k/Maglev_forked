@@ -32,7 +32,7 @@ object AppUpdater {
         "objects.githubusercontent.com",
         "release-assets.githubusercontent.com",
     )
-    private const val PACKAGE = "com.maglev"
+    private const val PACKAGE = "com.maglev.plus"
     private const val MAX_BYTES = 150L * 1024 * 1024
     private const val MAX_REDIRECTS = 5
     private const val READ_TIMEOUT_MS = 60_000
@@ -63,7 +63,7 @@ object AppUpdater {
     private fun failure(code: String, message: String): Map<String, Any?> = Json.failure(code, message)
 
     private fun managed(context: Context): Map<String, Any?>? =
-        if (InstallSource.managedBy(context) != null) failure("MANAGED", "Another app updates Maglev.") else null
+        if (InstallSource.managedBy(context) != null) failure("MANAGED", "Another app updates Maglev+.") else null
 
     // region download
 

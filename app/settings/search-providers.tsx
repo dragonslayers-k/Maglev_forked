@@ -33,7 +33,7 @@ const RESULT_NAME_LINES = [
   { value: 1, label: '1' },
   { value: 2, label: '2' },
   { value: 3, label: '3' },
-  { value: 0, label: 'Full name' },
+  { value: 0, label: '전체 이름' },
 ] as const;
 
 /** Torznab entries default to every category except adult; the user narrows it per source. */
@@ -184,20 +184,20 @@ export default function SearchProvidersSettings() {
   const openPos = open ? prefs.enabled.indexOf(open.id) : -1;
 
   return (
-    <SettingsPage title="Search sources">
+    <SettingsPage title="검색 사이트">
       <Stack.Screen options={{ headerShown: false }} />
-      <Caption>Maglev asks every source you turn on at the same time. Open a source to set which one wins when two return the same torrent.</Caption>
+      <Caption>토렌트 검색에 사용할 사이트 목록입니다. 켜진 사이트에 동시에 검색하며, 같은 결과가 중복되면 사이트별 우선순위를 적용합니다. 분류 필터로 사이트를 좁히고, 사이트별 설정에서 주소·사용 범위·응답 여부를 확인할 수 있습니다.</Caption>
 
       {checkList.length > 0 ? (
         <View style={styles.section}>
-          <SectionHeader title="Needs a quick check" />
+          <SectionHeader title="확인이 필요한 사이트" />
           <Card>
             {checkList.map((p, i) => (
               <ProviderRow
                 key={p.id}
                 provider={p}
                 enabled
-                note="Tap ? to open the site once"
+                note="?를 눌러 사이트를 한 번 열어 확인하세요."
                 noteTone="accent"
                 first={i === 0}
                 onOpen={() => setOpenId(p.id)}
@@ -210,23 +210,23 @@ export default function SearchProvidersSettings() {
       ) : null}
 
       <View style={styles.section}>
-        <SectionHeader title="What sources to show" />
+        <SectionHeader title="표시할 검색 사이트" />
         <Card>
           <ListRow
-            title="Show adult sources"
-            subtitle={prefs.adult ? 'Adult sources are listed under Off' : 'Hidden until you turn this on'}
-            accessory={<Toggle value={prefs.adult} onValueChange={(adult) => update({ adult })} accessibilityLabel="Show adult sources" />}
+            title="성인 사이트를 ‘사용 안 함’ 목록에 표시"
+            subtitle="켜짐: 목록에만 표시되며 검색하지 않습니다. 꺼짐: 목록에서 숨깁니다. 성인 웹사이트 자체를 차단하는 기능은 아닙니다."
+            accessory={<Toggle value={prefs.adult} onValueChange={(adult) => update({ adult })} accessibilityLabel="성인 사이트를 사용 안 함 목록에 표시" />}
           />
           <ListRow
-            title="Warn about risky sources"
-            subtitle="Mark results from sources known for fake or harmful uploads."
-            accessory={<Toggle value={prefs.warnUnsafe} onValueChange={(warnUnsafe) => update({ warnUnsafe })} accessibilityLabel="Warn about risky sources" />}
+            title="위험한 검색 사이트 경고"
+            subtitle="가짜 파일이나 유해한 업로드가 알려진 사이트의 결과에 표시합니다."
+            accessory={<Toggle value={prefs.warnUnsafe} onValueChange={(warnUnsafe) => update({ warnUnsafe })} accessibilityLabel="위험한 검색 사이트 경고" />}
           />
           {prefs.clearances.length > 0 ? (
             <ListRow
               icon="trash"
-              title="Clear site checks"
-              subtitle={`Forget the checks you passed on ${prefs.clearances.length} ${prefs.clearances.length === 1 ? 'site' : 'sites'}. You'll be asked again.`}
+              title="사이트 확인 기록 지우기"
+              subtitle={`지운 사이트 확인 기록 ${prefs.clearances.length}개를 다시 확인해야 합니다.`}
               onPress={() => {
                 const hosts = clearSiteChecks();
                 void clearCookies(hosts.map((h) => `https://${h.host}/`));
@@ -237,44 +237,44 @@ export default function SearchProvidersSettings() {
       </View>
 
       <View style={styles.section}>
-        <SectionHeader title="How search behaves" />
+        <SectionHeader title="검색 동작" />
         <Card>
           <ChipGroup
-            label="Wait for slow sources"
+            label="느린 사이트 대기 시간"
             options={WAITS}
             value={prefs.waitSeconds}
             onChange={(waitSeconds) => update({ waitSeconds })}
           />
-          <ChipGroup label="Results per source" options={LIMITS} value={prefs.limit} onChange={(limit) => update({ limit })} />
+          <ChipGroup label="사이트별 결과 수" options={LIMITS} value={prefs.limit} onChange={(limit) => update({ limit })} />
           <ListRow
-            title="Hide dead torrents"
-            subtitle="Results no one is sharing"
-            accessory={<Toggle value={prefs.hideDead} onValueChange={(hideDead) => update({ hideDead })} accessibilityLabel="Hide dead torrents" />}
+            title="시더 없는 토렌트 숨기기"
+            subtitle="공유 중인 사용자가 없는 결과를 숨깁니다."
+            accessory={<Toggle value={prefs.hideDead} onValueChange={(hideDead) => update({ hideDead })} accessibilityLabel="시더 없는 토렌트 숨기기" />}
           />
           <ListRow
-            title="Trusted uploaders only"
-            subtitle="Hide Pirate Bay uploads from ordinary members"
-            accessory={<Toggle value={prefs.trustedUploadersOnly} onValueChange={(trustedUploadersOnly) => update({ trustedUploadersOnly })} accessibilityLabel="Trusted uploaders only" />}
+            title="신뢰된 업로더만 표시"
+            subtitle="Pirate Bay의 일반 회원 업로드를 숨깁니다."
+            accessory={<Toggle value={prefs.trustedUploadersOnly} onValueChange={(trustedUploadersOnly) => update({ trustedUploadersOnly })} accessibilityLabel="신뢰된 업로더만 표시" />}
           />
         </Card>
       </View>
 
       <View style={styles.section}>
-        <SectionHeader title="Results" />
+        <SectionHeader title="결과" />
         <Card>
           <ChipGroup
-            label="Result name lines"
+            label="결과 이름 줄 수"
             options={RESULT_NAME_LINES}
             value={prefs.resultNameLines}
             onChange={(resultNameLines) => update({ resultNameLines })}
           />
         </Card>
-        <Caption>How many lines a long result name can use in Search.</Caption>
+        <Caption>검색 결과의 긴 제목을 몇 줄까지 표시할지 설정합니다.</Caption>
       </View>
 
       <View style={styles.section}>
-        <SectionHeader title="Show sources for" />
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow} accessibilityRole="radiogroup" accessibilityLabel="Show sources for">
+        <SectionHeader title="검색 사이트 범위" />
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow} accessibilityRole="radiogroup" accessibilityLabel="검색 사이트 범위">
           {CATEGORY_ORDER.filter((c) => c !== 'adult' || prefs.adult).map((c) => (
             <Chip key={c} label={CATEGORY_LABEL[c]} role="radio" selected={category === c} onPress={() => setCategory(c)} />
           ))}
@@ -282,9 +282,9 @@ export default function SearchProvidersSettings() {
       </View>
 
       <View style={styles.section}>
-        <SectionHeader title={`On · ${onList.length + checkList.length}`} />
+        <SectionHeader title={`사용 중 · ${onList.length + checkList.length}`} />
         <Card>
-          {onList.length === 0 ? <Text style={styles.empty}>Nothing is on. Turn on a source below.</Text> : shownOn.length === 0 ? <Text style={styles.empty}>No source that's on covers {CATEGORY_LABEL[category]}.</Text> : null}
+          {onList.length === 0 ? <Text style={styles.empty}>활성화된 검색 사이트가 없습니다. 아래에서 사이트를 켜세요.</Text> : shownOn.length === 0 ? <Text style={styles.empty}>현재 분류를 지원하는 활성 검색 사이트가 없습니다.</Text> : null}
           {shownOn.map((p, i) => {
             const n = note(p);
             return (
@@ -306,7 +306,7 @@ export default function SearchProvidersSettings() {
 
       {shownOff.length > 0 ? (
         <View style={styles.section}>
-          <SectionHeader title="Off" />
+          <SectionHeader title="사용 안 함" />
           <Card>
             {shownOff.map((p, i) => {
               const n = note(p);
@@ -329,18 +329,18 @@ export default function SearchProvidersSettings() {
       ) : null}
 
       <View style={styles.section}>
-        <SectionHeader title="Your own indexer" />
+        <SectionHeader title="사용자 지정 검색 서버" />
         <Card>
           <ListRow
             icon="plus"
-            title="Connect Jackett or Prowlarr"
-            subtitle="Search any tracker your server supports, including private ones"
+            title="Jackett 또는 Prowlarr 연결"
+            subtitle="서버에서 지원하는 공개·비공개 트래커를 검색합니다."
             onPress={() => setTorznabOpen(true)}
           />
         </Card>
       </View>
 
-      <Caption>Maglev doesn't host or index anything. Sources are third-party websites; you're responsible for what you download.</Caption>
+      <Caption>MAGLEV는 파일을 호스팅하거나 검색 색인을 직접 운영하지 않습니다. 검색 사이트는 제3자이며 다운로드한 콘텐츠의 책임은 사용자에게 있습니다.</Caption>
 
       <ProviderSheet
         provider={open}

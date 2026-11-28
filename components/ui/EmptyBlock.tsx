@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef } from 'react';
 import { Animated, StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { ThemeColors, motion, radius, spacing, type } from '../../constants/theme';
+import { koUiText } from '../../constants/korean';
 import { PixelIcon, PixelIconName } from '../PixelIcon';
 import { animateTo, useReduceMotion } from '../motion';
 import { Button } from './Button';
@@ -57,9 +58,9 @@ export function EmptyBlock({ icon, title, body, primary, secondary, error, testI
       </Animated.View>
       <Animated.View style={[styles.copy, { opacity: anim.copyOpacity, transform: [{ translateY: anim.copyY }] }]}>
         <Text style={styles.title} accessibilityRole="header">
-          {title}
+          {koUiText(title)}
         </Text>
-        {body ? <Text style={styles.body}>{body}</Text> : null}
+        {body ? <Text style={styles.body}>{koUiText(body)}</Text> : null}
         {primary || secondary ? (
           <View style={styles.actions}>
             {primary ? <Button label={primary.label} icon={primary.icon} onPress={primary.onPress} /> : null}

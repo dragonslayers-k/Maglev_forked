@@ -103,8 +103,8 @@ export function ProviderSheet({
 
         <View style={styles.headRow}>
           <Monogram abbr={provider.abbr} tint={enabled} />
-          <Text style={styles.headText}>{enabled ? 'Used when you search' : 'Not used for search'}</Text>
-          <Toggle value={enabled} onValueChange={onToggle} disabled={!!provider.turnedOff} accessibilityLabel={`Use ${provider.name} for search`} />
+          <Text style={styles.headText}>{enabled ? '검색에 사용됩니다' : '검색에 사용하지 않습니다'}</Text>
+          <Toggle value={enabled} onValueChange={onToggle} disabled={!!provider.turnedOff} accessibilityLabel={`검색에 ${provider.name} 사용`} />
         </View>
 
         <View style={styles.testRow} accessibilityLiveRegion="polite">
@@ -115,14 +115,14 @@ export function ProviderSheet({
           )}
           <Text style={styles.testText}>
             {testing
-              ? 'Checking…'
+              ? '확인 중…'
               : test
                 ? test.ok
-                  ? `Answered in ${formatSeconds(test.ms)}`
-                  : test.message || "Didn't answer"
-                : 'Not checked yet'}
+                  ? `${formatSeconds(test.ms)} 만에 응답`
+                  : test.message || '응답 없음'
+                : '아직 확인하지 않음'}
           </Text>
-          <Button label="Test now" variant="secondary" onPress={onTest} loading={testing} />
+          <Button label="지금 확인" variant="secondary" onPress={onTest} loading={testing} />
         </View>
 
         <View style={styles.group}>
@@ -137,16 +137,16 @@ export function ProviderSheet({
             accessibilityLabel={`${provider.name} address`}
           />
           <View style={styles.hintRow}>
-            <Text style={styles.hint}>Use a mirror if this address is blocked on your network.</Text>
+            <Text style={styles.hint}>네트워크에서 이 주소가 차단되면 미러 주소를 사용하세요.</Text>
             {modified ? (
-              <Button label="Reset" variant="ghost" onPress={() => onAddress('')} accessibilityLabel="Reset address to default" />
+              <Button label="초기화" variant="ghost" onPress={() => onAddress('')} accessibilityLabel="기본 주소로 초기화" />
             ) : null}
           </View>
         </View>
 
         {cats.length > 1 ? (
           <View style={styles.group}>
-            <Text style={styles.label}>Use for</Text>
+            <Text style={styles.label}>사용 범위</Text>
             <View style={styles.wrap}>
               {cats.map((c) => (
                 <Chip key={c} label={CATEGORY_LABEL[c]} selected={chosen.includes(c)} onPress={() => toggleCat(c)} />
@@ -157,19 +157,19 @@ export function ProviderSheet({
 
         {enabled && position >= 0 ? (
           <View style={styles.group}>
-            <Text style={styles.label}>Priority</Text>
+            <Text style={styles.label}>우선순위</Text>
             <Text style={styles.hint}>
-              Number {position + 1} of {onCount}. When two sources return the same torrent, the higher one wins.
+              {onCount}개 중 {position + 1}번째입니다. 같은 토렌트가 여러 사이트에서 나오면 우선순위가 높은 사이트 결과를 먼저 사용합니다.
             </Text>
             <View style={styles.wrap}>
-              <Button label="Move up" variant="secondary" onPress={() => onMove(-1)} disabled={position === 0} />
-              <Button label="Move down" variant="secondary" onPress={() => onMove(1)} disabled={position === onCount - 1} />
+              <Button label="위로" variant="secondary" onPress={() => onMove(-1)} disabled={position === 0} />
+              <Button label="아래로" variant="secondary" onPress={() => onMove(1)} disabled={position === onCount - 1} />
             </View>
           </View>
         ) : null}
 
-        {onRemove ? <Button label="Remove indexer" variant="danger" onPress={onRemove} /> : null}
-        <Button label="Done" onPress={done} fullWidth />
+        {onRemove ? <Button label="검색 서버 삭제" variant="danger" onPress={onRemove} /> : null}
+        <Button label="완료" onPress={done} fullWidth />
       </ScrollView>
     </Sheet>
   );

@@ -45,7 +45,7 @@ function universalProblems(text, acronyms, proper, glossary) {
   if (/…|\.\.\./.test(text)) p.push('has an ellipsis');
   if (/\b(could not|cannot|please)\b|^(unable to|failed to)\b/i.test(text)) p.push('uses a banned phrase (use Couldn\'t / Can\'t, no please)');
   if (/\s{2,}/.test(text) || text !== text.trim()) p.push('has stray spaces');
-  if (!/^[A-Z.0-9]/.test(text)) p.push('does not start with a capital');
+  if (!/^[A-Z.0-9가-힣]/.test(text)) p.push('does not start with a capital or Hangul');
   const noQuotes = text.replace(/"[^"]*"/g, '');
   for (const w of noQuotes.match(/[A-Za-z][A-Za-z'-]*/g) ?? []) {
     if (w.length > 1 && w === w.toUpperCase() && /[A-Z]{2}/.test(w) && !acronyms.includes(w)) p.push(`ALL CAPS word "${w}"`);

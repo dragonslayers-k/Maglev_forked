@@ -19,6 +19,57 @@ async function main() {
   const link = await import('../modules/maglev-engine/src/downloadLink.ts');
   const copy = await import('../utils/downloadCopy.ts');
   const { MockDownloads, mockSizeFor } = await import('../modules/maglev-engine/src/MaglevMockDownloads.ts');
+  const naverClip = await import('../utils/browser/naverClip.ts');
+
+  // NAVER Clip shares contain a mediaId, not the actual downloadable file URL.
+  console.log('NAVER Clip');
+  const shortsUrl = 'https://m.naver.com/shorts/?seedMediaId=72B42EEE67846A3F4B42E53AED191A36F493&serviceType=CLIP';
+  check('recognizes a Naver Shorts media id', naverClip.parseNaverClipMediaId(shortsUrl) === '72B42EEE67846A3F4B42E53AED191A36F493');
+  check('rejects a lookalike host', naverClip.parseNaverClipMediaId('https://evil.example/shorts/?seedMediaId=72B42EEE67846A3F493') === null);
+  const clipFixture = {
+    card: { content: { title: 'sample clip', vod: { playback: { MPD: [{ Period: [{ AdaptationSet: [
+      { mimeType: 'audio/mp4', Representation: [{ BaseURL: ['https://cdn.example/audio.m4a'] }] },
+      { mimeType: 'video/mp4', Representation: [{ BaseURL: [{ value: 'https://cdn.example/clip.mp4?token=fresh' }] }] },
+      { mimeType: 'video/mp2t', Representation: [{ BaseURL: ['https://cdn.example/segment.ts'] }] },
+    ] }] }] } } } },
+  };
+  check('selects progressive MP4 only, not audio or TS fragments', naverClip.findNaverClipMp4(clipFixture)?.url === 'https://cdn.example/clip.mp4?token=fresh');
+  let requested = '';
+  const fakeFetch = async (url) => {
+    requested = String(url);
+    return { ok: true, status: 200, json: async () => clipFixture };
+  };
+  const clip = await naverClip.resolveNaverClip(shortsUrl, fakeFetch);
+  check('resolves one MP4 and preserves the signed URL', clip.url === 'https://cdn.example/clip.mp4?token=fresh');
+  check('requests the single-media playback API', requested.includes('/shortformhub/feeds/v9/card') && requested.includes('seedMediaId=72B42EEE67846A3F4B42E53AED191A36F493'));
+  const { startFound } = await import('../components/browser/startFound.ts');
+  const oldFetch = globalThis.fetch;
+  let probedUrl = '';
+  let savedUrl = '';
+  let referer = '';
+  globalThis.fetch = fakeFetch;
+  try {
+    const started = await startFound({
+      headersFor: async () => ({ 'User-Agent': 'test-agent' }),
+      probeUrl: async (url, options) => {
+        probedUrl = url;
+        referer = options.headers.Referer;
+        return { ok: true, name: 'clip.mp4', size: 1 };
+      },
+      startDownload: async (url, options) => {
+        savedUrl = url;
+        check('browser save keeps Naver page referer', options.headers.Referer === shortsUrl);
+        return { ok: true, id: 'dl_naver_clip' };
+      },
+    }, { url: shortsUrl, pageUrl: shortsUrl, userAgent: 'test-agent' });
+    check('browser save probes the resolved single MP4', started.ok && probedUrl === 'https://cdn.example/clip.mp4?token=fresh');
+    check('browser save queues the same resolved MP4', savedUrl === probedUrl);
+    check('browser probe carries the Naver page referer', referer === shortsUrl);
+  } finally {
+    globalThis.fetch = oldFetch;
+  }
+
+
 
   // ---- links ----
   console.log('links');

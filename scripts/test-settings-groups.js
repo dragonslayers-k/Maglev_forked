@@ -17,11 +17,11 @@ const check = (name, ok) => {
 const index = read('app/(tabs)/settings.tsx');
 const at = (s) => index.indexOf(s);
 
-// Group titles, in order (0.25: App, General, Finding things, Downloads, Network and power).
-const titles = ['App', 'General', 'Finding things', 'Transfers', 'Network and power'];
+// Group titles, in order (Korean localization: 콘텐츠 찾기).
+const titles = ['앱', '일반', '콘텐츠 찾기', '전송', '네트워크 및 전원'];
 const tpos = titles.map((t) => at(`<SectionHeader title="${t}"`));
 check('all five group titles exist', tpos.every((p) => p > 0));
-check('groups run App, General, Finding things, Transfers, Network and power', tpos.every((p, i) => i === 0 || p > tpos[i - 1]));
+check('groups run 앱, 일반, 콘텐츠 찾기, 전송, 네트워크 및 전원', tpos.every((p, i) => i === 0 || p > tpos[i - 1]));
 
 const endPos = at('</ScrollView>');
 const jsx = Object.fromEntries(titles.map((t, i) => [t, index.slice(tpos[i], i + 1 < titles.length ? tpos[i + 1] : endPos)]));
@@ -30,30 +30,34 @@ const listOf = (name) => {
   return m ? m[1] : '';
 };
 const expected = {
-  General: ['generalRows', ['Appearance', 'Assistant', 'Notifications', 'Backup and restore']],
-  'Finding things': ['findRows', ['Search sources', 'Auto-download']],
-  Transfers: [null, ['Adding and finishing', 'Speed and sharing', 'Storage', 'Scheduling']],
-  'Network and power': ['networkRows', ['Network', 'Power', 'Browser']],
-  App: ['appRows', ['About', 'Updates']],
+  일반: ['generalRows', ['화면 모양', '알림', '백업 및 복원']],
+  '콘텐츠 찾기': ['findRows', ['검색 사이트', '자동 다운로드', '자막']],
+  전송: [null, ['추가 및 완료', '속도 및 공유', '저장 공간', '예약']],
+  '네트워크 및 전원': ['networkRows', ['네트워크', '전원', '브라우저']],
+  앱: ['appRows', ['앱 정보', '목록 업데이트']],
 };
 for (const [g, [list, rows]] of Object.entries(expected)) {
   if (list) check(`${g} renders ${list}`, jsx[g].includes(`${list}.map`));
   for (const r of rows) {
     const where = list ? listOf(list) : listOf('downloadsRow') + listOf('speedRow') + listOf('scheduleRow');
-    const ok = r === 'Storage' ? /<StorageRow/.test(jsx[g]) : where.includes(`title: '${r}'`);
+    const ok = r === '저장 공간' ? /<StorageRow/.test(jsx[g]) : where.includes(`title: '${r}'`);
     check(`${r} is in ${g}`, ok);
   }
 }
-check('Transfers renders Adding and finishing, Speed and sharing, Storage, Scheduling, Watches in order', (() => {
-  const d = jsx.Transfers;
+check('전송은 추가 및 완료, 속도 및 공유, 저장 공간, 예약, 관심 항목 순서로 표시', (() => {
+  const d = jsx['전송'];
   const p = ['{...downloadsRow}', '{...speedRow}', '<StorageRow', '{...scheduleRow}', '{...watchRow}'].map((x) => d.indexOf(x));
   return p.every((x, i) => x >= 0 && (i === 0 || x > p[i - 1]));
 })());
-check('App group is About, Updates, then Stats, with no sections of their own', /appRows[^=]*=\s*\[\s*\{[^}]*title: 'About'[\s\S]*?title: 'Updates'/.test(index) && /<SettingsRow key=\{r\.route\} \{\.\.\.r\} \/>\s*\)\)\}\s*<StatsRow \/>/.test(index) && !/SectionHeader title="About"/.test(index));
+check('App group is Korean app info, updates, then Stats, with no sections of their own', (() => {
+  const appInfo = index.indexOf("title: '앱 정보'");
+  const updates = index.indexOf("title: '목록 업데이트'");
+  return appInfo >= 0 && updates > appInfo && /<SettingsRow key=\{r\.route\} \{\.\.\.r\} \/>\s*\)\)\}\s*<StatsRow \/>/.test(index) && !/SectionHeader title="About"/.test(index);
+})());
 check('NeedsAttention banners sit above the groups', at('<NeedsAttention />') > 0 && at('<NeedsAttention />') < tpos[0]);
-check('Interface row is titled Appearance, route kept', /title: 'Appearance'[^}]*route: 'interface'/.test(index) && !/title: 'Interface'/.test(index));
+check('Interface row is titled Appearance, route kept', /title: '화면 모양'[^}]*route: 'interface'/.test(index) && !/title: 'Interface'/.test(index));
 check('merged row shows limits and queue', /`\$\{limits\} · \$\{queue\}`/.test(index) && /route: 'speed'/.test(index));
-check('Notifications row uses the bell icon', /icon: 'bell', title: 'Notifications'/.test(index));
+check('Notifications row uses the bell icon', /icon: 'bell', title: '알림'/.test(index));
 check('old Bandwidth and Torrents & queue rows are gone', !/title: 'Bandwidth'/.test(index) && !/Torrents & queue/.test(index));
 
 // Appearance page.

@@ -120,8 +120,8 @@ globalThis.__fake = { Platform: { OS: 'android' }, native };
   // (e) copy and the button
   {
     const n = addErrorNotice({ code: 'NOT_INITIALIZED', message: "The download engine isn't running yet." });
-    check('e: bare NOT_INITIALIZED gets the plain fallback body, no button without a handler',
-      n.notice.title === 'The downloader stopped' && n.notice.body === "It couldn't be started again." && !n.notice.actionLabel && !n.duplicate, n);
+    check('e: bare NOT_INITIALIZED gets Korean fallback copy, no button without a handler',
+      n.notice.title === '다운로더가 중지되었습니다' && n.notice.body === '다시 시작하지 못했습니다.' && !n.notice.actionLabel && !n.duplicate, n);
     check('e: DUPLICATE still maps', addErrorNotice({ code: 'DUPLICATE' }).duplicate === true);
   }
 
@@ -136,8 +136,8 @@ globalThis.__fake = { Platform: { OS: 'android' }, native };
     const { notice } = addErrorNotice(err, () => {
       retried = b.restart().then(async (r) => (r.ok ? b.addTorrent('x') : r));
     });
-    check('f: notice shows the real reason with a Start the downloader button',
-      notice.title === 'The downloader stopped' && notice.body === 'The folder is not available.' && notice.actionLabel === 'Start the downloader' && typeof notice.onAction === 'function', notice);
+    check('f: notice shows the real reason with a restart button',
+      notice.title === '다운로더가 중지되었습니다' && notice.body === 'The folder is not available.' && notice.actionLabel === 'Start the downloader' && typeof notice.onAction === 'function', notice);
     initResult = { ok: true }; // the user fixed the cause
     notice.onAction();
     const r = await retried;

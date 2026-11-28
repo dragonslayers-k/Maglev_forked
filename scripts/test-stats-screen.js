@@ -276,7 +276,7 @@ async function main() {
   const layout = read('app/_layout.tsx');
   const settings = read('app/(tabs)/settings.tsx');
   check('stats route is declared inside a guard', /Stack\.Screen name="stats"/.test(layout));
-  check('Settings has a Stats row', /title: 'Stats'|title="Stats"/.test(settings) && /\/stats/.test(settings));
+  check('Settings has a Korean Stats row', /title: '통계'|title="통계"/.test(settings) && /\/stats/.test(settings));
   check('the screen reads the stats store', /getStatsStore/.test(screen) && /rangeStats/.test(screen));
   check('the screen respects Keep stats', /keepStats/.test(screen) && /setStatsPrefs/.test(screen));
   const all = ['app/stats.tsx', ...fs.readdirSync(path.join(root, 'components/stats')).map((f) => `components/stats/${f}`)].map(read).join('\n');

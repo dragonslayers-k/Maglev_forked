@@ -15,6 +15,11 @@ assert.deepStrictEqual(applySizeProperties(props), props, 'props not idempotent'
 
 const rules = applyKeepRules('# existing\n-keep class a.B');
 assert(rules.includes('-keep class com.maglev.engine.** { *; }'));
+assert(rules.includes('-dontwarn java.beans.**'), 'suppresses optional JavaBeans-only Rhino references on Android');
+const oldGenerated = '# maglev-size-reduction\\n-keep class com.maglev.engine.** { *; }\\n-dontwarn java.beans.BeanDescriptor\\n';
+const upgraded = applyKeepRules(oldGenerated);
+assert(upgraded.includes('-dontwarn java.beans.**'), 'backfills rules into an already marked generated file');
+assert.strictEqual(applyKeepRules(upgraded), upgraded, 'rule backfill is idempotent');
 assert(rules.includes('native <methods>'));
 assert(rules.startsWith('# existing\n'));
 assert.strictEqual(applyKeepRules(rules), rules, 'rules not idempotent');
@@ -91,5 +96,30 @@ assert(applyKeepRules('').includes('com.maglev.engine'));
   assert.strictEqual(applyReleaseSigning(out), out, 'release signing not idempotent');
   assert.throws(() => applyReleaseSigning('dependencies {}'), /android \{/);
   assert(require('../app.json').expo.plugins.includes('./plugins/withReleaseSigning.js'), 'registered');
+}
+// --- JitPack repository settings plugin: current Expo templates and idempotency ---
+{
+  const { addJitpackRepository, MARKER } = require('../plugins/withJitpackRepository');
+  const packageConfig = require('../package.json').expo;
+  assert.deepStrictEqual(packageConfig.autolinking.android.buildFromSource, ['.*'], 'configure Expo Android source builds in package.json autolinking');
+  const modernTemplate = [
+    'pluginManagement {',
+    '    repositories { google(); mavenCentral() }',
+    '}',
+    'rootProject.name = "Maglev"',
+    'include(":app")',
+  ].join(String.fromCharCode(10));
+  const modern = addJitpackRepository(modernTemplate);
+  assert(modern.includes('dependencyResolutionManagement'), 'creates missing settings repository management');
+  assert(modern.includes('RepositoriesMode.PREFER_SETTINGS'), 'uses settings repository management');
+  assert(modern.includes('https://www.jitpack.io'), 'adds JitPack to new settings block');
+  assert.strictEqual(addJitpackRepository(modern), modern, 'new settings block patch is idempotent');
+  const existingDmr = ['dependencyResolutionManagement {', '    repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)', '}'].join(String.fromCharCode(10));
+  const withRepos = addJitpackRepository(existingDmr);
+  assert(withRepos.includes('google()') && withRepos.includes('mavenCentral()'), 'adds defaults when repositories block is absent');
+  assert.strictEqual(addJitpackRepository(withRepos), withRepos, 'existing DMR patch is idempotent');
+  const existingRepos = ['dependencyResolutionManagement {', '    repositories { google(); mavenCentral() }', '}'].join(String.fromCharCode(10));
+  const withJitpack = addJitpackRepository(existingRepos);
+  assert(withJitpack.includes(MARKER) && withJitpack.includes('jitpack.io'), 'adds JitPack to existing repository block');
 }
 console.log('test-plugins: all assertions passed');

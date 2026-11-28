@@ -13,6 +13,7 @@ import android.service.quicksettings.TileService
 import android.util.Log
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
+import com.maglev.engine.youtube.MediaContainerConverter
 import com.maglev.engine.service.TileModel
 import com.maglev.engine.network.NetworkGovernanceManager
 import com.maglev.engine.storage.Admission
@@ -35,6 +36,7 @@ import com.maglev.engine.storage.MediaScanPaths
 import com.maglev.engine.storage.StorageManager
 import com.maglev.engine.storage.StreamMuxer
 import com.maglev.engine.util.Json
+import com.maglev.engine.wireguard.WireGuardController
 import com.maglev.engine.util.TorrentFetcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExecutorCoroutineDispatcher
@@ -260,6 +262,43 @@ object EngineHost {
     }
 
     private fun isOk(m: Map<String, Any?>) = m["ok"] == true
+
+    fun isEngineInitialized(): Boolean = initialized
+
+    /**
+     * Rust EffectiveConfig serializes NativeConfig with #[serde(flatten], so the config fields
+     * live beside "ok", "restart_pending" and "blocklist" rather than under a "config" object.
+     * Keep this contract normalization here; never send response metadata back to nativeApplyConfig.
+     */
+    private fun nativeWireGuardConfig(result: Map<String, Any?>): Map<String, Any?> {
+        val config = LinkedHashMap<String, Any?>()
+        result.forEach { (key, value) ->
+            if (key != "ok" && key != "restart_pending" && key != "blocklist") {
+                config[key] = value
+            }
+        }
+        return config
+    }
+
+    /** App-local proxy affects Maglev HTTP downloads only, never Android system routing. */
+    fun getAppWireGuardProxy(): Map<String, Any?> = synchronized(lifecycleLock) {
+        if (!initialized) return@synchronized Json.failure("NOT_INITIALIZED", "다운로드 엔진이 아직 시작되지 않았습니다.")
+        val result = call { NativeCore.nativeGetEffectiveConfig() }
+        if (!isOk(result)) return@synchronized result
+        val config = nativeWireGuardConfig(result)
+        if (config.isEmpty()) return@synchronized Json.failure("INTERNAL", "다운로드 엔진 설정 응답이 비어 있습니다.")
+        mapOf("ok" to true, "proxy_url" to (config["proxy_url"] as? String))
+    }
+
+    fun setAppWireGuardProxy(proxyUrl: String?): Map<String, Any?> = synchronized(lifecycleLock) {
+        if (!initialized) return@synchronized Json.failure("NOT_INITIALIZED", "다운로드 엔진이 아직 시작되지 않았습니다.")
+        val result = call { NativeCore.nativeGetEffectiveConfig() }
+        if (!isOk(result)) return@synchronized result
+        val config = nativeWireGuardConfig(result).toMutableMap()
+        if (config.isEmpty()) return@synchronized Json.failure("INTERNAL", "다운로드 엔진 설정 응답이 비어 있습니다.")
+        config["proxy_url"] = proxyUrl
+        call { NativeCore.nativeApplyConfig(Json.toJson(config)) }
+    }
 
     // endregion
 
@@ -713,6 +752,7 @@ object EngineHost {
         val torrents = Json.list(res["torrents"])
         val downloads = Json.list(res["downloads"])
         detectCompletions(torrents)
+        processPendingPostProcessing(downloads)
         detectDownloadCompletions(downloads)
         // URL downloads count as transfers: they keep the service up and show in the notification (section 17).
         val transfers = allTransfers(torrents, downloads)
@@ -727,6 +767,13 @@ object EngineHost {
             lastEmitAt = nowMs
             @Suppress("UNCHECKED_CAST")
             val body = LinkedHashMap(Json.camelize(res) as Map<String, Any?>)
+            val formatContext = ctx
+            body["downloads"] = downloads.map { d ->
+                val copy = LinkedHashMap(d)
+                val id = d["id"] as? String
+                if (id != null && formatContext != null) copy["name"] = formatOutputName(formatContext, id, d["name"] as? String)
+                Json.camelize(copy)
+            }
             body["serviceBlocked"] = serviceBlocked
             emit("onTelemetry", body)
         }
@@ -1124,8 +1171,29 @@ object EngineHost {
         return linkedMapOf("ok" to true, "count" to n)
     }
 
+    /** Stops existing peer traffic before app-local HTTP tunnel mode is enabled. */
+    fun pauseTorrentsForAppWireGuard(): Map<String, Any?> {
+        if (!initialized) return mapOf("ok" to true, "paused" to 0)
+        val list = call { NativeCore.nativeListTorrents() }
+        if (!isOk(list)) return list
+        var paused = 0
+        for (torrent in Json.list(list["torrents"])) {
+            val state = torrent["state"] as? String ?: continue
+            if (state !in setOf("DOWNLOADING", "SEEDING", "QUEUED", "INITIALIZING", "RESOLVING")) continue
+            val id = torrent["id"] as? String ?: continue
+            val result = call { NativeCore.nativePause(id) }
+            if (!isOk(result)) return result
+            paused++
+        }
+        pollNow()
+        return mapOf("ok" to true, "paused" to paused)
+    }
+
     /** Resumes user-paused torrents. Governance-paused ones stay paused until their gate opens, and so do torrents held by a file health tag. */
     fun resumeAll(): Map<String, Any?> {
+        if (ctx?.let { WireGuardController.isEnabled(it) } == true) return Json.failure(
+            "APP_WIREGUARD_TORRENT_UNSUPPORTED",
+            "앱 내부 WireGuard가 켜져 있습니다. 토렌트는 터널을 통과하지 않으므로 먼저 WireGuard를 끄세요.")
         val list = call { NativeCore.nativeListTorrents() }
         if (!isOk(list)) return list
         var n = 0
@@ -1172,6 +1240,9 @@ object EngineHost {
 
     fun addTorrent(source: String, options: Map<String, Any?>): Map<String, Any?> {
         val c = requireCtx()
+        if (c != null && WireGuardController.isEnabled(c)) return Json.failure(
+            "APP_WIREGUARD_TORRENT_UNSUPPORTED",
+            "앱 내부 WireGuard 모드는 HTTP 다운로드 전용입니다. 토렌트는 직접 연결되므로 WireGuard를 끄세요.")
         val (src, failure) = localizeSource(source)
         if (failure != null) return failure
         val opts = LinkedHashMap(Json.snakeify(options) as Map<String, Any?>)
@@ -1945,6 +2016,23 @@ object EngineHost {
     // region URL downloads (§17)
 
     /** Per download: its last seen state, to find the edge to `finished`. Guarded by itself. */
+    private val postProcessing = ConcurrentHashMap.newKeySet<String>()
+    private val cancelledPostProcessing = ConcurrentHashMap.newKeySet<String>()
+    private const val FORMAT_POSTPROCESS_PREFIX = "youtube_postprocess_"
+    private const val FORMAT_OUTPUT_NAME_PREFIX = "youtube_output_name_"
+    private const val FORMAT_OUTPUT_FOLDER_PREFIX = "youtube_output_folder_"
+    private fun postProcessKey(id: String) = FORMAT_POSTPROCESS_PREFIX + id
+    private fun outputNameKey(id: String) = FORMAT_OUTPUT_NAME_PREFIX + id
+    private fun outputFolderKey(id: String) = FORMAT_OUTPUT_FOLDER_PREFIX + id
+    private fun formatPrefs(c: Context) = c.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+    private fun formatOutputName(c: Context, id: String, fallback: String?): String =
+        formatPrefs(c).getString(outputNameKey(id), null) ?: fallback ?: id
+    private fun pendingPostProcess(c: Context, id: String): Map<String, Any?>? {
+        val raw = formatPrefs(c).getString(postProcessKey(id), null) ?: return null
+        return Json.parseObject(raw).takeIf { it["ok"] != false }
+    }
+    private fun hasPendingPostProcess(c: Context, id: String): Boolean =
+        formatPrefs(c).contains(postProcessKey(id)) || postProcessing.contains(id)
     private val prevDownloadState = HashMap<String, String>()
 
     fun probeUrl(url: String, options: Map<String, Any?>, timeoutMs: Long): Map<String, Any?> =
@@ -1981,9 +2069,29 @@ object EngineHost {
 
     fun addDownload(url: String, options: Map<String, Any?>): Map<String, Any?> {
         val c = requireCtx()
-        val opts = LinkedHashMap(Json.snakeify(options) as Map<String, Any?>)
+        if (c != null && WireGuardController.isEnabled(c)) {
+            val prepared = WireGuardController.prepareDownload(c)
+            if (prepared["ok"] != true) return prepared
+            val proxy = prepared["proxy_url"] as? String
+                ?: return Json.failure("APP_WIREGUARD_PROXY_FAILED", "앱 내부 WireGuard 프록시를 준비하지 못했습니다.")
+            val applied = setAppWireGuardProxy(proxy)
+            if (!isOk(applied)) return Json.failure(
+                "APP_WIREGUARD_PROXY_FAILED",
+                "앱 내부 WireGuard 프록시를 다운로드 엔진에 적용하지 못했습니다. 직접 연결로 우회하지 않았습니다.")
+        }
+        val postProcess = options["postprocess"] as? Map<*, *>
+        val cleanOptions = LinkedHashMap(options)
+        cleanOptions.remove("postprocess") // Kotlin-only metadata; never pass it to Rust's strict download options.
+        val opts = LinkedHashMap(Json.snakeify(cleanOptions) as Map<String, Any?>)
         if (opts["folder"] == null && c != null) opts["folder"] = StorageManager.activeTarget(c).path
         val res = call { NativeCore.nativeAddDownload(url, Json.toJson(opts)) }
+        if (isOk(res) && c != null && postProcess != null) {
+            val id = res["id"] as? String
+            if (!id.isNullOrBlank()) {
+                val spec = postProcess.entries.associate { it.key.toString() to it.value }
+                formatPrefs(c).edit().putString(postProcessKey(id), Json.toJson(spec)).apply()
+            }
+        }
         pollNow()
         return res
     }
@@ -1992,7 +2100,12 @@ object EngineHost {
     fun resumeDownload(id: String) = call { NativeCore.nativeResumeDownload(id) }.also { pollNow() }
 
     /** Contract section 25.1: resume one torrent and exempt it from the rule pauses. */
-    fun resumeAnyway(id: String): Map<String, Any?> = resumeExempt { NativeCore.nativeResumeAnyway(id) }
+    fun resumeAnyway(id: String): Map<String, Any?> {
+        if (ctx?.let { WireGuardController.isEnabled(it) } == true) return Json.failure(
+            "APP_WIREGUARD_TORRENT_UNSUPPORTED",
+            "앱 내부 WireGuard가 켜져 있습니다. 토렌트는 터널을 통과하지 않으므로 먼저 WireGuard를 끄세요.")
+        return resumeExempt { NativeCore.nativeResumeAnyway(id) }
+    }
 
     /** Contract section 25.1: the same for a link download. */
     fun resumeDownloadAnyway(id: String): Map<String, Any?> = resumeExempt { NativeCore.nativeResumeDownloadAnyway(id) }
@@ -2008,7 +2121,14 @@ object EngineHost {
         return res
     }
     fun retryDownload(id: String): Map<String, Any?> {
-        ctx?.let { AutoRetry.reset(it, id) } // a retry by hand starts the automatic count again
+        ctx?.let { c ->
+            AutoRetry.reset(c, id) // a retry by hand starts the automatic count again
+            val spec = pendingPostProcess(c, id)
+            if (spec?.get("failed") == true) {
+                val retrySpec = LinkedHashMap(spec).apply { remove("failed") }
+                formatPrefs(c).edit().putString(postProcessKey(id), Json.toJson(retrySpec)).apply()
+            }
+        }
         return call { NativeCore.nativeRetryDownload(id) }.also { pollNow() }
     }
 
@@ -2044,10 +2164,18 @@ object EngineHost {
     fun removeDownload(id: String, deleteFiles: Boolean): Map<String, Any?> {
         // The document this download's copy created, read before the marker goes. Delete file removes only it.
         val copyUri = if (deleteFiles) ctx?.let { StorageManager.copiedUri(it, DL_PREFIX + id) } else null
+        if (deleteFiles && postProcessing.contains(id)) cancelledPostProcessing.add(id)
         val res = call { NativeCore.nativeRemoveDownload(id, deleteFiles) }
         if (isOk(res)) {
             val key = DL_PREFIX + id
-            ctx?.let { StorageManager.clearCopied(it, key) }
+            ctx?.let { c ->
+                val prefs = formatPrefs(c)
+                val outputName = prefs.getString(outputNameKey(id), null)
+                val outputFolder = prefs.getString(outputFolderKey(id), null)
+                if (deleteFiles && !outputName.isNullOrBlank() && !outputFolder.isNullOrBlank()) File(outputFolder, outputName).delete()
+                prefs.edit().remove(postProcessKey(id)).remove(outputNameKey(id)).remove(outputFolderKey(id)).apply()
+                StorageManager.clearCopied(c, key)
+            }
             // Delete file also removes the copy in the chosen folder (contract 17.z).
             if (copyUri != null) {
                 try { ctx?.let { SafStorageManager.deleteDocument(it, android.net.Uri.parse(copyUri)) } }
@@ -2098,15 +2226,20 @@ object EngineHost {
      */
     private fun downloadsAsTransfers(downloads: List<Map<String, Any?>>): List<Map<String, Any?>> =
         downloads.mapNotNull { d ->
+            val id = d["id"] as? String ?: return@mapNotNull null
+            val c = ctx
+            val processing = c != null && hasPendingPostProcess(c, id)
             val state = when (d["state"]) {
                 "downloading", "resolving", "verifying" -> "DOWNLOADING"
                 "queued" -> "QUEUED"
                 "paused" -> "PAUSED"
+                "finished" -> if (processing) "DOWNLOADING" else return@mapNotNull null
                 else -> return@mapNotNull null
             }
+            val name = if (c != null) formatOutputName(c, id, d["name"] as? String) else d["name"]
             linkedMapOf<String, Any?>(
                 "id" to null,
-                "name" to d["name"],
+                "name" to name,
                 "state" to state,
                 "paused_by" to d["paused_by"],
                 "progress_bytes" to Json.long(d["downloaded"]),
@@ -2120,6 +2253,74 @@ object EngineHost {
         }
 
     /** Notification and media scan on the edge to `finished`. The first poll after a restart never notifies. */
+    private fun processPendingPostProcessing(downloads: List<Map<String, Any?>>) {
+        val c = ctx ?: return
+        for (d in downloads) {
+            if (d["state"] != "finished") continue
+            val id = d["id"] as? String ?: continue
+            val spec = pendingPostProcess(c, id) ?: continue
+            if (spec["failed"] == true || !postProcessing.add(id)) continue
+            ioScope.launch {
+                try {
+                    val folder = d["folder"] as? String
+                    val sourceName = d["name"] as? String
+                    val outputName = spec["outputName"] as? String
+                    val kind = spec["kind"] as? String
+                    val targetExt = spec["targetExt"] as? String
+                    if (folder.isNullOrBlank() || sourceName.isNullOrBlank() || outputName.isNullOrBlank() || kind.isNullOrBlank() || targetExt.isNullOrBlank()) {
+                        val failedSpec = LinkedHashMap(spec).apply { put("failed", true) }
+                        formatPrefs(c).edit().putString(postProcessKey(id), Json.toJson(failedSpec)).apply()
+                        Notifications.notifyTorrentError(c, id, "변환 실패 · ${sourceName ?: id} · 변환 설정이 올바르지 않습니다.")
+                    } else {
+                        val source = File(folder, sourceName)
+                        val output = File(folder, outputName)
+                        val error = if (!source.exists() && output.isFile && output.length() > 0L) null
+                            else MediaContainerConverter.convert(source, output, kind, targetExt, (spec["audioBitrateKbps"] as? Number)?.toInt())
+                        if (cancelledPostProcessing.remove(id)) {
+                            output.delete()
+                            formatPrefs(c).edit().remove(postProcessKey(id)).remove(outputNameKey(id)).remove(outputFolderKey(id)).apply()
+                            return@launch
+                        }
+                        if (error == null) {
+                            formatPrefs(c).edit()
+                                .putString(outputNameKey(id), outputName)
+                                .putString(outputFolderKey(id), folder)
+                                .remove(postProcessKey(id))
+                                .apply()
+                            if (source.absolutePath != output.absolutePath) source.delete()
+                            notifyDownloadCompleted(c, d + ("name" to outputName))
+                        } else {
+                            val failedSpec = LinkedHashMap(spec).apply { put("failed", true) }
+                            formatPrefs(c).edit().putString(postProcessKey(id), Json.toJson(failedSpec)).apply()
+                            Notifications.notifyTorrentError(c, id, "변환 실패 · $sourceName · ${error.take(150)}")
+                        }
+                    }
+                } catch (t: Throwable) {
+                    Log.e(TAG, "YouTube output conversion failed", t)
+                    val spec = pendingPostProcess(c, id)
+                    if (spec != null) { val failedSpec = LinkedHashMap(spec).apply { put("failed", true) }; formatPrefs(c).edit().putString(postProcessKey(id), Json.toJson(failedSpec)).apply() }
+                    Notifications.notifyTorrentError(c, id, "변환 실패 · ${d["name"] as? String ?: id} · ${(t.message ?: "FFmpeg 변환에 실패했습니다.").take(150)}")
+                } finally {
+                    postProcessing.remove(id)
+                    pollNow()
+                }
+            }
+        }
+    }
+
+    private fun notifyDownloadCompleted(c: Context, d: Map<String, Any?>) {
+        val id = d["id"] as? String ?: return
+        val nativeName = d["name"] as? String ?: id
+        val name = formatOutputName(c, id, nativeName)
+        val folder = d["folder"] as? String
+        val open = try {
+            val uri = (if (folder != null) viewUri(c, folder, name) else null)
+                ?: StorageManager.copiedUri(c, DL_PREFIX + id)?.let { Uri.parse(it) }
+            if (uri != null) Notifications.openFileAction(c, id, uri, SafStorageManager.mimeFor(name)) else null
+        } catch (t: Throwable) { Log.w(TAG, "open action failed", t); null }
+        Notifications.notifyCompleted(c, id, name, Json.long(d["size"]), open)
+        if (folder != null) ioScope.launch { try { scanPaths(c, folder, listOf(name)) } catch (t: Throwable) { Log.w(TAG, "media scan failed", t) } }
+    }
     private fun detectDownloadCompletions(downloads: List<Map<String, Any?>>) {
         val c = ctx
         val done = ArrayList<Map<String, Any?>>()
@@ -2128,24 +2329,14 @@ object EngineHost {
                 val id = d["id"] as? String ?: continue
                 val st = d["state"] as? String ?: continue
                 val prev = prevDownloadState[id]
-                if (prev != null && prev != "finished" && st == "finished") done.add(d)
+                if (prev != null && prev != "finished" && st == "finished" && (c == null || !hasPendingPostProcess(c, id))) done.add(d)
                 prevDownloadState[id] = st
             }
             prevDownloadState.keys.retainAll(downloads.mapNotNull { it["id"] as? String }.toSet())
         }
         if (c == null) return
         for (d in done) {
-            val id = d["id"] as? String ?: continue
-            val name = d["name"] as? String ?: id
-            val folder = d["folder"] as? String
-            // Open for the finished file: its staged path, else the copy Maglev made in the user's folder.
-            val open = try {
-                val uri = (if (folder != null) viewUri(c, folder, name) else null)
-                    ?: StorageManager.copiedUri(c, DL_PREFIX + id)?.let { Uri.parse(it) }
-                if (uri != null) Notifications.openFileAction(c, id, uri, SafStorageManager.mimeFor(name)) else null
-            } catch (t: Throwable) { Log.w(TAG, "open action failed", t); null }
-            Notifications.notifyCompleted(c, id, name, Json.long(d["size"]), open)
-            if (folder != null) ioScope.launch { try { scanPaths(c, folder, listOf(name)) } catch (t: Throwable) { Log.w(TAG, "media scan failed", t) } }
+            notifyDownloadCompleted(c, d)
         }
     }
 
@@ -2244,7 +2435,9 @@ object EngineHost {
             if (d["state"] != "finished") continue
             val id = d["id"] as? String ?: continue
             val folder = d["folder"] as? String ?: continue
-            val name = d["name"] as? String ?: continue
+            val nativeName = d["name"] as? String ?: continue
+            if (hasPendingPostProcess(c, id)) continue
+            val name = formatOutputName(c, id, nativeName)
             val key = DL_PREFIX + id
             if (!StorageManager.isStagingPath(c, folder) || StorageManager.isCopied(c, key, folder, treeStr)) continue
             val failedAt = copyFailedAt[key]
@@ -2328,8 +2521,9 @@ object EngineHost {
             ?: return Json.failure("NOT_FOUND", "That download isn't in your list")
         if (d["state"] != "finished") return Json.failure("INVALID_STATE", "This download isn't finished yet")
         val folder = d["folder"] as? String
-        val name = d["name"] as? String
-        if (folder == null || name.isNullOrEmpty()) return Json.failure("NOT_FOUND", "File not found")
+        val nativeName = d["name"] as? String
+        if (folder == null || nativeName.isNullOrEmpty()) return Json.failure("NOT_FOUND", "File not found")
+        val name = formatOutputName(c, id, nativeName)
         // Once the file was copied into the user's folder (maybe under a free name) the staged one is gone: open the
         // document Maglev created, by its URI.
         val copyUri = StorageManager.copiedUri(c, DL_PREFIX + id)

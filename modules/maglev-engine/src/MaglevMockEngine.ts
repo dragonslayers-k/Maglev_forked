@@ -49,6 +49,7 @@ import type {
   InstallSource,
   UpdateNetwork,
   UrlProbe,
+  YouTubeInfo,
 } from './MaglevEngine.types.ts';
 import { HEALTH_TAGS, subtitleError } from './MaglevEngine.types.ts';
 import { blocksChanged } from './blocksDiff.ts';
@@ -855,6 +856,27 @@ export class MaglevMockEngine implements MaglevEngineApi {
   public addDownload(url: string, options: DownloadOptions = {}): Promise<EngineResult<{ id: string }>> {
     return this.downloads.add(url, options);
   }
+  public getYouTubeInfo(_url: string): Promise<EngineResult<YouTubeInfo>> {
+    return Promise.resolve({ ok: false, code: 'UNSUPPORTED', message: 'YouTube extraction is available on Android only.' });
+  }
+  public enterBrowserPictureInPicture(_aspectRatio: number): Promise<EngineResult> {
+    return Promise.resolve({ ok: false, code: 'UNSUPPORTED', message: 'Picture-in-picture is available on Android only.' });
+  }
+  public addYouTubeDownload(_url: string, _formatId: string): Promise<EngineResult<{ id: string }>> {
+    return Promise.resolve({ ok: false, code: 'UNSUPPORTED', message: 'YouTube downloads are available on Android only.' });
+  }
+  public getAppWireGuardStatus(): Promise<EngineResult<{ enabled: boolean; hasProfile: boolean; running: boolean }>> {
+    return Promise.resolve({ ok: true, enabled: false, hasProfile: false, running: false });
+  }
+  public testAppWireGuardConnection(): Promise<EngineResult<{ ip: string; country: string; country_code: string; message: string }>> {
+    return Promise.resolve({ ok: false, code: 'UNSUPPORTED', message: 'WireGuard exit verification is available on Android only.' });
+  }
+  public importAppWireGuardProfile(_uri: string): Promise<EngineResult<{ hasProfile: boolean }>> {
+    return Promise.resolve({ ok: false, code: 'UNSUPPORTED', message: 'App-local WireGuard profile import is available on Android only.' });
+  }
+  public setAppWireGuardEnabled(_enabled: boolean): Promise<EngineResult<{ enabled: boolean }>> {
+    return Promise.resolve({ ok: false, code: 'UNSUPPORTED', message: 'App-local WireGuard is available on Android only.' });
+  }
   public async pauseDownload(id: string): Promise<EngineResult> {
     return this.downloads.pause(id);
   }
@@ -1351,6 +1373,10 @@ export class MaglevMockEngine implements MaglevEngineApi {
 
   public async openStream(_url: string, _mime: string, _title: string): Promise<EngineResult> {
     return ok();
+  }
+
+  public async playInAppMedia(_url: string, _mime: string, _title: string, _headers?: Record<string, string>): Promise<EngineResult> {
+    return { ok: false, code: 'UNSUPPORTED', message: '앱 내 미디어 재생은 Android에서 지원됩니다.' };
   }
 
   private schedule: ScheduleConfig = { enabled: false, rules: [] };

@@ -5,6 +5,7 @@ import { SETTINGS_INDEX } from '../../utils/settingsIndex';
 import { FocusAnchor, SettingsFocusProvider, rowKey } from './settingsFocus';
 import { useTheme } from '../../context/ThemeContext';
 import { ThemeColors, radius, spacing, type } from '../../constants/theme';
+import { koUiText } from '../../constants/korean';
 import { Button, Chip, Screen, Sheet, TextField } from '../ui';
 
 /** Sub-screen shell: header with back, scrolling body, instant-apply content. */
@@ -52,7 +53,7 @@ export function Card({ children }: { children: React.ReactNode }) {
 export function Caption({ children, tone }: { children: React.ReactNode; tone?: 'warning' }) {
   const { colors } = useTheme();
   const s = useMemo(() => makeStyles(colors), [colors]);
-  return <Text style={[s.caption, tone === 'warning' && { color: colors.warning }]}>{children}</Text>;
+  return <Text style={[s.caption, tone === 'warning' && { color: colors.warning }]}>{typeof children === 'string' ? koUiText(children) : children}</Text>;
 }
 
 /** A labelled group of Chips for picking one value. */
@@ -73,11 +74,11 @@ export function ChipGroup<T extends string | number>({
   const s = useMemo(() => makeStyles(colors), [colors]);
   return (
     <FocusAnchor anchorKey={rowKey(label)}>
-      <View style={s.group} accessibilityRole="radiogroup" accessibilityLabel={label}>
-        <Text style={s.groupLabel}>{label}</Text>
+      <View style={s.group} accessibilityRole="radiogroup" accessibilityLabel={koUiText(label)}>
+        <Text style={s.groupLabel}>{koUiText(label)}</Text>
         <View style={s.chips}>
           {options.map((o) => (
-            <Chip key={String(o.value)} label={o.label} selected={o.value === value} onPress={() => onChange(o.value)} />
+            <Chip key={String(o.value)} label={koUiText(o.label)} selected={o.value === value} onPress={() => onChange(o.value)} />
           ))}
         </View>
         {caption ? <Caption>{caption}</Caption> : null}

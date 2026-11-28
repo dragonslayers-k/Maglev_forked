@@ -8,6 +8,7 @@ import { Stack, useRouter } from 'expo-router';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 import { useTheme } from '../context/ThemeContext';
+import { koUiText } from '../constants/korean';
 import { ThemeColors, motion, radius, spacing, type } from '../constants/theme';
 import { Button, IconButton, Screen, SegmentedControl, Sheet } from '../components/ui';
 import { useMotion } from '../components/ui/useMotion';
@@ -26,9 +27,9 @@ import { dayKey, dayNumber } from '../utils/stats/time';
 import type { DailyRow, StatsRecord } from '../utils/stats/types';
 
 const KINDS = [
-  { value: 'week', label: 'Week' },
-  { value: 'month', label: 'Month' },
-  { value: 'year', label: 'Year' },
+  { value: 'week', label: '주간' },
+  { value: 'month', label: '월간' },
+  { value: 'year', label: '연간' },
 ] as const;
 
 interface Rows {
@@ -186,28 +187,28 @@ export default function StatsScreen() {
   }, [sheet, go, m.disabled]);
 
   const title = rangeTitle(range, today);
-  const unit = shown.kind === 'year' ? 'week' : 'day';
+  const unit = shown.kind === 'year' ? '주' : '일';
   const b = sel >= 0 ? buckets[sel] : null;
   let r1: string;
   let r2 = '';
   let hint = '';
   if (off) {
-    r1 = 'Stats are off';
-    r2 = "Maglev isn't keeping stats right now.";
+    r1 = '통계가 꺼져 있습니다';
+    r2 = '현재 Maglev가 통계를 기록하지 않습니다.';
   } else if (failed) {
-    r1 = "Stats couldn't be read";
-    r2 = 'Try again later.';
+    r1 = '통계를 읽지 못했습니다';
+    r2 = '나중에 다시 시도하세요.';
   } else if (loaded == null) {
     r1 = '';
   } else if (dayOne) {
-    r1 = 'Download something and your first building appears here';
+    r1 = '다운로드를 시작하면 첫 건물이 여기에 나타납니다';
   } else if (stats.empty) {
-    r1 = `Nothing downloaded in ${rangeTitle(shown, today)}`;
-    r2 = 'When a download finishes, its building goes up';
+    r1 = `${koUiText(rangeTitle(shown, today))} 다운로드 기록이 없습니다`;
+    r2 = '다운로드가 완료되면 해당 건물이 올라갑니다';
   } else if (b) {
-    r1 = `${b.label}${b.current ? ' · so far' : ''}${sel === busiest ? ` · busiest ${b.noun}` : ''}`;
+    r1 = `${koUiText(b.label)}${b.current ? ' · 현재까지' : ''}${sel === busiest ? ` · ${b.noun === 'week' ? '이번 주' : '최다 다운로드 날짜'}` : ''}`;
     r2 = bucketReadout(b);
-    hint = 'Drag the train to read each day';
+    hint = '기차를 움직여 날짜별 기록을 확인하세요';
   } else r1 = '';
 
   const nudge = (d: number) => {
@@ -217,14 +218,14 @@ export default function StatsScreen() {
   };
 
   return (
-    <Screen title="Stats" onBack={() => router.back()} edges={['top', 'left', 'right', 'bottom']}>
+    <Screen title="통계" onBack={() => router.back()} edges={['top', 'left', 'right', 'bottom']}>
       <Stack.Screen options={{ headerShown: false }} />
       <ScrollView ref={scroll} contentContainerStyle={s.content}>
         <SegmentedControl
           options={KINDS}
           value={range.kind}
           onChange={(k: RangeKind) => !off && go(switchRangeKind(range, k, today, firstDay))}
-          accessibilityLabel="Range"
+          accessibilityLabel="기간"
         />
         <View style={s.rnav}>
           <View style={s.flip}>
@@ -259,12 +260,12 @@ export default function StatsScreen() {
               <Text style={s.big}>{off ? '—' : fmtSize(stats.downloaded)}</Text>
             )}
             {vs ? <Text style={s.vs}>{vs.text}</Text> : null}
-            {sinceDay != null ? <Text style={s.since}>{`Since ${shortDate(sinceDay)}`}</Text> : null}
+            {sinceDay != null ? <Text style={s.since}>{`${shortDate(sinceDay)}부터`}</Text> : null}
             <View style={s.lblRow}>
-              <Text style={s.lbl}>{sentence ? ' ' : off ? 'Stats are off' : rangeCaption(shown, today)}</Text>
-              <IconButton icon="about" size={16} color={colors.textMuted} accessibilityLabel="What is this?" onPress={() => setInfo((v) => !v)} />
+              <Text style={s.lbl}>{sentence ? ' ' : off ? '통계가 꺼져 있습니다' : rangeCaption(shown, today)}</Text>
+              <IconButton icon="about" size={16} color={colors.textMuted} accessibilityLabel="통계 안내" onPress={() => setInfo((v) => !v)} />
             </View>
-            {info ? <Text style={s.cap}>{`Each building is one ${unit}. Taller means more downloaded. The train shows the day: drag it along the rail.`}</Text> : null}
+            {info ? <Text style={s.cap}>{`건물 하나는 ${unit}을 나타냅니다. 높을수록 다운로드한 용량이 많습니다. 기차를 레일을 따라 움직여 날짜를 확인하세요.`}</Text> : null}
           </View>
           <Animated.View style={fadeStyle}>
             <PixelCity
@@ -278,7 +279,7 @@ export default function StatsScreen() {
               live={live.running && stats.includesToday}
               inert={inert}
               onPick={setSel}
-              accessibilityLabel={`Pixel city for ${rangeTitle(shown, today)}. Each building is one ${unit}.`}
+              accessibilityLabel={`${koUiText(rangeTitle(shown, today))} 픽셀 도시. 건물 하나는 ${unit}을 나타냅니다.`}
               valueText={[r1, r2].filter(Boolean).join(', ')}
             />
           </Animated.View>
@@ -301,8 +302,8 @@ export default function StatsScreen() {
 
         {off ? (
           <View style={s.offCard}>
-            <Text style={s.offText}>Turn on stats to see your downloads here. Nothing is recorded while they are off.</Text>
-            <Button label="Turn on stats" variant="secondary" onPress={() => setStatsPrefs({ keepStats: true })} />
+            <Text style={s.offText}>다운로드 기록을 보려면 통계를 켜세요. 통계가 꺼져 있으면 기록하지 않습니다.</Text>
+            <Button label="통계 켜기" variant="secondary" onPress={() => setStatsPrefs({ keepStats: true })} />
           </View>
         ) : (
           <Animated.View style={fadeStyle}>
@@ -317,7 +318,7 @@ export default function StatsScreen() {
             />
           </Animated.View>
         )}
-        <Text style={s.foot}>Stats stay on this phone.</Text>
+        <Text style={s.foot}>통계는 이 휴대전화에만 저장됩니다.</Text>
       </ScrollView>
 
       <Sheet visible={sheetOpen} onClose={() => setSheetOpen(false)} title={sheet?.title ?? ''}>
@@ -329,7 +330,7 @@ export default function StatsScreen() {
         ))}
         {sheet?.day != null && shown.kind !== 'week' ? (
           <View style={s.sact}>
-            <Button label="Show this day" variant="secondary" fullWidth onPress={showDay} />
+            <Button label="이 날짜 보기" variant="secondary" fullWidth onPress={showDay} />
           </View>
         ) : null}
       </Sheet>

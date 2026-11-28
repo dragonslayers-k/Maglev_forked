@@ -11,11 +11,9 @@ import { visibleTabs, type TabId } from '../../components/tabs/tabPrefs';
 import { useTabPrefs } from '../../components/tabs/tabPrefsStore';
 import { PRESS_SINK, animateTo, useReduceMotion } from '../../components/motion';
 import { useTheme } from '../../context/ThemeContext';
-import { useAssistantPrefs } from '../../utils/prefs/assistantApp';
 import { ThemeColors, fontFamily, motion, spacing, type, withAlpha } from '../../constants/theme';
 import { badgeLabel, useFeedsNewCount } from '../../utils/feeds';
 import { startFeedsBadge } from '../../utils/feedsBadgeStart';
-import { useUnseenReply } from '../../utils/assistantApp/unseenReply';
 
 const PILL_W = 56;
 const PILL_H = 28;
@@ -135,10 +133,8 @@ function TabButton({
 export default function TabLayout() {
   const tabBarStyle = useTabBarStyle();
 
-  const assistant = useAssistantPrefs();
   const prefs = useTabPrefs();
   const feedsNew = useFeedsNewCount();
-  const unseenReply = useUnseenReply();
   // Count from stored data now, and again when the app returns to the foreground.
   useEffect(() => startFeedsBadge(), []);
 
@@ -148,7 +144,7 @@ export default function TabLayout() {
       activityEnabled={freeze}
       options={
         hidden
-          ? // href null removes the tab entirely (Settings > Assistant off). expo-router throws if
+          ? // href null removes a hidden tab. expo-router throws if
             // href and tabBarButton are set together (TabsClient processScreens), so a hidden tab has no button.
             { href: null, title }
           : {
@@ -161,16 +157,14 @@ export default function TabLayout() {
     />
   );
 
-  // One Tabs.Screen per tab, rendered in the saved order (the bar follows child order). A tab that
-  // is off, or the Assistant while Settings > Assistant is off, has href null and no button.
-  const shown = visibleTabs(prefs, { assistantEnabled: assistant.enabled });
+  // One Tabs.Screen per remaining tab, rendered in the saved order (the bar follows child order).
+  const shown = visibleTabs(prefs);
   const screens: Record<TabId, React.ReactElement> = {
-    index: tab('index', 'Transfers', 'tab-transfers', !shown.includes('index')),
-    search: tab('search', 'Search', 'tab-search', !shown.includes('search')),
-    feeds: tab('feeds', 'Feeds', 'tab-feeds', !shown.includes('feeds'), true, feedsNew),
-    settings: tab('settings', 'Settings', 'tab-settings', !shown.includes('settings'), true),
-    assistant: tab('assistant', 'Assistant', 'tab-assistant', !shown.includes('assistant'), false, 0, unseenReply),
-    browse: tab('browse', 'Browser', 'tab-browse', !shown.includes('browse')),
+    index: tab('index', '전송', 'tab-transfers', !shown.includes('index')),
+    search: tab('search', '검색', 'tab-search', !shown.includes('search')),
+    feeds: tab('feeds', '피드', 'tab-feeds', !shown.includes('feeds'), true, feedsNew),
+    settings: tab('settings', '설정', 'tab-settings', !shown.includes('settings'), true),
+    browse: tab('browse', '브라우저', 'tab-browse', !shown.includes('browse')),
   };
 
   // If the tab being shown is turned off, go to Transfers. Only a change of the bar triggers this,
@@ -225,7 +219,7 @@ export default function TabLayout() {
         React Activity (activityEnabled): a hidden tab keeps its state, its effects are cleaned up
         and its renders drop to idle priority; coming back re-runs its effects.
         Not for Transfers (its list must be current the moment it shows), Search (its search effect
-        would run the search again on return) or Assistant (a running turn keeps streaming and
+        would run the search again on return) or another active screen (its state remains mounted and
         updating its steps while another tab is open).
       */}
       {prefs.order.map((id) => screens[id])}
@@ -258,7 +252,7 @@ const makeStyles = (c: ThemeColors) =>
       justifyContent: 'center',
       backgroundColor: c.text,
     },
-    // A small square dot: a reply is waiting in the Assistant.
+    // A small square dot: a background task has an unread update.
     dot: { position: 'absolute', top: -2, right: 6, width: 8, height: 8, backgroundColor: c.accent },
     badgeText: { fontSize: 10, lineHeight: 12, fontFamily: fontFamily.bodyStrong, color: c.bg, fontVariant: ['tabular-nums'] }, // design-exception: badge text in a fixed 16 px badge
     glyph: { width: ICON, height: ICON },

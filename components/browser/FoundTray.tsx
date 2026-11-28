@@ -65,7 +65,7 @@ function Row({
         onLongPress={onLongPress}
         accessibilityRole="button"
         accessibilityLabel={`${item.name}, ${meta}${inTransfers ? `, ${foundTray.inTransfers}` : ''}`}
-        accessibilityHint={selecting ? undefined : 'Long-press to select several files'}
+        accessibilityHint={selecting ? undefined : '길게 눌러 여러 파일을 선택하세요'}
         accessibilityState={selecting ? { checked } : undefined}
         style={styles.row}
         containerStyle={styles.rowMain}

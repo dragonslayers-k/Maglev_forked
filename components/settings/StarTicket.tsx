@@ -1,21 +1,19 @@
 import React, { useMemo, useRef } from 'react';
 import { Animated, Easing, Linking, StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
-import { updateStarState } from '../../utils/prefs/star';
-import { afterStarred } from '../../utils/star';
 import { ThemeColors, radius, spacing, type } from '../../constants/theme';
 import { PressableScale } from '../ui';
 import { useReduceMotion } from '../motion';
 
-export const REPO_URL = 'https://github.com/Kaos599/Maglev';
+export const REPO_URL = 'https://github.com/dragonslayers-k/Maglev_forked';
 
 const starTicketCopy = {
-  top: 'FREE · NO ADS · OPEN SOURCE',
-  title: 'Like Maglev? Give it a star',
-  body: 'It takes a second on GitHub and helps others find the app.',
-  stub: 'STAR',
-  label: 'Like Maglev? Give it a star on GitHub',
-  hint: 'Opens Maglev on GitHub',
+  top: 'MAGLEV+ · INTEGRATION STATUS',
+  title: '기능 통합·검증 현황',
+  body: '참고 프로젝트별 반영 범위와 미완성 항목을 확인합니다.',
+  stub: 'INFO',
+  label: '기능 통합 및 검증 현황 확인',
+  hint: '통합 구성 문서를 엽니다',
 } as const;
 
 const NOTCH = 18;
@@ -26,11 +24,11 @@ const BURST_REACH = 34;
 /** Eight directions, in whole-pixel steps. */
 const DIRS: readonly [number, number][] = [[0, -1], [1, -1], [1, 0], [1, 1], [0, 1], [-1, 1], [-1, 0], [-1, -1]];
 
-/** 10x10 pixel star, drawn with Views: the brand fonts have no star glyph. */
-const STAR_ROWS = ['....##....', '....##....', '...####...', '##########', '.########.', '..######..', '..######..', '.###..###.', '.##....##.', '##......##'];
+/** Pixel information mark, drawn with Views so it works in every bundled font. */
+const STAR_ROWS = ['....##....', '....##....', '..........', '...####...', '...####...', '....##....', '....##....', '....##....', '....##....', '....##....'];
 const STAR_PX = 2.4;
 
-function PixelStar({ color }: { color: string }) {
+function PixelInfo({ color }: { color: string }) {
   return (
     <View style={{ width: STAR_PX * 10, height: STAR_PX * 10 }} accessible={false}>
       {STAR_ROWS.flatMap((row, y) =>
@@ -57,7 +55,7 @@ function stepped(progress: Animated.Value, reach: number): Animated.AnimatedInte
   return progress.interpolate({ inputRange: input, outputRange: output });
 }
 
-/** A lime ticket asking for a GitHub star. The whole ticket is one button. */
+/** A lime ticket linking to the actual source-integration status. */
 export function StarTicket() {
   const { colors, dark } = useTheme();
   const s = useMemo(() => makeStyles(colors, dark), [colors, dark]);
@@ -69,9 +67,7 @@ export function StarTicket() {
       progress.setValue(0);
       Animated.timing(progress, { toValue: 1, duration: BURST_MS, easing: Easing.linear, useNativeDriver: true }).start();
     }
-    void Linking.openURL(REPO_URL);
-    // Starring from About also stops the star prompt (contract 33).
-    updateStarState(afterStarred);
+    void Linking.openURL('https://github.com/dragonslayers-k/Maglev_forked/blob/feature/p1-video-detection-observer/docs/FINAL_SOURCE_IMPLEMENTATION_MATRIX_KO.md');
   };
 
   const fade = progress.interpolate({ inputRange: [0, 0.01, 0.7, 1], outputRange: [0, 1, 1, 0] });
@@ -101,7 +97,7 @@ export function StarTicket() {
           ))}
         </View>
         <View style={s.stub}>
-          <PixelStar color={colors.onAccent} />
+          <PixelInfo color={colors.onAccent} />
           <Text style={s.stubLabel}>{starTicketCopy.stub}</Text>
         </View>
         <View style={[s.notch, s.notchLeft]} />

@@ -1,5 +1,5 @@
 import { Platform, requireOptionalNativeModule } from 'expo-modules-core';
-import type {
+import type { YouTubeInfo,
   ActiveBlock,
   AddTorrentOptions,
   Detail,
@@ -84,6 +84,15 @@ try {
   NativeModule = null;
 }
 
+// PiP is hosted by the small MaglevWatch module to keep the large engine ModuleDefinition
+// below the JVM method-size limit. This module is registered independently in expo-module.config.
+let PictureInPictureModule: any = null;
+try {
+  PictureInPictureModule = Platform.OS === 'android' ? requireOptionalNativeModule('MaglevWatch') : null;
+} catch {
+  PictureInPictureModule = null;
+}
+
 const unavailable = (message: string, code: EngineErrorCode = 'ENGINE_UNAVAILABLE'): EngineResult<any> => ({
   ok: false,
   code,
@@ -141,7 +150,7 @@ function cleanBlocks(raw: unknown): ActiveBlock[] {
  */
 const USER_ACTION_METHODS: readonly string[] = [
   // Add flow (a paste, share, search or feed add, including the preflight lookups)
-  'addTorrent', 'addDownload', 'resolveMetadata', 'probeUrl', 'probeStream',
+  'addTorrent', 'addDownload', 'addYouTubeDownload', 'resolveMetadata', 'probeUrl', 'probeStream',
   // Torrents
   'pause', 'resume', 'resumeAnyway', 'recheck', 'pauseAll', 'resumeAll', 'delete',
   'setIncludedFiles', 'setFilePriorities', 'removeFiles', 'resolveFiles', 'setHealth', 'scanFileHealth',
@@ -155,7 +164,7 @@ const USER_ACTION_METHODS: readonly string[] = [
   'runFeedCheckNow',
 ];
 export const READ_METHODS: readonly string[] = [
-  'shutdown', 'restartEngine', 'cancelResolve', 'getResolveActivity', 'listTorrents', 'getDetail', 'fileHealth', 'exportTorrent',
+  'shutdown', 'restartEngine', 'cancelResolve', 'getResolveActivity', 'getYouTubeInfo', 'listTorrents', 'getDetail', 'fileHealth', 'exportTorrent',
   'shareExportedTorrent', 'getFreeSpace', 'applyConfig', 'getEffectiveConfig', 'exportDebugLog', 'shareDebugLog', 'getPieceBitfield', 'streamUrl',
   'version', 'pickDownloadFolder', 'pickFolder', 'getPlaybackSupport', 'getStorageStatus', 'openFile', 'shareFile',
   'openFolder', 'openDownloadFolder', 'openDownload', 'shareDownload', 'getActiveBlocks', 'getNetworkState',
@@ -634,6 +643,34 @@ export class MaglevEngineBridge implements MaglevEngineApi {
   public addDownload(url: string, options: DownloadOptions = {}): Promise<EngineResult<{ id: string }>> {
     return this.route('addDownload', url, options);
   }
+  public getYouTubeInfo(url: string): Promise<EngineResult<YouTubeInfo>> {
+    return this.route('getYouTubeInfo', url);
+  }
+  public addYouTubeDownload(url: string, formatId: string, playerClient: string, formatKind: 'video' | 'audio', audioBitrateKbps?: number | null, outputContainer = 'original'): Promise<EngineResult<{ id: string }>> {
+    return this.route('addYouTubeDownload', url, formatId, playerClient, formatKind, audioBitrateKbps ?? null, outputContainer);
+  }
+  public async enterBrowserPictureInPicture(aspectRatio: number): Promise<EngineResult> {
+    if (Platform.OS !== 'android' || !PictureInPictureModule?.enterBrowserPictureInPicture) {
+      return { ok: false, code: 'UNSUPPORTED', message: 'Picture-in-picture is available on Android only.' };
+    }
+    try {
+      return await PictureInPictureModule.enterBrowserPictureInPicture(aspectRatio);
+    } catch (e: any) {
+      return { ok: false, code: 'INTERNAL', message: String(e?.message ?? e) };
+    }
+  }
+  public getAppWireGuardStatus(): Promise<EngineResult<{ enabled: boolean; hasProfile: boolean; running: boolean }>> {
+    return this.route('getAppWireGuardStatus');
+  }
+  public testAppWireGuardConnection(): Promise<EngineResult<{ ip: string; country: string; country_code: string; message: string }>> {
+    return this.route('testAppWireGuardConnection');
+  }
+  public importAppWireGuardProfile(uri: string): Promise<EngineResult<{ hasProfile: boolean }>> {
+    return this.route('importAppWireGuardProfile', uri);
+  }
+  public setAppWireGuardEnabled(enabled: boolean): Promise<EngineResult<{ enabled: boolean }>> {
+    return this.route('setAppWireGuardEnabled', enabled);
+  }
   public pauseDownload(id: string): Promise<EngineResult> {
     return this.route('pauseDownload', id);
   }
@@ -690,6 +727,16 @@ export class MaglevEngineBridge implements MaglevEngineApi {
   }
   public openStream(url: string, mime: string, title: string): Promise<EngineResult> {
     return this.route('openStream', url, mime, title);
+  }
+  public async playInAppMedia(url: string, mime: string, title: string, headers: Record<string, string> = {}): Promise<EngineResult> {
+    if (Platform.OS !== 'android' || !PictureInPictureModule?.playInAppMedia) {
+      return { ok: false, code: 'UNSUPPORTED', message: '앱 내 미디어 재생은 Android에서 지원됩니다.' };
+    }
+    try {
+      return await PictureInPictureModule.playInAppMedia(url, mime, title, headers);
+    } catch (e: any) {
+      return { ok: false, code: 'INTERNAL', message: String(e?.message ?? e) };
+    }
   }
   public setSchedule(config: ScheduleConfig): Promise<EngineResult> {
     return this.route('setSchedule', config);

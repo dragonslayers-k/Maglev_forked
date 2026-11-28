@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { AppState, StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { ThemeColors, spacing, type } from '../constants/theme';
+import { APP_ICON_BADGE_CIRCLE, APP_ICON_BADGE_PLUS } from '../constants/appIcons';
 import { IconButton } from './ui';
 import { MaglevMark } from './brand/MaglevMark';
 import { MARK_FX_COMPACT } from './brand/markPaths';
@@ -89,9 +90,14 @@ export function HeaderBar({ actions, selection, cruising = false }: HeaderBarPro
   return (
     <View style={styles.bar}>
       <View style={styles.brand}>
-        <MaglevMark height={22} cruising={dash} tappable arrive />
+        <View style={styles.markBadgeWrap} accessibilityLabel="Maglev Plus">
+          <MaglevMark height={22} cruising={dash} tappable arrive />
+          <View style={styles.plusBadge} pointerEvents="none">
+            <Text style={styles.plusBadgeText}>+</Text>
+          </View>
+        </View>
         <Text style={styles.brandTitle} accessibilityRole="header">
-          MAGLEV
+          MAGLEV+
         </Text>
       </View>
       <View style={styles.actions}>{actions}</View>
@@ -112,6 +118,9 @@ const makeStyles = (c: ThemeColors) =>
     },
     // zIndex: the mark flies over the action buttons when tapped.
     brand: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingLeft: spacing.sm, zIndex: 1 },
+    markBadgeWrap: { position: 'relative', width: 22 * (107 / 44), height: 22, alignItems: 'center', justifyContent: 'center' },
+    plusBadge: { position: 'absolute', right: -3, top: -5, width: 16, height: 16, borderRadius: 8, backgroundColor: APP_ICON_BADGE_CIRCLE, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: c.bg, zIndex: 2 },
+    plusBadgeText: { ...type.bodyStrong, color: APP_ICON_BADGE_PLUS, fontSize: type.size.sm, lineHeight: type.size.sm, includeFontPadding: false },
     brandTitle: { ...type.brand, fontSize: type.size.base, color: c.text },
     actions: { flexDirection: 'row', alignItems: 'center' },
     selectedText: { ...type.bodyStrong, fontSize: type.size.xl, color: c.text, flex: 1, marginLeft: spacing.xs },

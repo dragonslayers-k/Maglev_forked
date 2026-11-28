@@ -3,8 +3,8 @@
     "extra": {
       "homepage": "https://harshdayal.dev/maglev"
     },
-    "name": "Maglev",
-    "slug": "maglev",
+    "name": "Maglev+",
+    "slug": "maglev-plus",
     "version": "0.33",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -18,7 +18,7 @@
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.maglev.client",
+      "bundleIdentifier": "com.maglev.plus.client",
       "icon": "./assets/icon.png"
     },
     "android": {
@@ -28,7 +28,7 @@
         "backgroundColor": "#0B2A30"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.maglev",
+      "package": "com.maglev.plus",
       "permissions": [
         "INTERNET",
         "ACCESS_NETWORK_STATE",
@@ -194,6 +194,7 @@
         }
       ],
       "./plugins/withAbiSplits.js",
+      "./plugins/withJitpackRepository.js",
       "./plugins/withSizeReduction.js",
       "./plugins/withShareIntents.js",
       "./plugins/withAppIcons.js",
@@ -201,10 +202,18 @@
       "./plugins/withBackupRules.js",
       "./plugins/withCleartextLan.js",
       "./plugins/withReleaseSigning.js",
-      "./plugins/withSelfUpdate.js"
+      "./plugins/withSelfUpdate.js",
+      "./plugins/withPictureInPicture"
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "autolinking": {
+      "android": {
+        "buildFromSource": [
+          ".*"
+        ]
+      }
     }
   }
 }

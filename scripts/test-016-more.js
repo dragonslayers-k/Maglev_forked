@@ -18,18 +18,18 @@ const check = (name, ok) => {
   check('a general source shows under every filter', providerCovers({ categories: ['all'] }, 'games'));
 
   const sp = read('app/settings/search-providers.tsx');
-  check('settings: category chips as a radio group', /accessibilityRole="radiogroup" accessibilityLabel="Show sources for"/.test(sp) && /role="radio"/.test(sp));
+  check('settings: category chips as a radio group', /accessibilityRole="radiogroup" accessibilityLabel="[^"]+"/.test(sp) && /role="radio"/.test(sp));
   check('settings: On and Off lists are filtered', /shownOn\.map/.test(sp) && /shownOff\.map/.test(sp));
   check('settings: needs-a-check list is not filtered', /checkList\.map/.test(sp) && !/checkList[^\n]*providerCovers/.test(sp));
   check('settings: adult chip only when adult sources are shown', /c !== 'adult' \|\| prefs\.adult/.test(sp));
 
   const st = read('app/(tabs)/settings.tsx');
-  check('App group order is About, Updates, Stats (0.26)', /appRows[^=]*=\s*\[\s*\{[^}]*title: 'About'[\s\S]*?title: 'Updates'/.test(st));
+  check('App group order is Korean app info, updates, Stats (0.26)', /appRows[^=]*=\s*\[\s*\{[^}]*title: '앱 정보'[\s\S]*?title: '목록 업데이트'/.test(st));
   check('no persistent scrollbar (0.25: removed on request)', !/persistentScrollbar/.test(st));
   check('pill is dismissed by reaching the end, not a nudge', /if \(end && m\.y > 0\) dismissHint\(\)/.test(st) && !/y > 4\) dismissHint/.test(st));
 
   const layout = read('app/(tabs)/_layout.tsx');
-  check('Browser tab uses its animated glyph', /tab\('browse', 'Browser', 'tab-browse'/.test(layout));
+  check('Korean Browser tab uses its animated glyph', /tab\('browse', '브라우저', 'tab-browse'/.test(layout));
 
   console.log(failed ? `\n${failed} failed` : '\n0.16 more: all passed');
   process.exit(failed ? 1 : 0);

@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
-import { sanitizeFileName, type FoundItem, type StreamProbe } from 'maglev-engine';
+import { Linking, StyleSheet, Text, View } from 'react-native';
+import { maglevEngine, sanitizeFileName, type FoundItem, type StreamProbe } from 'maglev-engine';
 import { useTheme } from '../../context/ThemeContext';
 import { useMaglevEngine } from '../../context/EngineContext';
 import { ThemeColors, spacing, type } from '../../constants/theme';
@@ -9,6 +9,7 @@ import { banners, mobileDataLine, notices, streamSheet } from '../../constants/c
 import { probeErrorView } from '../../utils/downloadCopy';
 import { useDownloadAdmission } from '../../utils/useDownloadAdmission';
 import { hostOf } from '../../utils/browserUrl';
+import { guessMediaMime } from '../../utils/browser/mediaHit';
 import { Banner, Button, LoadingDots, RadioCard, TextField } from '../ui';
 import { FloatingSheet, afterSheetCloses, NoteRow } from './FloatingSheet';
 import { useSettings } from '../../context/SettingsContext';
@@ -55,6 +56,7 @@ export function StreamSheet({ item, pageTitle, userAgent = '', pageUrl = '', onC
   const [audioId, setAudioId] = useState<string | null>(null);
   const [name, setName] = useState('');
   const [message, setMessage] = useState<string | null>(null);
+  const [protectedStream, setProtectedStream] = useState(false);
   const [canRetry, setCanRetry] = useState(false);
   const [tries, setTries] = useState(0);
   const token = useRef(0);
@@ -66,6 +68,7 @@ export function StreamSheet({ item, pageTitle, userAgent = '', pageUrl = '', onC
     setPhase('probing');
     setProbe(null);
     setMessage(null);
+    setProtectedStream(false);
     setVariantId(null);
     setAudioId(null);
     setName(sanitizeFileName((pageTitle || item.name || '').trim()));
@@ -84,6 +87,7 @@ export function StreamSheet({ item, pageTitle, userAgent = '', pageUrl = '', onC
       const known = STREAM_BANNERS[res.code as keyof typeof STREAM_BANNERS];
       if (known) {
         setMessage(res.message || known);
+        setProtectedStream(res.code === 'STREAM_PROTECTED');
         setCanRetry(false);
       } else {
         setMessage(res.message || probeErrorView(res.code, res.message, res.httpStatus).body);
@@ -149,7 +153,7 @@ export function StreamSheet({ item, pageTitle, userAgent = '', pageUrl = '', onC
                 <RadioCard
                   key={v.id}
                   title={qualityLabel(v, probe.variants)}
-                  description={v.audio === 'none' ? 'No sound' : `${(v.bandwidth / 1_000_000).toFixed(1)} Mbps`}
+                  description={v.audio === 'none' ? '오디오 없음' : `${(v.bandwidth / 1_000_000).toFixed(1)} Mbps`}
                   icon="file"
                   selected={v.id === variantId}
                   onPress={() => {
@@ -189,7 +193,7 @@ export function StreamSheet({ item, pageTitle, userAgent = '', pageUrl = '', onC
               minLines={1}
               size="lg"
               editable={!adding}
-              accessibilityLabel="File name"
+              accessibilityLabel="파일 이름"
             />
             <SaveToRow disabled={adding} onError={setMessage} />
           </>
@@ -200,11 +204,42 @@ export function StreamSheet({ item, pageTitle, userAgent = '', pageUrl = '', onC
         {message ? <Banner tone="danger" title={message} /> : null}
 
         <View style={styles.actions}>
-          <Button label="Copy link" icon="copy" variant="ghost" onPress={() => onCopyLink(it.url)} disabled={adding} />
+          <Button label="링크 복사" icon="copy" variant="ghost" onPress={() => onCopyLink(it.url)} disabled={adding} />
+          {!protectedStream ? (
+            <Button
+              label="앱에서 재생"
+              icon="play"
+              variant="secondary"
+              disabled={phase === 'probing' || adding}
+              onPress={() => {
+                void (async () => {
+                  try {
+                    const headers = await downloadHeaders({ url: it.url, pageUrl: it.pageUrl || pageUrl, userAgent });
+                    const cleanHeaders = Object.fromEntries(
+                      Object.entries(headers).filter(([, value]) => typeof value === 'string'),
+                    ) as Record<string, string>;
+                    const result = await maglevEngine.playInAppMedia(
+                      it.url,
+                      guessMediaMime(it.url),
+                      pageTitle || it.name || hostOf(it.url),
+                      cleanHeaders,
+                    );
+                    if (result.ok) onClose();
+                    else showNotice({ message: result.message || '앱 내 플레이어를 열지 못했습니다.' });
+                  } catch (error) {
+                    showNotice({ message: String((error as Error)?.message || '앱 내 플레이어를 열지 못했습니다.') });
+                  }
+                })();
+              }}
+            />
+          ) : null}
+          {protectedStream ? (
+            <Text style={styles.meta}>보호되거나 브라우저 버퍼 기반인 스트림은 현재 Android 앱 내 녹화가 지원되지 않습니다. DRM 복호화·보호 우회는 수행하지 않습니다.</Text>
+          ) : null}
           {phase === 'error' ? (
-            canRetry ? <Button label="Try again" onPress={() => setTries((n) => n + 1)} /> : <Button label="Close" onPress={onClose} />
+            canRetry ? <Button label="다시 시도" onPress={() => setTries((n) => n + 1)} /> : <Button label="닫기" onPress={onClose} />
           ) : (
-            <Button label="Start" loading={adding} disabled={phase !== 'ready' || !variant || doesntFit} onPress={() => void start()} />
+            <Button label="다운로드 시작" loading={adding} disabled={phase !== 'ready' || !variant || doesntFit} onPress={() => void start()} />
           )}
         </View>
       </View>

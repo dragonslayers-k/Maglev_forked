@@ -32,6 +32,13 @@
         android:requestLegacyExternalStorage="true"
         tools:targetApi="q">
 
+        <activity
+            android:name=".player.MaglevMediaPlayerActivity"
+            android:exported="false"
+            android:supportsPictureInPicture="true"
+            android:resizeableActivity="true"
+            android:configChanges="screenSize|smallestScreenSize|screenLayout|orientation" />
+
         <service
             android:name=".service.MaglevTorrentService"
             android:foregroundServiceType="dataSync|specialUse"

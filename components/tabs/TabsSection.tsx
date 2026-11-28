@@ -6,7 +6,6 @@ import { useTheme } from '../../context/ThemeContext';
 import { ThemeColors, motion, radius, spacing, touch, type } from '../../constants/theme';
 import { tabsCopy } from '../../constants/copy';
 import { haptic } from '../../constants/haptics';
-import { useAssistantPrefs } from '../../utils/prefs/assistantApp';
 import { useReduceMotion } from '../motion';
 import { Toggle } from '../ui';
 import { Caption } from '../settings/SettingsParts';
@@ -21,7 +20,7 @@ const LIFT_SCALE = 1.03;
 /** Says where a tab landed after a reorder (drag drop or the Move up / Move down actions). `to` is zero-based. */
 function announceMove(id: TabId | undefined, to: number, count: number) {
   if (!id) return;
-  AccessibilityInfo.announceForAccessibility(`${tabsCopy.names[id]} moved to position ${to + 1} of ${count}`);
+  AccessibilityInfo.announceForAccessibility(`${tabsCopy.names[id]} 탭을 ${count}개 중 ${to + 1}번째 위치로 이동했습니다`);
 }
 
 /** Six small squares in two columns: the grip that says "hold and drag". */
@@ -137,11 +136,11 @@ function DraggableRow({ id, index, count, name, locked, shown, drag, onReorder, 
           style={s.grip}
           accessible
           accessibilityRole="adjustable"
-          accessibilityLabel={`Reorder ${name}, position ${index + 1} of ${count}`}
-          accessibilityHint="Swipe up or down to move"
+          accessibilityLabel={`${name} 탭 순서 변경, ${count}개 중 ${index + 1}번째`}
+          accessibilityHint="위아래로 밀어 순서를 변경하세요"
           accessibilityActions={[
-            { name: 'increment', label: 'Move down' },
-            { name: 'decrement', label: 'Move up' },
+            { name: 'increment', label: '아래로 이동' },
+            { name: 'decrement', label: '위로 이동' },
           ]}
           onAccessibilityAction={(e) => {
             const dir = e.nativeEvent.actionName === 'decrement' ? 'up' : 'down';
@@ -156,7 +155,7 @@ function DraggableRow({ id, index, count, name, locked, shown, drag, onReorder, 
           </Text>
           {locked ? <Text style={s.subtitle}>{tabsCopy.alwaysShown}</Text> : null}
         </View>
-        <Toggle value={locked || shown} disabled={locked} onValueChange={onShown} accessibilityLabel={`Show ${name} tab`} />
+        <Toggle value={locked || shown} disabled={locked} onValueChange={onShown} accessibilityLabel={`${name} 탭 표시`} />
       </Animated.View>
     </GestureDetector>
   );
@@ -165,9 +164,7 @@ function DraggableRow({ id, index, count, name, locked, shown, drag, onReorder, 
 /** Settings > Interface > Tabs: which tabs show, and their order. Hold a row and drag to reorder. Applies live. */
 export function TabsSection() {
   const prefs = useTabPrefs();
-  const assistant = useAssistantPrefs();
-  // The Assistant setting decides whether the assistant exists, so its row appears only while it is on.
-  const rows = prefs.order.filter((id) => id !== 'assistant' || assistant.enabled);
+  const rows = prefs.order;
 
   const active = useSharedValue(-1);
   const target = useSharedValue(-1);
@@ -220,7 +217,7 @@ export function TabsSection() {
       </View>
       <View style={s.caption}>
         <Caption>{tabsCopy.reorderHint}</Caption>
-        <Caption>{assistant.enabled ? tabsCopy.hint : `${tabsCopy.hint} ${tabsCopy.assistantNote}`}</Caption>
+        <Caption>{tabsCopy.hint}</Caption>
       </View>
     </>
   );

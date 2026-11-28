@@ -1,5 +1,11 @@
 package com.maglev.engine.browser
 
+import android.app.Activity
+import android.app.PictureInPictureParams
+import android.util.Rational
+import android.view.Gravity
+import android.widget.TextView
+import android.graphics.drawable.GradientDrawable
 import android.annotation.SuppressLint
 import android.content.ActivityNotFoundException
 import android.content.Context
@@ -39,6 +45,8 @@ import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
 import android.webkit.WebSettings
+import android.webkit.ServiceWorkerClient
+import android.webkit.ServiceWorkerController
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.FrameLayout
@@ -56,6 +64,7 @@ import java.io.ByteArrayInputStream
 import java.net.URISyntaxException
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicReference
 
 /**
  * The in-app browser view (docs/NATIVE_CONTRACT.md section 24): an ExpoView that hosts one android.webkit.WebView,
@@ -110,7 +119,7 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
     private var requestedUrl: String? = null
 
     // 24.10. Main thread only.
-    private var active = true
+    @Volatile private var active = true
     private var popupPolicy = "ask"
     private var popupAllowHosts: List<String> = emptyList()
     // The current document has finished loading at least once. Redirects during its first load are part of the page.
@@ -155,6 +164,7 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
     @Volatile private var curTitle: String = ""
     @Volatile private var nonce: String = ""
     @Volatile private var hlsSeen = false
+    @Volatile private var dashSeen = false
     @Volatile private var lastFlush = 0L
     private var progress = 0
     private var loading = false
@@ -171,6 +181,15 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
     private var customViewCallback: WebChromeClient.CustomViewCallback? = null
     private var customViewHost: ViewGroup? = null
     private var previousOrientation: Int = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+    private var fullscreenPipButton: TextView? = null
+    /** PiP menu request completes only after WebChromeClient actually attaches the fullscreen surface. */
+    private var pipPendingFromBrowserMenu = false
+    private var pipRequestResult: ((Boolean) -> Unit)? = null
+    private fun resolvePipRequest(success: Boolean) {
+        val result = pipRequestResult ?: return
+        pipRequestResult = null
+        result(success)
+    }
 
     private val bridge = PageScanBridge { json -> onScanReport(json) }
 
@@ -179,6 +198,8 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
     // 24.10a: a text selection or the find bar is active, so a downward drag must not reload. Main thread.
     private var selectionHold = false
     private var findActive = false
+    private var touchStartX = 0f
+    private var touchStartY = 0f
     // The spinner stops once the reload it started has been seen loading and has finished. Main thread.
     private var pullLoading = false
     // 24.10a: the injected script that finds media under a long press (prop mediaHitScript), and the dark pages switch.
@@ -188,6 +209,12 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
 
     init {
         BlocklistStore.warm(context)
+        // Require a deliberate downward pull and avoid stealing upward page-scroll gestures.
+        val refreshDensity = context.resources.displayMetrics.density
+        // setDistanceToTriggerSync takes dp (not px); multiplying by density made the pull threshold
+        // excessively large on high-density Galaxy screens and caused awkward scroll interception.
+        refresh.setDistanceToTriggerSync(104)
+        refresh.setSlingshotDistance((refreshDensity * 112).toInt())
         refresh.setOnRefreshListener {
             pullLoading = false
             reload()
@@ -321,9 +348,16 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
     }
 
     fun setActive(value: Boolean) {
-        if (value == active) return
-        active = value
         if (destroyed) return
+        if (value == active) {
+            // The first active prop can equal the default value. Still claim the process-wide
+            // Service Worker observer because another tab may have been constructed afterwards.
+            if (value) installServiceWorkerObserver(this)
+            return
+        }
+        active = value
+        if (value) installServiceWorkerObserver(this)
+        else serviceWorkerObserver.compareAndSet(this, null)
         applyActive()
     }
 
@@ -544,6 +578,7 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
     fun destroyBrowser() {
         if (destroyed) return
         destroyed = true
+        serviceWorkerObserver.compareAndSet(this, null)
         mainHandler.removeCallbacksAndMessages(null)
         for (c in captures.toList()) destroyCapture(c)
         exitFullscreen()
@@ -629,9 +664,29 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
         w.setOnLongClickListener { v -> onLongPressed(v as WebView) }
         // Let the page scroll inside React Native parents.
         w.setOnTouchListener { _, ev ->
-            requestDisallowInterceptTouchEvent(true)
-            // 24.10a: a new touch ends the hold a long press put on pull to reload (the selection is gone or being edited with handles).
-            if (ev.actionMasked == MotionEvent.ACTION_DOWN) selectionHold = false
+            val density = context.resources.displayMetrics.density
+            when (ev.actionMasked) {
+                MotionEvent.ACTION_DOWN -> {
+                    // A new touch ends the hold a long press put on pull-to-reload.
+                    selectionHold = false
+                    touchStartX = ev.x
+                    touchStartY = ev.y
+                    requestDisallowInterceptTouchEvent(true)
+                }
+                MotionEvent.ACTION_MOVE -> {
+                    val dx = ev.x - touchStartX
+                    val dy = ev.y - touchStartY
+                    val vertical = kotlin.math.abs(dy) > kotlin.math.abs(dx) * 1.2f
+                    val pullingDownAtTop = vertical && dy > 10f * density &&
+                        !webView.canScrollVertically(-1) && !selectionHold && !findActive
+                    // SwipeRefreshLayout may intercept only a downward gesture from the top.
+                    // Upward and horizontal gestures stay with the WebView.
+                    requestDisallowInterceptTouchEvent(!pullingDownAtTop)
+                }
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                    requestDisallowInterceptTouchEvent(false)
+                }
+            }
             noteTouch(ev.actionMasked)
             false
         }
@@ -754,6 +809,7 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
         tracker.clear()
         blockedPage.set(0)
         hlsSeen = false
+        dashSeen = false
         sslFailed = false
         newNonce()
         lastSentPage = 0
@@ -781,6 +837,9 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
         var added = false
         for (e in report.entries) {
             val item = PageScan.toItem(e, curUrl, curTitle) ?: continue
+            // Page-script MIME observations and native request observations share one segment filter.
+            if (item.stream == "hls") hlsSeen = true
+            if (item.stream == "dash") dashSeen = true
             if (tracker.add(item)) added = true
         }
         if (added) scheduleFlush()
@@ -1140,7 +1199,7 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
                 scheduleFlush()
                 return emptyResponse()
             }
-            noteNetwork(uri.toString(), request.requestHeaders)
+            noteNetwork(uri.toString(), request.requestHeaders, request.method)
             return null
         }
 
@@ -1429,8 +1488,29 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
     private fun emptyResponse() =
         WebResourceResponse("text/plain", "utf-8", 204, "No Content", emptyMap(), ByteArrayInputStream(ByteArray(0)))
 
-    /** A sub-resource or main request the page made (section 24.3 rule 1). Background thread. */
-    private fun noteNetwork(url: String, headers: Map<String, String>?) {
+    /**
+     * Service-worker requests are process-wide in Android WebView: there is no WebView parameter to identify their
+     * owner. Route only to the active tab, and only when Referer or Origin matches that tab's document host.
+     */
+    private fun noteServiceWorkerRequest(request: WebResourceRequest) {
+        if (destroyed || !active || !request.method.equals("GET", ignoreCase = true)) return
+        val headers = request.requestHeaders
+        val owner = headers.entries.firstOrNull { it.key.equals("Referer", true) }?.value
+            ?: headers.entries.firstOrNull { it.key.equals("Origin", true) }?.value
+        val ownerHost = owner?.let { Uri.parse(it).host?.lowercase() } ?: return
+        if (!ownerHost.equals(pageHost, ignoreCase = true)) return
+        val uri = request.url ?: return
+        if (uri.scheme != "http" && uri.scheme != "https") return
+        noteNetwork(uri.toString(), headers, request.method)
+    }
+
+    /** A sub-resource, main request or attributable Service Worker request (section 24.3 rule 1). Background thread. */
+    private fun noteNetwork(url: String, headers: Map<String, String>?, method: String = "GET") {
+        if (!method.equals("GET", ignoreCase = true)) return
+        val path = url.substringBefore('?').substringBefore('#').lowercase()
+        if (path.endsWith(".m3u8")) hlsSeen = true
+        if (path.endsWith(".mpd")) dashSeen = true
+        if (FoundClassifier.isStreamSegment(url, hlsSeen, dashSeen)) return
         var accept: String? = null
         var hasRange = false
         if (headers != null) {
@@ -1441,6 +1521,7 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
         }
         val c = FoundClassifier.classifyNetwork(url, accept, hasRange, hlsSeen) ?: return
         if (c.stream == "hls") hlsSeen = true
+        if (c.stream == "dash") dashSeen = true
         val item = FoundClassifier.item(url, c, "network", curUrl, curTitle) ?: return
         if (tracker.add(item)) scheduleFlush()
     }
@@ -1449,30 +1530,208 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
 
     // region Fullscreen video
 
+    /** Requests the page player's fullscreen video surface from the browser PiP menu. */
+    private fun requestFullscreenVideoForPipInternal(requestedAspectRatio: Double, onResult: (Boolean) -> Unit) {
+        if (destroyed || !active) { onResult(false); return }
+        if (requestedAspectRatio.isFinite() && requestedAspectRatio in 0.42..2.39) {
+            activeVideoAspectRatio = requestedAspectRatio
+            activeVideoAspectRatioKnown = true
+        }
+        pipRequestResult?.invoke(false)
+        pipRequestResult = onResult
+        pipPendingFromBrowserMenu = true
+        mainHandler.postDelayed({
+            if (pipRequestResult != null) {
+                pipPendingFromBrowserMenu = false
+                resolvePipRequest(false)
+            }
+        }, 5_000L)
+        val script = """
+            (function() {
+              var videos = Array.prototype.slice.call(document.querySelectorAll('video'));
+              videos = videos.filter(function(v) {
+                var s = window.getComputedStyle(v);
+                return !v.paused && !v.ended && v.readyState >= 2 && v.videoWidth > 0 && v.videoHeight > 0 &&
+                  v.getClientRects().length > 0 && s.display !== 'none' && s.visibility !== 'hidden' &&
+                  v.clientWidth > 0 && v.clientHeight > 0;
+              });
+              videos.sort(function(a,b){return (b.clientWidth*b.clientHeight)-(a.clientWidth*a.clientHeight);});
+              var v=videos[0]; if(!v)return 0;
+              var ratio=v.videoWidth/v.videoHeight;if(!isFinite(ratio)||ratio<0.42||ratio>2.39)return 0;
+              var root=v;
+              for(var d=0;d<7&&root.parentElement;d++){root=root.parentElement;if(root.querySelector&&root.querySelector('.ytp-fullscreen-button'))break;}
+              var selectors=['.ytp-fullscreen-button','[aria-label*="fullscreen" i]','[title*="fullscreen" i]','.fullscreen-button'];
+              for(var i=0;i<selectors.length;i++){var b=root.querySelector?root.querySelector(selectors[i]):null;if(b&&b.getClientRects().length&&!b.disabled){try{b.click();return ratio;}catch(e){}}}
+              try{if(v.requestFullscreen){var p=v.requestFullscreen();if(p&&p.catch)p.catch(function(){});return ratio;}}catch(e){}
+              try{if(v.webkitEnterFullscreen){v.webkitEnterFullscreen();return ratio;}}catch(e){}
+              return 0;
+            })()
+        """.trimIndent()
+        webView.evaluateJavascript(script) { raw ->
+            val ratio = raw?.trim()?.removeSurrounding("\"")?.toDoubleOrNull()
+            val accepted = ratio != null && ratio.isFinite() && ratio in 0.42..2.39
+            if (accepted) {
+                activeVideoAspectRatio = ratio!!
+                activeVideoAspectRatioKnown = true
+                // Do not report success yet: requestFullscreen() can be rejected or ignored.
+                // Success is resolved only from onShowCustomView after the surface is attached.
+            } else {
+                pipPendingFromBrowserMenu = false
+                resolvePipRequest(false)
+            }
+        }
+    }
+
     private fun showFullscreen(view: View, callback: WebChromeClient.CustomViewCallback) {
         if (destroyed || customView != null) {
             callback.onCustomViewHidden()
             return
         }
-        customView = view
-        customViewCallback = callback
+        val container = FrameLayout(context).apply { setBackgroundColor(Color.BLACK) }
         view.setBackgroundColor(Color.BLACK)
+        container.addView(view, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
+        customView = container
+        customViewCallback = callback
+        fullscreenVideoActive = true
+        activeVideoAspectRatioKnown = false
+        activeVideoAspectRatio = 16.0 / 9.0
+
         val activity = appContext.currentActivity
+        val pipButton = TextView(context).apply {
+            text = "PiP"
+            textSize = 14f
+            setTextColor(Color.WHITE)
+            gravity = Gravity.CENTER
+            contentDescription = "Picture in picture"
+            val density = resources.displayMetrics.density
+            setPadding((12 * density).toInt(), (8 * density).toInt(), (12 * density).toInt(), (8 * density).toInt())
+            background = GradientDrawable().apply {
+                setColor(0xCC202124.toInt())
+                cornerRadius = 12f * density
+            }
+            elevation = 8f * density
+            setOnClickListener {
+                if (activity != null) enterFullscreenPictureInPicture(activity, this)
+            }
+        }
+        fullscreenPipButton = pipButton
+        val density = resources.displayMetrics.density
+        container.addView(
+            pipButton,
+            FrameLayout.LayoutParams((56 * density).toInt(), (40 * density).toInt(), Gravity.TOP or Gravity.END).apply {
+                setMargins(0, (16 * density).toInt(), (16 * density).toInt(), 0)
+            }
+        )
+
         if (activity != null) {
-            // Over the whole screen, system bars hidden; landscape allowed while it lasts.
+            // Fullscreen custom video is placed above the app chrome; PiP therefore captures the video surface,
+            // not the browser page and its toolbar. FULL_SENSOR permits both portrait and landscape video.
             val decor = activity.window.decorView as ViewGroup
-            decor.addView(view, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
+            decor.addView(container, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
             customViewHost = decor
             previousOrientation = activity.requestedOrientation
             activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR
             val controller = WindowCompat.getInsetsController(activity.window, decor)
             controller.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
             controller.hide(WindowInsetsCompat.Type.systemBars())
+            if (pipPendingFromBrowserMenu) {
+                pipPendingFromBrowserMenu = false
+                // Do not enter PiP in the same frame as onShowCustomView.
+                // The pending request is resolved only after Android accepts PiP below. WebView's fullscreen
+                // video surface is attached/reparented here; entering immediately can snapshot
+                // the old SurfaceView geometry (black PiP with the video left at the bottom).
+                // Wait for layout + orientation changes to settle, then request a fresh layout
+                // and update the PiP aspect ratio from the active HTML video.
+                container.post {
+                    container.requestLayout()
+                    view.requestLayout()
+                    mainHandler.postDelayed({
+                        if (destroyed || customView !== container || !container.isAttachedToWindow) return@postDelayed
+                        container.requestLayout()
+                        view.requestLayout()
+                        updateFullscreenPipParams(activity, autoEnter = true) {
+                            mainHandler.postDelayed({
+                                if (destroyed || customView !== container || !container.isAttachedToWindow) return@postDelayed
+                                enterFullscreenPictureInPicture(activity, pipButton)
+                            }, 250L)
+                        }
+                    }, 350L)
+                }
+            } else {
+                updateFullscreenPipParams(activity, autoEnter = true)
+            }
         } else {
-            addView(view, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
+            addView(container, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
             customViewHost = this
         }
         emitPage()
+    }
+
+    private fun buildPipParams(ratio: Double, autoEnter: Boolean): PictureInPictureParams {
+        val safeRatio = if (ratio.isFinite()) ratio.coerceIn(0.42, 2.39) else (16.0 / 9.0)
+        val numerator = (safeRatio * 1000.0).toInt().coerceAtLeast(1)
+        val builder = PictureInPictureParams.Builder().setAspectRatio(Rational(numerator, 1000))
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            builder.setAutoEnterEnabled(autoEnter)
+            builder.setSeamlessResizeEnabled(true)
+        }
+        return builder.build()
+    }
+
+    private fun updateFullscreenPipParams(activity: Activity, autoEnter: Boolean, onReady: ((Double) -> Unit)? = null) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
+        val script = """
+            (function() {
+              var videos = Array.prototype.slice.call(document.querySelectorAll('video'));
+              videos = videos.filter(function(v) { var s=window.getComputedStyle(v); return v.videoWidth>0&&v.videoHeight>0&&v.getClientRects().length>0&&s.display!=='none'&&s.visibility!=='hidden'&&v.clientWidth>0&&v.clientHeight>0; });
+              var playing=videos.filter(function(v){return !v.paused&&!v.ended&&v.readyState>=2;});
+              function area(v){return Math.max(0,v.clientWidth)*Math.max(0,v.clientHeight);}
+              playing.sort(function(a,b){return area(b)-area(a);});videos.sort(function(a,b){return area(b)-area(a);});
+              var v=playing[0]||videos[0];return v?String(v.videoWidth/v.videoHeight):'';
+            })()
+        """.trimIndent()
+        webView.evaluateJavascript(script) { raw ->
+            val parsed = raw?.trim()?.removeSurrounding("\"")?.toDoubleOrNull()
+            if (parsed != null && parsed.isFinite() && parsed in 0.42..2.39) {
+                activeVideoAspectRatio = parsed
+                activeVideoAspectRatioKnown = true
+            }
+            val ratio = if (activeVideoAspectRatioKnown) activeVideoAspectRatio else (16.0 / 9.0)
+            try {
+                activity.setPictureInPictureParams(buildPipParams(ratio, autoEnter))
+            } catch (_: Throwable) {
+            }
+            onReady?.invoke(ratio)
+        }
+    }
+
+    private fun enterFullscreenPictureInPicture(activity: Activity, button: TextView) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
+        button.visibility = View.INVISIBLE
+        updateFullscreenPipParams(activity, autoEnter = true) { ratio ->
+            try {
+                val entered = activity.enterPictureInPictureMode(buildPipParams(ratio, autoEnter = true))
+                if (!entered) {
+                    button.visibility = View.VISIBLE
+                    resolvePipRequest(false)
+                } else {
+                    resolvePipRequest(true)
+                }
+            } catch (_: Throwable) {
+                button.visibility = View.VISIBLE
+                resolvePipRequest(false)
+            }
+        }
+    }
+
+    override fun onWindowFocusChanged(hasWindowFocus: Boolean) {
+        super.onWindowFocusChanged(hasWindowFocus)
+        val activity = appContext.currentActivity ?: return
+        if (activity.isInPictureInPictureMode) {
+            fullscreenPipButton?.visibility = View.INVISIBLE
+        } else if (hasWindowFocus) {
+            fullscreenPipButton?.visibility = View.VISIBLE
+        }
     }
 
     private fun exitFullscreen() {
@@ -1483,8 +1742,15 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
         customViewCallback = null
         customViewHost = null
         host?.removeView(view)
+        fullscreenPipButton = null
+        fullscreenVideoActive = false
+        activeVideoAspectRatioKnown = false
+        activeVideoAspectRatio = 16.0 / 9.0
         val activity = appContext.currentActivity
         if (activity != null && host != null && host !== this) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                runCatching { activity.setPictureInPictureParams(PictureInPictureParams.Builder().setAutoEnterEnabled(false).build()) }
+            }
             activity.requestedOrientation = previousOrientation
             WindowCompat.getInsetsController(activity.window, activity.window.decorView)
                 .show(WindowInsetsCompat.Type.systemBars())
@@ -1499,6 +1765,50 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
     // endregion
 
     companion object {
+        @Volatile var fullscreenVideoActive: Boolean = false
+            private set
+        @Volatile var activeVideoAspectRatio: Double = 16.0 / 9.0
+            private set
+        @Volatile var activeVideoAspectRatioKnown: Boolean = false
+            private set
+
+        /** Used by the PiP menu to request fullscreen on the active tab's current HTML video. */
+        fun requestFullscreenVideoForPip(requestedAspectRatio: Double, onResult: (Boolean) -> Unit) {
+            val view = serviceWorkerObserver.get()
+            if (view == null || view.destroyed) {
+                onResult(false)
+                return
+            }
+            view.requestFullscreenVideoForPipInternal(requestedAspectRatio, onResult)
+        }
+
+
+        // ServiceWorkerController is process-wide. Keep one dispatcher and point it at the active browser tab only.
+        private val serviceWorkerObserver = AtomicReference<MaglevBrowserView?>(null)
+        private val serviceWorkerInstallLock = Any()
+        @Volatile private var serviceWorkerClientInstalled = false
+
+        private fun installServiceWorkerObserver(view: MaglevBrowserView) {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) return
+            serviceWorkerObserver.set(view)
+            if (serviceWorkerClientInstalled) return
+            synchronized(serviceWorkerInstallLock) {
+                if (serviceWorkerClientInstalled) return
+                try {
+                    ServiceWorkerController.getInstance().setServiceWorkerClient(object : ServiceWorkerClient() {
+                        override fun shouldInterceptRequest(request: WebResourceRequest): WebResourceResponse? {
+                            serviceWorkerObserver.get()?.noteServiceWorkerRequest(request)
+                            // Observation only. Never consume or replace the Service Worker response.
+                            return null
+                        }
+                    })
+                    serviceWorkerClientInstalled = true
+                } catch (_: Throwable) {
+                    serviceWorkerObserver.compareAndSet(view, null)
+                }
+            }
+        }
+
         /** Found items and the blocked count go out at most this often (docs/NATIVE_CONTRACT.md section 24.2). */
         const val FLUSH_MS = 250L
 

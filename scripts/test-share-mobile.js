@@ -52,12 +52,12 @@ async function main() {
 
   const { mobileDataLine } = await import('../constants/copy.ts');
   const GIB = 1024 ** 3;
-  check('builder: 1.2 GiB on mobile data', mobileDataLine(true, false, 1.2 * GIB) === "You're on mobile data. This is 1.2 GB.", String(mobileDataLine(true, false, 1.2 * GIB)));
+  check('builder: 1.2 GiB on mobile data', mobileDataLine(true, false, 1.2 * GIB) === '현재 모바일 데이터를 사용 중입니다. 파일 크기는 1.2 GB입니다.', String(mobileDataLine(true, false, 1.2 * GIB)));
   check('builder: unknown size says nothing', mobileDataLine(true, false, null) === null);
   check('builder: zero size says nothing', mobileDataLine(true, false, 0) === null);
   check('builder: not metered says nothing', mobileDataLine(false, false, 5 * GIB) === null);
-  check('builder: Wi-Fi only on mobile data waits', mobileDataLine(true, true, 5 * GIB) === 'This waits for Wi-Fi.');
-  check('builder: Wi-Fi only waits even with unknown size', mobileDataLine(true, true, null) === 'This waits for Wi-Fi.');
+  check('builder: Wi-Fi only on mobile data waits', mobileDataLine(true, true, 5 * GIB) === 'Wi-Fi 연결 시 다운로드합니다.');
+  check('builder: Wi-Fi only waits even with unknown size', mobileDataLine(true, true, null) === 'Wi-Fi 연결 시 다운로드합니다.');
   check('builder: Wi-Fi only on Wi-Fi says nothing', mobileDataLine(false, true, 5 * GIB) === null);
 
   if (failed) {

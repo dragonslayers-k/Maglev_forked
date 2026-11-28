@@ -9,13 +9,12 @@ import { ThemeProvider, useTheme } from '../context/ThemeContext';
 import { EngineProvider, useEngineStatus } from '../context/EngineContext';
 import NavigationBarSync from '../components/NavigationBarSync';
 import { NoticeHost } from '../components/ui/NoticeHost';
-import { StarPrompt } from '../components/StarPrompt';
 import { HighlightSheet } from '../components/HighlightSheet';
 import { syncScheduleToNative } from '../utils/prefs/schedule';
 import { syncFeedAutomationToNative } from '../utils/prefs/feedAutomation';
+import { startListUpdates } from '../utils/lists';
 import { initHistory } from '../utils/history';
 import { privateSession } from '../utils/browser/privateSession';
-import { startUpdates } from '../utils/update';
 import { useSubtitleRequests } from '../components/subtitles/useSubtitleRequests';
 import { installGlobalHandler, setCurrentRoute } from '../utils/crashLog';
 
@@ -44,7 +43,7 @@ const ENGINE_RESOLVE_TIMEOUT_MS = 15000;
  * once the engine can answer rather than failing with "Engine not started" (the bridge does not
  * queue calls made before start).
  */
-const ENGINE_FIRST_ROUTE = /^\/(add-torrent|add-download|torrent\/|download\/)/;
+const ENGINE_FIRST_ROUTE = /^\/(add-torrent|add-download|youtube-download|torrent\/|download\/)/;
 
 /** NATIVE_CONTRACT 44.7: runs the subtitle requests. Renders nothing; does no work while there are none. */
 function SubtitleRequestRunner() {
@@ -105,10 +104,11 @@ function AppNavigation() {
     void syncFeedAutomationToNative();
   }, [engineReady]);
 
-  // In-app updates (contract 27): the daily check when the app becomes active, and the download and install triggers.
+
+  // Data lists update independently of app APK releases/self-updater.
   useEffect(() => {
     if (!engineReady) return;
-    return startUpdates();
+    return startListUpdates();
   }, [engineReady]);
 
   // Native splash stays up (see preventAutoHideAsync); render the background only, no navigator, until resolved.
@@ -163,12 +163,12 @@ function AppNavigation() {
             onboarding (0.12). scripts/test-route-guards.js keeps every route inside a guard.
           */}
           <Stack.Screen name="add-download" />
+          <Stack.Screen name="youtube-download" />
           <Stack.Screen name="browser" />
           <Stack.Screen name="browser-history" />
           <Stack.Screen name="browser-bookmarks" />
           <Stack.Screen name="free-space" />
           <Stack.Screen name="settings/about" />
-          <Stack.Screen name="settings/assistant" />
           <Stack.Screen name="settings/backup" />
           <Stack.Screen name="settings/browser" />
           <Stack.Screen name="settings/downloads" />
@@ -177,6 +177,8 @@ function AppNavigation() {
           <Stack.Screen name="settings/licenses" />
           <Stack.Screen name="settings/network" />
           <Stack.Screen name="settings/network-advanced" />
+          <Stack.Screen name="settings/wireguard" />
+          <Stack.Screen name="settings/wireguard" />
           <Stack.Screen name="settings/notifications" />
           <Stack.Screen name="settings/power" />
           <Stack.Screen name="settings/scheduling" />
@@ -194,7 +196,6 @@ function AppNavigation() {
       </Stack>
       {main ? <SubtitleRequestRunner /> : null}
       {main ? <NoticeHost /> : null}
-      {main ? <StarPrompt /> : null}
       {main ? <HighlightSheet /> : null}
     </>
   );

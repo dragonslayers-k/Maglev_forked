@@ -23,7 +23,7 @@ check('five rows in order', (() => {
 check('rows use ListRow', (sheet.match(/<ListRow/g) || []).length === 5 || /ROWS|rows\.map/.test(sheet));
 check('browser row uses the network icon', /icon[:=]\s*['"{]*\s*['"]network['"]/.test(sheet));
 check('search row uses the search icon', /['"]search['"]/.test(sheet));
-check('paste is disabled with "Copy a link first"', /Copy a link first/.test(read('constants', 'copy.ts')) && /addMenu\.copyFirst/.test(sheet) && /disabled=/.test(sheet));
+check('paste is disabled with Korean copy-first guidance', /copyFirst: '먼저 링크를 복사하세요'/.test(read('constants', 'copy.ts')) && /addMenu\.copyFirst/.test(sheet) && /disabled=/.test(sheet));
 check('no hex colours', !/#[0-9a-fA-F]{6}\b/.test(sheet));
 check('add-download has an editable file name', /accessibilityLabel="File name"/.test(dl) && /name:\s*newName|name: renamed|\.\.\.\(renamed/.test(dl));
 check('rename rejects slashes and empty', /[\\/].*test\(|\[\\\/\\\\\]/.test(dl) && /nameError|nameInvalid/.test(dl));

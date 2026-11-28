@@ -18,6 +18,7 @@ const read = (rel) => fs.readFileSync(path.join(root, rel), 'utf8');
 
 async function main() {
   const u = await import('../utils/browserUrl.ts');
+  const yt = await import('../utils/browser/youtube.ts');
   const prefs = await import('../utils/prefs/browser.ts');
   const f = await import('../components/browser/foundFilter.ts');
 
@@ -45,6 +46,14 @@ async function main() {
   check('allowed covers subdomains', u.isAllowedHost(['example.com'], 'a.b.example.com') && !u.isAllowedHost(['example.com'], 'notexample.com'));
   check('notice rate limit', u.noticeAllowed(0, 100) && !u.noticeAllowed(1000, 5999) && u.noticeAllowed(1000, 6000));
 
+  console.log('YouTube share URL recognition');
+  check('youtu.be short link canonicalizes', yt.parseYouTubeLink('https://youtu.be/AbCdEf12345?t=1m20s')?.canonicalUrl === 'https://www.youtube.com/watch?v=AbCdEf12345&t=80s');
+  check('www.youtube.com watch URL canonicalizes', yt.parseYouTubeLink('https://www.youtube.com/watch?v=AbCdEf12345')?.canonicalUrl === 'https://www.youtube.com/watch?v=AbCdEf12345');
+  check('watch and playlist retained', yt.parseYouTubeLink('https://youtube.com/watch?v=AbCdEf12345&list=PLabcdefghij&index=4')?.canonicalUrl === 'https://www.youtube.com/watch?v=AbCdEf12345&list=PLabcdefghij');
+  check('shorts, live, embed forms', ['shorts','live','embed'].every((kind) => yt.parseYouTubeLink(`https://youtube.com/${kind}/AbCdEf12345`)?.videoId === 'AbCdEf12345'));
+  check('host and ID validation', !yt.parseYouTubeLink('https://youtube.com.evil.test/watch?v=AbCdEf12345') && !yt.parseYouTubeLink('https://youtu.be/invalid'));
+  check('bad timestamp ignored and excessive input rejected', yt.parseYouTubeLink('https://youtube.com/watch?v=AbCdEf12345&t=999999')?.startSeconds === undefined && !yt.parseYouTubeLink('https://youtube.com/watch?v=AbCdEf12345'.repeat(100)));
+
   console.log('maglev://browser');
   const r = u.browserIntentRoute;
   check('url is prefilled, never loaded', r('/browser?url=' + encodeURIComponent('https://x.test/a')) === '/browser?prefill=' + encodeURIComponent('https://x.test/a'));
@@ -59,7 +68,11 @@ async function main() {
   {
     const src = read('app/+native-intent.tsx');
     check('native intent normalises the full url for dl_ too', /appPath\(raw\)/.test(src));
+    check('YouTube shares route to the dedicated downloader, not direct-download probe', /parseYouTubeIntent\(raw\)[\s\S]*?\/youtube-download\?url=/.test(src) && /return sharedDownloadRoute\(raw\)/.test(src));
   }
+  check('pasted YouTube URLs use the extractor screen', /parseYouTubeLink\(input\)[\s\S]*?youtube-download/.test(read('app/add-download.tsx')));
+  check('Quick Share forwards YouTube links to the native-intent route', /YouTubeUrl\.parse\(cls\.source\)[\s\S]*?maglev:\/\/youtube-download\?url=/.test(read('modules/maglev-engine/android/src/main/java/com/maglev/engine/share/QuickShareActivity.kt')));
+  check('native yt-dlp adapter feeds the existing transfer engine', /YoutubeDL\.getInstance\(\)\.getInfo/.test(read('modules/maglev-engine/android/src/main/java/com/maglev/engine/youtube/YoutubeDownload.kt')) && /EngineHost\.addDownload/.test(read('modules/maglev-engine/android/src/main/java/com/maglev/engine/youtube/YoutubeDownload.kt')));
   check('other routes are left alone', r('/add-download?url=x') === null && r('/settings/browser') === null);
 
   console.log('prefs');
@@ -120,7 +133,9 @@ async function main() {
     check('audio-only does not shift the quality tiers', sc.qualityName(b1, [b1, b2, au]) === 'Low quality' && sc.qualityName(b2, [b1, b2, au]) === 'High quality');
   }
   check('stream links are told by path', sc.streamKindOfLink('https://a.test/x/v.m3u8?t=1') === 'hls' && sc.streamKindOfLink('https://a.test/v.MPD#x') === 'dash' && sc.streamKindOfLink('https://a.test/v.mp4') === null && sc.streamKindOfLink('https://a.test/m3u8/file.zip') === null);
-  check('add download probes streams and opens the stream sheet', /streamKindOfLink\(input\)/.test(read('app/add-download.tsx')) && /<StreamSheet item=\{streamItem\}/.test(read('app/add-download.tsx')));
+  check('add download probes streams and opens the stream sheet', /streamKindOfLink\(downloadUrl\)/.test(read('app/add-download.tsx')) && /<StreamSheet item=\{streamItem\}/.test(read('app/add-download.tsx')));
+  check('Naver Shorts collapses detected fragments into one whole-clip item', /naverclip:/.test(read('app/browser.tsx')) && /visible\.filter\(item => item\.kind !== 'video'\)/.test(read('app/browser.tsx')));
+  check('browser save resolves Naver Shorts to progressive MP4', /resolveNaverClip\(naverClipPage\)/.test(read('components/browser/startFound.ts')));
   check('no height falls back to bandwidth tiers', sc.qualityName(blind[0], blind) === 'Low quality' && sc.qualityName(blind[1], blind) === 'Medium quality' && sc.qualityName(blind[2], blind) === 'High quality' && sc.qualityName(blind[0], [blind[0]]) === 'Medium quality');
   const tr = [{ id: 't1', lang: 'en', name: 'English', bandwidth: null }, { id: 't2', lang: 'fr', name: null, bandwidth: null }, { id: 't3', lang: null, name: null, bandwidth: null }];
   check('audio label: name, lang, Track N', sc.audioLabel(tr[0], 0) === 'English' && sc.audioLabel(tr[1], 1) === 'fr' && sc.audioLabel(tr[2], 2) === 'Track 3');
@@ -152,7 +167,7 @@ async function main() {
   // 0.15: the Browser button is a compact labelled button (globe + the word) that hides when the Browser tab is on.
   check('search tab has a labelled Browser button', />\s*Browser\s*</.test(read('app/(tabs)/search.tsx')) && /accessibilityLabel="Open the browser"/.test(read('app/(tabs)/search.tsx')));
   check('settings list has Browser row', /route: 'browser'/.test(read('app/(tabs)/settings.tsx')));
-  check('add-download offers Open in browser', /Open in browser/.test(read('app/add-download.tsx')));
+  check('add-download offers yt-dlp page analysis and keeps Open in browser fallback', /yt-dlp로 페이지 분석/.test(read('app/add-download.tsx')) && /브라우저에서 열기/.test(read('app/add-download.tsx')));
 
   if (failed) {
     console.error(`\n${failed} check(s) failed`);

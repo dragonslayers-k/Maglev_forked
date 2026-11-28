@@ -50,8 +50,8 @@ check(
   /autoCapitalize \?\? \(mono/.test(code) && /autoCorrect \?\? \(mono/.test(code) && /spellCheck \?\? \(mono/.test(code),
 );
 check(
-  'clear button is an IconButton labelled "Clear", shown only with text',
-  /<IconButton[^>]*accessibilityLabel=\{clearLabel\}/.test(code) && /clearLabel = 'Clear'/.test(code) && /showClear = clearable && editable && typeof value === 'string' && value\.length > 0/.test(code),
+  'clear button is an IconButton with localized clear label, shown only with text',
+  /<IconButton[^>]*accessibilityLabel=\{koUiText\(clearLabel\)\}/.test(code) && /clearLabel = 'Clear'/.test(code) && /showClear = clearable && editable && typeof value === 'string' && value\.length > 0/.test(code),
 );
 check('clear button keeps a 44x44 target (IconButton box)', /box: \{ width: (44|touch\.min), height: (44|touch\.min)/.test(read('components/ui/IconButton.tsx')));
 check(

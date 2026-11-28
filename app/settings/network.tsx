@@ -70,6 +70,14 @@ export default function NetworkSettings() {
 
       <Card>
         <ListRow
+          title="앱 내부 WireGuard"
+          subtitle="다운로드 전용 · 기기 전체 VPN/APN과 별개"
+          onPress={() => router.push('/settings/wireguard' as never)}
+        />
+      </Card>
+
+      <Card>
+        <ListRow
           title={advanced.rowTitle}
           subtitle={advanced.rowSubtitle}
           onPress={() => router.push('/settings/network-advanced' as never)}

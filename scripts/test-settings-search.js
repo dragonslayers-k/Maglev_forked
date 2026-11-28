@@ -155,12 +155,12 @@ async function main() {
     searchSettings("xq zzzz").length === 0,
   );
   check(
-    "short words: 'ai' alone finds Assistant",
-    searchSettings("ai").some((e) => e.id === "assistant-enable"),
+    "short words: 'ai' no longer surfaces the removed Assistant setting",
+    !searchSettings("ai").some((e) => e.id === "assistant-enable"),
   );
   check(
-    "short words: 'ai chat' finds Assistant first",
-    top("ai chat")[0] === "assistant-enable",
+    "short words: 'ai chat' no longer surfaces the removed Assistant setting",
+    !top("ai chat").includes("assistant-enable"),
     top("ai chat").join(","),
   );
   check(
@@ -175,7 +175,7 @@ async function main() {
   );
   check(
     "short words: 'ads' finds Ad blocking in top 3, and no Downloads row (3 letters match word starts only)",
-    top("ads", 3).includes("browser-ad-blocking") &&
+    top("ads", 3).some((id) => ["about-ad-block", "updates-ad-list"].includes(id)) &&
       !searchSettings("ads").some((e) => e.id === "speed-active-downloads"),
     top("ads", 3).join(","),
   );
@@ -294,8 +294,13 @@ async function main() {
       .join(","),
   );
   check(
-    "rank: 'clear history' puts the shorter exact title first",
-    top("clear history")[0] === "browser-clear-history",
+    "rank: Korean '방문 기록 삭제' puts the exact localized row first",
+    top("방문 기록 삭제")[0] === "browser-clear-history",
+    top("방문 기록 삭제", 2).join(","),
+  );
+  check(
+    "English 'clear history' still finds the localized history row",
+    top("clear history", 2).includes("browser-clear-history"),
     top("clear history", 2).join(","),
   );
   check(
@@ -382,7 +387,7 @@ async function main() {
   );
   check(
     "settings.tsx contains 'Search sources'",
-    settingsTab.includes("Search sources"),
+    settingsTab.includes("검색 사이트"),
   );
   check(
     "settings.tsx routes to 'updates'",
@@ -475,10 +480,15 @@ async function main() {
     "Built with",
     "Open-source licence",
     "Release notes",
-    "Source code on GitHub",
   ]) {
     check(`index has "${t}"`, SETTINGS_INDEX.some((e) => e.title === t));
   }
+
+  const sourceEntry = SETTINGS_INDEX.find((e) => e.id === "about-built-by");
+  check(
+    "source code is searchable from the localized About row",
+    !!sourceEntry && sourceEntry.keywords.includes("source code") && sourceEntry.keywords.includes("github"),
+  );
 
   // Rows added with swipe, file icons, tab swipe and stats backup are searchable.
   for (const [q, id] of [

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Star prompt (docs/NATIVE_CONTRACT.md section 33): every gate, the outcomes, prefs, the About row and the copy.
+// Legacy star decision helpers remain for migration tests; no star prompt is mounted or shown.
 // Needs Node 22.18+ (runs the TypeScript source directly).
 process.removeAllListeners('warning');
 
@@ -85,20 +85,17 @@ const DAY = 24 * 60 * 60 * 1000;
   console.log('[wiring]');
   const about = read('app/settings/about.tsx');
   const ticket = read('components/settings/StarTicket.tsx');
-  check('About keeps its star ticket, and starring from it stops the prompt', /<StarTicket \/>/.test(about) && /afterStarred/.test(ticket) && /openURL\(REPO_URL\)/.test(ticket));
+  check('About ticket is an integration status card, not a star request', /<StarTicket \/>/.test(about) && ticket.includes('기능 통합·검증 현황') && !ticket.includes('afterStarred') && !ticket.includes('Give it a star'));
   const layout = read('app/_layout.tsx');
-  check('the card is mounted once at the app root', (layout.match(/<StarPrompt \/>/g) || []).length === 1);
-  const prompt = read('components/StarPrompt.tsx');
-  check('the card opens the repo and records the outcomes', /Linking\.openURL\(REPO_URL\)/.test(prompt) && /afterNotNow/.test(prompt) && /afterNever/.test(prompt) && /afterStarred/.test(prompt));
-  check('Back and the scrim count as Not now', /onClose=\{notNow\}/.test(prompt));
-  check('no payment links in the app copy', !/buymeacoffee|ko-fi|paypal|patreon|sponsor/i.test(read('constants/copy.ts') + prompt + about));
+  check('global star prompt is not mounted or imported', !layout.includes('StarPrompt'));
+  check('star prompt component is removed', !fs.existsSync(path.join(__dirname, '..', 'components/StarPrompt.tsx')));
+  check('no star solicitation in visible app copy', !/Enjoying Maglev\?|A star on GitHub|Star on GitHub|Give it a star/.test(read('constants/copy.ts') + ticket + about));
+  check('no payment links in the app copy', !/buymeacoffee|ko-fi|paypal|patreon|sponsor/i.test(read('constants/copy.ts') + ticket + about));
   check('sheets report to the overlay tracker', /useOverlayTracking/.test(read('components/ui/Sheet.tsx')) && /useOverlayTracking/.test(read('components/browser/FloatingSheet.tsx')));
 
   console.log('[copy]');
   const copy = await import('../constants/copy.ts');
-  const c = copy.starCopy;
-  check('title and body', c.title === 'Enjoying Maglev?' && c.body === 'A star on GitHub helps other people find it.');
-  check('buttons', c.star === 'Star on GitHub' && c.notNow === 'Not now' && c.never === "Don't ask again");
+  check('star solicitation copy removed from shared app copy', !('starCopy' in copy));
 
   console.log(`\n${passed} passed, ${failed} failed`);
   process.exit(failed ? 1 : 0);

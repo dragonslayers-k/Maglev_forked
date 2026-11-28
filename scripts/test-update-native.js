@@ -48,7 +48,7 @@ for (const id of ['app.accrescent.client']) check(`${id} is accrescent`, src.inc
 for (const id of ['com.aurora.store', 'com.sec.android.app.samsungapps', 'com.amazon.venezia', 'com.xiaomi.market', 'com.huawei.appmarket', 'com.heytap.market', 'com.oppo.market']) check(`${id} is store`, src.includes(`"${id}"`));
 check('store installers map to "store"', /installer in STORES -> "store"/.test(src));
 check('a sideload installer (system installer, browser, shell, Maglev) stays unmanaged', !/"com\.android\.packageinstaller"|"com\.android\.shell"|"com\.maglev"/.test(src) && /else -> null/.test(src));
-check('the bridge type and the copy know accrescent and store', /'accrescent' \| 'store'/.test(read('modules/maglev-engine/src/MaglevEngine.types.ts')) && /Updates come from Accrescent\./.test(read('constants/copy.ts')) && /the app store you installed Maglev from/.test(read('constants/copy.ts')));
+check('the bridge type and the copy know accrescent and store', /'accrescent' \| 'store'/.test(read('modules/maglev-engine/src/MaglevEngine.types.ts')) && /Updates come from Accrescent\./.test(read('constants/copy.ts')) && /the app store you installed Maglev\+ from/.test(read('constants/copy.ts')));
 
 console.log('\n[no updater code when managed]');
 check('download refuses with MANAGED first', /fun download\([^)]*\)[^{]*\{\s*managed\(context\)\?\.let \{ return it \}/.test(upd));
@@ -75,7 +75,7 @@ check('cleanup deletes everything but the pending file', /fun cleanup\(context: 
 console.log('\n[verify before every install]');
 const verify = body(upd, /fun verify\(/);
 check('SHA-256 of the file equals the expected one', /sha256Hex\(file\) != sha256\.lowercase\(\)/.test(verify) && /MessageDigest\.getInstance\("SHA-256"\)/.test(upd));
-check('package name is com.maglev', /PACKAGE = "com\.maglev"/.test(upd) && /archive\.packageName != PACKAGE/.test(verify));
+check('package name is com.maglev.plus', /PACKAGE = "com\.maglev\.plus"/.test(upd) && /archive\.packageName != PACKAGE/.test(verify));
 check('versionCode is greater than the installed one', /versionOf\(archive\) <= versionOf\(installed\)/.test(verify) && /longVersionCode/.test(upd));
 check('signers equal the installed app (SHA-256 sets of apkContentsSigners)', /apkContentsSigners/.test(upd) && /a != own/.test(verify) && /own = signers\(installed\)/.test(verify) && /a\.isEmpty\(\)/.test(verify));
 check('a rotated key is accepted when signingCertificateHistory holds the installed signer (API 28+ guard)', /signingCertificateHistory/.test(upd) && /SDK_INT < Build\.VERSION_CODES\.P\) return emptySet\(\)/.test(upd) && /own\.intersect\(signerHistory\(archive\)\)\.isEmpty\(\)/.test(verify));
@@ -136,14 +136,14 @@ check('the mock never fakes a download or install', /downloadUpdate\(\)[^\n]*\{\
 
 console.log('\n[About and wiring]');
 const layout = read('app/_layout.tsx');
-check('_layout starts the updater once the engine is ready', /startUpdates\(\)/.test(layout));
+check('_layout starts list updates independently and no app self-updater', /startListUpdates/.test(layout) && !/startUpdates\(\)/.test(layout));
 const about = read('app/settings/about.tsx');
 const updates = read('app/settings/updates.tsx');
-check('Updates has the check, mode picker and auto-check toggle; About has Report a bug', /updateCopy\.check\.title/.test(updates) && /updateCopy\.modes\.map/.test(updates) && /updateAutoCheck/.test(updates) && /updateCopy\.report\.title/.test(about) && /buildIssueUrl/.test(about));
+check('settings page is list-only; About retains Report a bug', /SettingsPage title="목록 업데이트"/.test(updates) && /checkListsNow/.test(updates) && !/updateCopy\.check\.title|updateAutoCheck/.test(updates) && about.includes('오류 신고') && /buildIssueUrl/.test(about));
 check('Report a bug sends version, Android release and device', /Platform\.constants/.test(about) && /buildIssueUrl\(\{ version: appVersion, android, device \}\)/.test(about));
 check('the device name goes through deviceLabel (no repeated maker)', /deviceLabel\(c\.Manufacturer, c\.Model\)/.test(about));
-check('managed installs see "Updates come from"', /updateCopy\.managedBy\(managedBy\)/.test(updates));
-check('the card uses the app Sheet and shows release notes as plain text', /<Sheet/.test(updates) && /plainNotes\(notes\)/.test(updates));
+check('managed-install copy remains available but is not shown in the list page', /Updates come from/.test(read('constants/copy.ts')) && !/updateCopy\.managedBy/.test(updates));
+check('app update card and release-note installer UI are removed', !/<Sheet/.test(updates) && !/plainNotes\(notes\)/.test(updates));
 check('no raw hex colours in the updater UI', !/#[0-9a-fA-F]{6}\b/.test(about + updates));
 
 const idx = read('utils/update/index.ts');
@@ -158,7 +158,7 @@ check('notifiedVersion stops a restored update from posting again', /notifiedVer
 check('the ready notice carries the file so Install starts the install', /notify\('ready', next\.info\.version, \{ path: next\.path, sha256: next\.info\.sha256 \}\)/.test(idx));
 check('setPlayerOpen exists and feeds safeToInstall', /export function setPlayerOpen\(open: boolean\)/.test(idx) && (idx.match(/playerOpen, \.\.\.telemetry/g) || []).length === 2);
 check('there is no in-app player screen to call it from (playback goes to another app), so no route calls it', !fs.readdirSync(path.join(root, 'app'), { recursive: true }).some((f) => /player/i.test(String(f))));
-check('checkNow returns whether a check started, and Updates opens the card only for that', /Promise<boolean>/.test(idx) && /checkNow\(\{ manual: true \}\)\.then\(\(started\) =>/.test(updates) && /if \(!started\) return;/.test(updates) && !/pending\.current/.test(updates));
+check('native check state machine remains but app UI no longer invokes it', /Promise<boolean>/.test(idx) && !/checkNow\(\{ manual: true \}\)/.test(updates) && !/startUpdates\(\)/.test(layout));
 
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

@@ -28,7 +28,7 @@ check('a blank tab mounts StartPage', /<StartPage[\s\S]{0,300}privateMode=\{pref
 check('StartPage opens a new tab or the current one', /o\?\.newTab\) openTabChecked\(\{ url \}\)[\s\S]{0,40}else go\(url\)/.test(scr));
 check('RecentHistory is gone', !fs.existsSync(path.join(root, 'components/browser/RecentHistory.tsx')) && !/RecentHistory/.test(scr));
 check('the page menu has the bookmark toggle', /<BookmarkToggle url=\{page\?\.url \?\? tab\?\.url \?\? ''\} title=\{page\?\.title \?\? tab\?\.title \?\? ''\} onDone=\{\(\) => setMenuOpen\(false\)\} \/>/.test(scr));
-check('the toggle sits after Copy page link, inside the page-only rows', /Copy page link[\s\S]*?<BookmarkToggle[\s\S]*?<\/>\s*\) : null\}/.test(scr));
+check('the toggle sits after the Korean copy-link row, inside the page-only rows', /페이지 링크 복사[\s\S]*?<BookmarkToggle[\s\S]*?<\/>\s*\) : null\}/.test(scr));
 
 // ---- media long press ----
 check('TS: onMediaHit is a wrapper prop and a native event', /onMediaHit\?: \(e: BrowserMediaHitEvent\) => void;/.test(wrap) && /onMediaHit\?: \(e: NativeEvent<BrowserMediaHitEvent>\) => void;/.test(wrap) && /onMediaHit=\{onMediaHit \? \(e\) => onMediaHit\(e\.nativeEvent\)/.test(wrap));
@@ -36,6 +36,9 @@ check('TS: the view gets mediaHitScript(\'\') (no nonce is needed)', /mediaHitSc
 check('screen: only a video hit for the active tab opens the media menu', /onMediaHit: \(id, e\) => \{\s*if \(id !== activeIdRef\.current\) return;\s*const hit = parseMediaHit\(e\.json\);\s*if \(hit && hit\.kind === 'video' && hasMenu\(buildMediaMenu\(hit\)\)\) setMediaHit\(hit\);/.test(scr));
 check('screen: MediaMenu is wired to save, stream, tab, copy, share, files and link options', /<MediaMenu[\s\S]*?onSave=[\s\S]*?onStream=\{streamFromHit\}[\s\S]*?onOpenNewTab=[\s\S]*?onCopy=[\s\S]*?onShare=[\s\S]*?Share\.share[\s\S]*?onShowFound=\{\(\) => setTrayOpen\(true\)\}[\s\S]*?onLinkOptions=/.test(scr));
 check('screen: Back closes the media menu', /if \(mediaHit\) \{\s*setMediaHit\(null\);\s*return true;/.test(scr));
+check('screen: page menu offers explicit yt-dlp analysis', /yt-dlp로 페이지 분석/.test(scr) && /pathname: '\/youtube-download'/.test(scr));
+check('screen: DRM/blob detection shows the shared unsupported notices, not a PC-only MPMux popup', /notices\.browser\.drm/.test(scr) && /notices\.browser\.mseCaptureUnavailable/.test(scr) && !/MPMux 사용 안내|Chrome 확장 프로그램|setMpmuxHelp/.test(scr));
+check('screen: protected and browser-buffer streams are explicitly marked unsupported without DRM bypass', /DRM 복호화·보호 우회는 수행하지 않습니다/.test(read('components/browser/StreamSheet.tsx')) && /DRM 보호 영상은 저장할 수 없습니다/.test(copy));
 check('Kotlin: onMediaHit is registered in the view events and as a dispatcher', /"onFindResult", "onMediaHit"\)/.test(mod) && /private val onMediaHit by EventDispatcher/.test(kt));
 check('Kotlin: the long press asks the page for __maglevMediaHit and emits the decoded payload', /evaluateJavascript\("window\.__maglevMediaHit && window\.__maglevMediaHit\(\)"\)/.test(kt) && /JSONTokener\(value\)\.nextValue\(\) as\? String/.test(kt) && /optString\("type"\) != "maglev-media-hit"/.test(kt) && /onMediaHit\(mapOf\("json" to payload\)\)/.test(kt));
 check('Kotlin: text selection is kept (the listener returns false for a non-image, non-link hit)', /askMediaHit\(w\)\s*return false/.test(kt));
@@ -55,17 +58,17 @@ check('Kotlin: algorithmic darkening only when the feature is supported', /WebVi
 check('gradle: androidx.webkit dependency', /androidx\.webkit:webkit:/.test(gradle));
 check('pref: darkPages defaults on and only false turns it off', /darkPages: boolean;/.test(prefs) && /darkPages: true,/.test(prefs) && /darkPages: o\.darkPages !== false,/.test(prefs));
 check('screen: darkPages is the pref and the app being dark', /darkPages=\{prefs\.darkPages && dark\}/.test(scr) && /const \{ colors, dark \} = useTheme\(\)/.test(scr));
-check('settings: a Dark pages row with a caption', /browserTabs\.settings\.darkPages\}\s+subtitle=\{browserTabs\.settings\.darkPagesSubtitle\}/.test(settings) && /darkPages: 'Dark pages'/.test(copy) && /Darken pages that only have a light look, when Maglev is dark\./.test(copy));
-check('settings index: Dark pages with keywords', /"browser-dark-pages",\s*"Dark pages",\s*"browser",\s*"Browser",\s*\[[^\]]*"dark"[^\]]*"night"[^\]]*"pages"[^\]]*"websites"[^\]]*"theme"/.test(index));
+check('settings: a Korean dark-pages row with a caption', /browserTabs\.settings\.darkPages\}\s+subtitle=\{browserTabs\.settings\.darkPagesSubtitle\}/.test(settings) && /darkPages: '웹페이지 어둡게 표시'/.test(copy) && /어두운 테마에서 밝은 웹페이지를 어둡게 표시합니다\./.test(copy));
+check('settings index: Korean dark-pages title with English keywords', /"browser-dark-pages",\s*"웹페이지 어둡게 표시",\s*"browser",\s*"브라우저",\s*\[[^\]]*"dark"[^\]]*"night"[^\]]*"pages"[^\]]*"websites"[^\]]*"theme"/.test(index));
 check('backup restores the pref through normalizeBrowserPrefs', /normalizeBrowserPrefs\(value\)/.test(read('utils/backup/io.ts')));
 
 // ---- clear this site's data ----
 check('Kotlin: clearSiteStorage clears local and session storage and is a view command', /localStorage\.clear\(\);sessionStorage\.clear\(\)/.test(kt) && /AsyncFunction\("clearSiteStorage"/.test(mod));
 check('TS: clearSiteStorage is on the ref', /clearSiteStorage\(\): Promise<void>;/.test(wrap) && /clearSiteStorage: \(\) => nativeRef\.current\?\.clearSiteStorage\(\)/.test(wrap));
 check('screen: cookies of the host and parents, minus Search hosts, then storage, then reload, then the notice', /hostsToWipe\(\[url\], keepHosts\(\)\)[\s\S]*?clearCookies\(targets\)[\s\S]*?clearSiteStorage\(\)[\s\S]*?\.reload\(\)[\s\S]*?clearSiteDone/.test(scr) && /export function keepHosts/.test(read('utils/browser/privateSession.ts')));
-check('screen: the row asks first, in a Dialog, with a danger Clear and Cancel', /<Dialog\s+visible=\{clearSiteOpen\}[\s\S]*?clearSiteTitle[\s\S]*?clearSiteAction\}\s+variant="danger"[\s\S]*?Cancel/.test(scr) && /clearSiteBody\(pageHost\)/.test(scr));
+check('screen: the row asks first, in a Dialog, with a danger Clear and Cancel', /<Dialog\s+visible=\{clearSiteOpen\}[\s\S]*?clearSiteTitle[\s\S]*?clearSiteAction\}\s+variant="danger"[\s\S]*?취소/.test(scr) && /clearSiteBody\(pageHost\)/.test(scr));
 check('screen: the row is for http(s) pages and opens the Dialog, not the action', /\^https\?:\\\/\\\/\/i\.test\(page\?\.url \?\? ''\)[\s\S]{0,200}clearSiteRow[\s\S]{0,160}setClearSiteOpen\(true\)/.test(scr));
-check('copy follows the contract', /clearSiteRow: "Clear this site's data"/.test(copy) && /clearSiteDone: "Cleared this site's data"/.test(copy) && /clearSiteBody: \(host: string\) => `You'll be signed out of \$\{host\}\.`/.test(copy));
+check('copy follows the Korean contract', /clearSiteRow: '이 사이트 데이터 삭제'/.test(copy) && /clearSiteDone: '사이트 데이터를 삭제했습니다\.'/.test(copy) && /clearSiteBody: \(host: string\) => `\$\{host\}에서 로그아웃됩니다\.`/.test(copy));
 
 // ---- motion and accessibility ----
 const swipeTabs = read('components/browser/AddressSwipe.tsx');

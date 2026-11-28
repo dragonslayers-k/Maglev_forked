@@ -521,10 +521,10 @@ export default function TransfersScreen() {
         }
         actions={
           <>
-            <IconButton icon="sort" accessibilityLabel="Sort transfers" onPress={() => setSortOpen(true)} />
+            <IconButton icon="sort" accessibilityLabel="전송 항목 정렬" onPress={() => setSortOpen(true)} />
             <IconButton
               icon="search"
-              accessibilityLabel={searchOpen ? 'Close filter' : 'Filter transfers by name'}
+              accessibilityLabel={searchOpen ? '필터 닫기' : '전송 이름으로 필터'}
               selected={searchOpen}
               color={searchOpen ? colors.accentText : undefined}
               onPress={toggleSearch}
@@ -538,10 +538,10 @@ export default function TransfersScreen() {
           <TextField
             leadingIcon="search"
             clearable
-            clearLabel="Clear filter text"
+            clearLabel="필터 입력 지우기"
             size="lg"
             mono
-            placeholder="Filter by name"
+            placeholder="이름으로 필터"
             value={query}
             onChangeText={setQuery}
             autoFocus
@@ -590,7 +590,7 @@ export default function TransfersScreen() {
           <FilterPills value={filter} counts={counts} onChange={setFilter} />
           {filter === 'done' && finishedCount > 0 && !selectionMode ? (
             <View style={styles.clearRow}>
-              <Button label="Clear finished" icon="trash" variant="secondary" fullWidth onPress={() => setClearOpen(true)} />
+              <Button label="완료 항목 지우기" icon="trash" variant="secondary" fullWidth onPress={() => setClearOpen(true)} />
             </View>
           ) : null}
           {visible.length === 0 && shownDownloads.length === 0 ? (
@@ -602,7 +602,7 @@ export default function TransfersScreen() {
                 primary={
                   filtering
                     ? {
-                        label: 'Clear filters',
+                        label: '필터 초기화',
                         onPress: () => {
                           setFilter('all');
                           setQuery('');

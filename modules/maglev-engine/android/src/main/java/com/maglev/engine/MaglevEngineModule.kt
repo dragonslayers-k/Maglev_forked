@@ -3,6 +3,7 @@ package com.maglev.engine
 import android.Manifest
 import android.app.Activity
 import android.content.Context
+import android.util.Log
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
@@ -26,10 +27,13 @@ import com.maglev.engine.update.AppUpdater
 import com.maglev.engine.update.InstallSource
 import com.maglev.engine.update.UpdateNotices
 import com.maglev.engine.util.Json
+import com.maglev.engine.wireguard.WireGuardController
+import com.maglev.engine.youtube.YoutubeDownload
 import expo.modules.interfaces.permissions.PermissionsResponseListener
 import expo.modules.kotlin.Promise
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
+import expo.modules.kotlin.modules.ModuleDefinitionBuilder
 import kotlinx.coroutines.launch
 import java.io.File
 
@@ -68,7 +72,15 @@ class MaglevEngineModule : Module() {
             val result = try {
                 block()
             } catch (t: Throwable) {
-                Json.failure("INTERNAL", t.message ?: "Engine call failed")
+                val root = generateSequence(t) { it.cause }.lastOrNull() ?: t
+                val rawMessage = root.message ?: root.javaClass.simpleName
+                val safeMessage = rawMessage
+                    .replace(Regex("""https?://[^\s]+""", RegexOption.IGNORE_CASE), "[URL]")
+                    .take(180)
+                // Keep the exception type and root cause visible. Previously an empty Throwable.message
+                // collapsed native/yt-dlp failures into the unhelpful "Engine call failed" text.
+                Log.e("MaglevEngine", "Native IO call failed: ${t.javaClass.name}; cause=${root.javaClass.name}")
+                Json.failure("INTERNAL", "${t.javaClass.simpleName} (cause=${root.javaClass.simpleName}): ${safeMessage}")
             }
             promise.resolve(Json.camelize(result))
         }
@@ -133,10 +145,19 @@ class MaglevEngineModule : Module() {
     )
 
     override fun definition() = ModuleDefinition {
+        defineModulePart0()
+        defineModulePart1()
+        defineModulePart2()
+        defineModulePart3()
+        defineModulePart4()
+        defineModulePart5()
+        defineModulePart6()
+        defineModulePart7()
+    }
+
+    private fun ModuleDefinitionBuilder.defineModulePart0() {
         Name("MaglevEngine")
-
         Events("onTelemetry", "onTorrentCompleted", "onNotificationAction", "onStorageStatus", "onUpdateProgress", "onUpdateResult", "onBlocksChanged")
-
         OnCreate {
             context?.let {
                 EngineHost.attach(it)
@@ -146,34 +167,28 @@ class MaglevEngineModule : Module() {
             }
             EngineHost.emitter = { name, body -> sendEvent(name, body) }
         }
-
         OnDestroy {
             context?.let { AppIconManager.applyPending(it) }
             EngineHost.emitter = null
             pendingPick?.resolve(mapOf("ok" to true, "cancelled" to true))
             pendingPick = null
         }
-
         // "Clear history when I close Maglev": only when the activity is really finishing, not on a rotation (contract 24.9).
         OnActivityDestroys {
             val a = appContext.currentActivity
             if (a != null && a.isFinishing) context?.let { HistoryWipe.wipeIfArmed(it) }
         }
-
         OnActivityEntersForeground {
             AppUpdater.inForeground = true
             EngineHost.onForeground()
         }
-
         // The launcher icon switch waits until the app is out of sight (NATIVE_CONTRACT section 26).
         OnActivityEntersBackground {
             AppUpdater.inForeground = false
             EngineHost.onBackground()
             context?.let { AppIconManager.applyPending(it) }
         }
-
         // region Engine
-
         AsyncFunction("init") { config: Map<String, Any?>, promise: Promise ->
             engine(promise) { EngineHost.init(config) }
         }
@@ -210,6 +225,47 @@ class MaglevEngineModule : Module() {
         }
         AsyncFunction("addDownload") { url: String, options: Map<String, Any?>?, promise: Promise ->
             io(promise) { EngineHost.addDownload(url, options ?: emptyMap()) }
+        }
+        // App-local WireGuard: encrypted profile, HTTP download proxy only; never Android VpnService.
+        AsyncFunction("getAppWireGuardStatus") { promise: Promise ->
+            val c = context
+            if (c == null) promise.resolve(Json.failure("ENGINE_UNAVAILABLE", "Module is not attached"))
+            else io(promise) {
+                mapOf("ok" to true, "enabled" to WireGuardController.isEnabled(c),
+                    "has_profile" to WireGuardController.hasProfile(c), "running" to WireGuardController.isRunning())
+            }
+        }
+    }
+
+    private fun ModuleDefinitionBuilder.defineModulePart1() {
+        AsyncFunction("importAppWireGuardProfile") { uri: String, promise: Promise ->
+            val c = context
+            if (c == null) promise.resolve(Json.failure("ENGINE_UNAVAILABLE", "Module is not attached"))
+            else io(promise) {
+                WireGuardController.importProfile(c, Uri.parse(uri))
+                mapOf("ok" to true, "has_profile" to true)
+            }
+        }
+        AsyncFunction("testAppWireGuardConnection") { promise: Promise ->
+            val c = context
+            if (c == null) promise.resolve(Json.failure("ENGINE_UNAVAILABLE", "Module is not attached"))
+            else io(promise) { WireGuardController.testConnection(c) }
+        }
+        AsyncFunction("setAppWireGuardEnabled") { enabled: Boolean, promise: Promise ->
+            val c = context
+            if (c == null) promise.resolve(Json.failure("ENGINE_UNAVAILABLE", "Module is not attached"))
+            else io(promise) { WireGuardController.setEnabled(c, enabled) }
+        }
+        // YouTube (yt-dlp): extract metadata and add a selected progressive format to the existing transfer engine.
+        AsyncFunction("getYouTubeInfo") { url: String, promise: Promise ->
+            val c = context
+            if (c == null) promise.resolve(Json.failure("ENGINE_UNAVAILABLE", "Module is not attached"))
+            else io(promise) { YoutubeDownload.info(c, url) }
+        }
+        AsyncFunction("addYouTubeDownload") { url: String, formatId: String, playerClient: String, formatKind: String, audioBitrateKbps: Double?, outputContainer: String, promise: Promise ->
+            val c = context
+            if (c == null) promise.resolve(Json.failure("ENGINE_UNAVAILABLE", "Module is not attached"))
+            else io(promise) { YoutubeDownload.add(c, url, formatId, playerClient, formatKind, audioBitrateKbps, outputContainer) }
         }
         AsyncFunction("pauseDownload") { id: String, promise: Promise ->
             engine(promise) { EngineHost.pauseDownload(id) }
@@ -262,8 +318,15 @@ class MaglevEngineModule : Module() {
         AsyncFunction("pause") { id: String, promise: Promise ->
             engine(promise) { EngineHost.call { NativeCore.nativePause(id) }.also { EngineHost.pollNow() } }
         }
+    }
+
+    private fun ModuleDefinitionBuilder.defineModulePart2() {
         AsyncFunction("resume") { id: String, promise: Promise ->
-            engine(promise) { EngineHost.call { NativeCore.nativeResume(id) }.also { EngineHost.pollNow() } }
+            engine(promise) {
+                if (context?.let { WireGuardController.isEnabled(it) } == true) Json.failure(
+                    "APP_WIREGUARD_TORRENT_UNSUPPORTED", "앱 내부 WireGuard가 켜져 있어 토렌트 재개를 차단했습니다.")
+                else EngineHost.call { NativeCore.nativeResume(id) }.also { EngineHost.pollNow() }
+            }
         }
         AsyncFunction("resumeAnyway") { id: String, promise: Promise ->
             engine(promise) { EngineHost.resumeAnyway(id) }
@@ -338,6 +401,9 @@ class MaglevEngineModule : Module() {
             io(promise) { EngineHost.moveStorage(id, target) }
         }
         // Section 18. Fixing missing files can mean a recheck, so these stay off the serialized thread.
+    }
+
+    private fun ModuleDefinitionBuilder.defineModulePart3() {
         AsyncFunction("setHealth") { id: String, tag: String, promise: Promise ->
             io(promise) { EngineHost.setHealth(id, tag) }
         }
@@ -356,11 +422,8 @@ class MaglevEngineModule : Module() {
         AsyncFunction("version") { promise: Promise ->
             native(promise) { NativeCore.nativeVersion() }
         }
-
         // endregion
-
         // region Scheduler and feeds (contract section 11)
-
         AsyncFunction("setSchedule") { cfg: Map<String, Any?>, promise: Promise ->
             engine(promise) { EngineHost.setSchedule(cfg) }
         }
@@ -379,11 +442,8 @@ class MaglevEngineModule : Module() {
         AsyncFunction("runFeedCheckNow") { promise: Promise ->
             io(promise) { EngineHost.runFeedCheckNow() }
         }
-
         // endregion
-
         // region Storage
-
         AsyncFunction("pickDownloadFolder") { promise: Promise ->
             startFolderPicker(promise, saveAsDefault = true)
         }
@@ -408,15 +468,11 @@ class MaglevEngineModule : Module() {
         AsyncFunction("openDownloadFolder") { id: String, promise: Promise ->
             engine(promise) { EngineHost.openDownloadFolder(id) }
         }
-
         OnActivityResult { _, payload ->
             if (payload.requestCode == REQ_PICK_FOLDER) handlePickResult(payload.resultCode, payload.data)
         }
-
         // endregion
-
         // region Permissions
-
         AsyncFunction("getPermissionStatus") { promise: Promise ->
             val c = context
             promise.resolve(
@@ -440,6 +496,9 @@ class MaglevEngineModule : Module() {
                 else Json.failure("INVALID_ARGUMENT", err),
             )
         }
+    }
+
+    private fun ModuleDefinitionBuilder.defineModulePart4() {
         AsyncFunction("openBatterySettings") { promise: Promise ->
             val c = context
             val err = if (c == null) "Module is not attached" else PermissionHelper.openBatterySettings(c)
@@ -459,17 +518,13 @@ class MaglevEngineModule : Module() {
             // Only API 28 and below use the runtime permission. Newer versions answer "n/a" in the status.
             requestRuntimePermission(promise, Manifest.permission.WRITE_EXTERNAL_STORAGE, 0, false, maxSdk = Build.VERSION_CODES.P)
         }
-
         // endregion
-
         // region Site checks (docs/SEARCH_CONTRACT.md section 8)
-
         // Cookies the shared WebView jar holds for a URL ("a=1; b=2"), or "" when none.
         // CookieManager.getCookie includes HttpOnly cookies such as cf_clearance.
         AsyncFunction("getCookies") { url: String, promise: Promise ->
             promise.resolve(runCatching { android.webkit.CookieManager.getInstance().getCookie(url) }.getOrNull() ?: "")
         }
-
         // Expires every cookie the jar returns for each URL (hosts the user passed a check on, or a private session
         // visited). Returns how many names were expired.
         // CookieManager.setCookie(url, value): "Any existing cookie with the same host, path and name will be replaced";
@@ -504,11 +559,8 @@ class MaglevEngineModule : Module() {
             }
             promise.resolve(removed)
         }
-
         // endregion
-
         // region Subtitles (docs/NATIVE_CONTRACT.md section 36.6)
-
         // OpenSubtitles 64-bit hash of a finished video. Errors: FILE_TOO_SMALL, NOT_FOUND, IO.
         AsyncFunction("subtitleHash") { pathOrUri: String, promise: Promise ->
             subtitles(promise) {
@@ -516,8 +568,10 @@ class MaglevEngineModule : Module() {
                 linkedMapOf("hash" to hash, "bytes" to bytes.toDouble())
             }
         }
-
         // Writes a subtitle next to the video. Errors: NAME_TAKEN, VERIFY_FAILED, CANT_WRITE, NO_SPACE.
+    }
+
+    private fun ModuleDefinitionBuilder.defineModulePart5() {
         AsyncFunction("saveSubtitle") { videoPathOrUri: String, fileName: String, base64: String, replace: Boolean, promise: Promise ->
             subtitles(promise) {
                 val data = decodeBase64(base64)
@@ -525,7 +579,6 @@ class MaglevEngineModule : Module() {
                 linkedMapOf("path" to path)
             }
         }
-
         // Subtitle members of a zip, in memory. Error: ARCHIVE_UNSAFE.
         AsyncFunction("unzipSubtitles") { base64: String, promise: Promise ->
             subtitles(promise) {
@@ -539,11 +592,8 @@ class MaglevEngineModule : Module() {
                 }
             }
         }
-
         // endregion
-
         // region Browser (docs/NATIVE_CONTRACT.md section 24)
-
         // `options.conditional` sends If-None-Match / If-Modified-Since (section 31.2). The result carries `changed`.
         AsyncFunction("updateBlocklist") { urls: List<String>, options: Map<String, Any?>, promise: Promise ->
             val conditional = options["conditional"] == true
@@ -572,7 +622,6 @@ class MaglevEngineModule : Module() {
                 BrowserData.clear(c, null, options["cookies"] == true, options["cache"] == true) { promise.resolve(mapOf("ok" to true)) }
             }
         }
-
         // The "Clear history when I close Maglev" flag (contract 24.9). JS sends it at start and on every change.
         AsyncFunction("setHistoryWipeOnClose") { enabled: Boolean, promise: Promise ->
             val c = context
@@ -583,13 +632,14 @@ class MaglevEngineModule : Module() {
                 promise.resolve(mapOf("ok" to true))
             }
         }
-
         // How many times the history was emptied because Maglev closed (section 30). JS compares it with the last count it saw.
         AsyncFunction("getHistoryWipeCount") { promise: Promise ->
             val c = context
             promise.resolve(if (c == null) 0 else HistoryWipe.wipeCount(c))
         }
+    }
 
+    private fun ModuleDefinitionBuilder.defineModulePart6() {
         View(MaglevBrowserView::class) {
             Events("onPage", "onFound", "onBlockedCount", "onDownloadRequest", "onMagnet", "onRefused", "onCrashed", "onPageNote",
                 "onNewWindow", "onPopupRequest", "onPopupBlocked", "onLongPress", "onFindResult", "onMediaHit")
@@ -630,11 +680,8 @@ class MaglevEngineModule : Module() {
             OnViewDidUpdateProps { view: MaglevBrowserView -> view.applyProps() }
             OnViewDestroys { view: MaglevBrowserView -> view.destroyBrowser() }
         }
-
         // endregion
-
         // region In-app updates (docs/NATIVE_CONTRACT.md section 27)
-
         AsyncFunction("getInstallSource") { promise: Promise ->
             val c = context
             if (c == null) {
@@ -647,6 +694,9 @@ class MaglevEngineModule : Module() {
             }
         }
         // Blocks for the whole download, so it stays off the serialized engine thread. A second call joins the first.
+    }
+
+    private fun ModuleDefinitionBuilder.defineModulePart7() {
         AsyncFunction("downloadUpdate") { url: String, sha256: String, size: Double, requireVpn: Boolean, promise: Promise ->
             val c = context
             if (c == null) {
@@ -697,11 +747,8 @@ class MaglevEngineModule : Module() {
             context?.let { UpdateNotices.clear(it, kind) }
             promise.resolve(mapOf("ok" to true))
         }
-
         // endregion
-
         // region Governance
-
         AsyncFunction("setGovernance") { rules: Map<String, Any?>, promise: Promise ->
             engine(promise) {
                 @Suppress("UNCHECKED_CAST")
@@ -729,7 +776,6 @@ class MaglevEngineModule : Module() {
                 )
             }
         }
-
         // endregion
     }
 

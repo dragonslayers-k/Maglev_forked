@@ -19,7 +19,7 @@ export interface BrowserRouter {
 }
 
 /** True when Browse is in the tab bar right now. */
-const browseTabShown = (): boolean => visibleTabs(getTabPrefs(), { assistantEnabled: false }).includes('browse');
+const browseTabShown = (): boolean => visibleTabs(getTabPrefs()).includes('browse');
 
 let openCounter = 0;
 

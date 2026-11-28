@@ -47,7 +47,7 @@ class StorageGuardTest {
     }
 
     @Test fun notificationCopy() {
-        assertEquals("Paused: phone storage is almost full", StorageGuard.PAUSED_TITLE)
-        assertEquals("Free up space", StorageGuard.PAUSED_TEXT)
+        assertEquals("일시 정지됨: 휴대전화 저장 공간이 거의 없습니다", StorageGuard.PAUSED_TITLE)
+        assertEquals("공간 확보", StorageGuard.PAUSED_TEXT)
     }
 }

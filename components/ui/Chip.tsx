@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { ThemeColors, alpha, radius, spacing, type, touch } from '../../constants/theme';
+import { koUiText } from '../../constants/korean';
 import { PressableScale } from './PressableScale';
 
 export interface ChipProps {
@@ -26,7 +27,7 @@ export function Chip({ label, selected = false, onPress, count, disabled = false
       disabled={disabled}
       testID={testID}
       accessibilityRole={role}
-      accessibilityLabel={hasCount ? `${label}, ${count}` : label}
+      accessibilityLabel={hasCount ? `${koUiText(label)}, ${count}` : koUiText(label)}
       accessibilityState={role === 'radio' ? { checked: selected, disabled } : { selected, disabled }}
       style={(pressed) => [
         styles.chip,
@@ -35,7 +36,7 @@ export function Chip({ label, selected = false, onPress, count, disabled = false
       ]}
     >
       <Text style={[styles.label, { color: selected ? colors.accentText : colors.text }]}>
-        {label}
+        {koUiText(label)}
       </Text>
       {hasCount ? (
         <View style={[styles.count, selected && styles.countSelected]}>

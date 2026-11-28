@@ -8,14 +8,14 @@ import { PressableScale, SegmentedControl, Sheet } from '../ui';
 import { DensityPreview, type PreviewKind } from './DensityPreview';
 
 const KINDS = [
-  { value: 'link', label: 'Link' },
-  { value: 'torrent', label: 'Torrent' },
+  { value: 'link', label: '링크' },
+  { value: 'torrent', label: '토렌트' },
 ] as const;
 
 // NATIVE_CONTRACT 41.4: the two names, their icons and their one line each.
 const OPTIONS: { value: TelemetryDensity; name: string; text: string; spoken: string; icon: PixelIconName }[] = [
-  { value: 'COMPACT', name: 'Compact', text: 'Speed and time left', spoken: 'Compact, speed and time left', icon: 'card-text' },
-  { value: 'VERBOSE', name: 'Detailed', text: 'Adds amounts, connections and timing', spoken: 'Detailed, adds amounts, connections and timing', icon: 'grid-3x2' },
+  { value: 'COMPACT', name: '간결하게', text: '속도 및 남은 시간', spoken: '간결하게, 속도 및 남은 시간', icon: 'card-text' },
+  { value: 'VERBOSE', name: '자세히', text: '용량·연결·시간 정보 포함', spoken: '자세히, 용량·연결·시간 정보 포함', icon: 'grid-3x2' },
 ];
 
 export interface DensitySheetProps {
@@ -39,17 +39,17 @@ export function DensitySheet({ visible, onClose, value, onChange }: DensitySheet
       visible={visible}
       onClose={onClose}
       title="Download page"
-      subtitle="How much you see when you tap a download in Transfers. The buttons and files are the same in both."
+      subtitle="전송 항목을 눌렀을 때 표시할 정보량을 선택합니다. 두 방식 모두 버튼과 파일은 동일합니다."
       testID="density-sheet"
     >
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.content}>
         <View style={s.previewRow}>
-          <Text style={s.previewLabel}>Preview</Text>
+          <Text style={s.previewLabel}>미리보기</Text>
           <View style={s.kindSwitch}>
-            <SegmentedControl<PreviewKind> options={KINDS} value={kind} onChange={setKind} accessibilityLabel="Preview" />
+            <SegmentedControl<PreviewKind> options={KINDS} value={kind} onChange={setKind} accessibilityLabel="미리보기" />
           </View>
         </View>
-        <View style={s.cards} accessibilityRole="radiogroup" accessibilityLabel="Download page">
+        <View style={s.cards} accessibilityRole="radiogroup" accessibilityLabel="다운로드 화면">
           {OPTIONS.map((o) => {
             const selected = value === o.value;
             return (
@@ -59,7 +59,7 @@ export function DensitySheet({ visible, onClose, value, onChange }: DensitySheet
                 haptic={selected ? false : 'select'}
                 onPress={() => !selected && onChange(o.value)}
                 accessibilityRole="radio"
-                accessibilityLabel={selected ? `${o.spoken}, selected` : o.spoken}
+                accessibilityLabel={selected ? `${o.spoken}, 선택됨` : o.spoken}
                 accessibilityState={{ selected, checked: selected }}
                 style={[s.card, { borderColor: selected ? colors.accent : colors.border }]}
                 containerStyle={s.cardOuter}
@@ -84,7 +84,7 @@ export function DensitySheet({ visible, onClose, value, onChange }: DensitySheet
           accessibilityElementsHidden={kind === 'link'}
           importantForAccessibility={kind === 'link' ? 'no-hide-descendants' : 'auto'}
         >
-          Detailed torrents also show upload and ratio.
+          자세히 보기에서는 업로드 속도와 공유 비율도 표시합니다.
         </Text>
       </ScrollView>
     </Sheet>

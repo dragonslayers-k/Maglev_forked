@@ -33,7 +33,7 @@ function availableParts(b: Backup): BackupPart[] {
       case 'schedule':
         return p.hasSchedule;
       case 'assistant':
-        return p.hasAssistant;
+        return false; // legacy Assistant preferences remain in backup format but are no longer offered
       case 'torrents':
         return p.torrents > 0;
       case 'downloads':

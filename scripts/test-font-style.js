@@ -105,7 +105,7 @@ async function main() {
 
   // ---- the wordmark stays Silkscreen: only the header wordmark uses type.brand
   const brandUsers = walk('app').concat(walk('components')).filter((f) => /type\.brand|fontFamily\.brand|family\.brand/.test(read(f)));
-  // 0.15: the GitHub star ticket in About is a second approved user of the Silkscreen brand face (ticket stamp text).
+  // About's plus uses the heading token, not the brand wordmark face.
   // 0.28: the NEW | version badge on the new-feature highlight is a third approved user (Silkscreen plate).
   check('only HeaderBar and the star ticket use the brand (wordmark) font (components/HeaderBar.tsx, components/highlight/Station.tsx, components/settings/StarTicket.tsx)', brandUsers.sort().join() === 'components/HeaderBar.tsx,components/highlight/Station.tsx,components/settings/StarTicket.tsx', brandUsers.join(', '));
   check('no file hardcodes the Silkscreen name outside constants and _layout', walk('app').concat(walk('components'), walk('context'), walk('utils')).every((f) => !/'Silkscreen'/.test(read(f))));
@@ -135,8 +135,8 @@ async function main() {
 
   // ---- copy (same voice rules as scripts/test-copy-voice.js, which also lints these strings)
   const c = copy.fontStyleCopy;
-  check('copy: section label is Font', c.label === 'Font');
-  check('copy: options are Clean, Retro, Mono', JSON.stringify(c.options.map((o) => o.title)) === JSON.stringify(['Clean', 'Retro', 'Mono']));
+  check('copy: section label is Korean', c.label === '글꼴');
+  check('copy: options are Korean Clean, Retro, Mono labels', JSON.stringify(c.options.map((o) => o.title)) === JSON.stringify(['깔끔하게', '레트로', '고정폭']));
   check('copy: one option per style', c.options.map((o) => o.value).join() === FS.FONT_STYLES.join());
   const bad = [];
   for (const o of c.options) {
@@ -146,7 +146,7 @@ async function main() {
     if (/[!…]|\.\.\./.test(o.description)) bad.push(`${o.value}: ! or ellipsis`);
   }
   check('copy: descriptions are short sentences', bad.length === 0, bad.join('; '));
-  check('copy: preview sample is a filename and a size', /^Big Buck Bunny 1080p/.test(c.sampleName) && /\d+(\.\d)? MB$/.test(c.sampleSize));
+  check('copy: preview sample is a filename and a size', /^빅 벅 버니 1080p/.test(c.sampleName) && /\d+(\.\d)? MB$/.test(c.sampleSize));
 
   // ---- AGENTS.md
   const agents = read('AGENTS.md');

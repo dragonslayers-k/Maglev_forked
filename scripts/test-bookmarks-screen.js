@@ -84,15 +84,15 @@ const copy = read('constants/bookmarkCopy.ts');
 for (const k of ['screenTitle', 'menuRow', 'searchPlaceholder', 'noResults', 'seeAllBookmarksLabel', 'moreLabel']) check(`bookmarkCopy.${k}`, new RegExp(`\\b${k}\\b`).test(copy));
 
 // 6. Move to top, Settings row, saved-state icon.
-check('copy has Move to top', /moveToTop:\s*'Move to top'/.test(copy));
+check('copy has the Korean Move to top label', /moveToTop:\s*'맨 위로 이동'/.test(copy));
 check('Bookmarks screen offers Move to top, hidden for the first', /M\.moveToTop/.test(screen) && /moveBookmark\(\w+\.id, 0\)/.test(screen) && /bookmarks\[0\]\?\.id !== /.test(screen));
 check('Start page offers Move to top, hidden for the first', /M\.moveToTop/.test(start) && /moveBookmark\(target\.id, 0\)/.test(start) && /bookmarks\[0\]\?\.id !== /.test(start));
 const sb = read('app/settings/browser.tsx');
 check('Settings has a Bookmarks row to /browser-bookmarks', /title=\{bookmarkCopy\.screenTitle\}[\s\S]{0,120}router\.push\('\/browser-bookmarks'\)/.test(sb));
 const idx = read('utils/settingsIndex.ts');
-check('settings index has the Bookmarks row', /"browser-open-bookmarks",\s*"Bookmarks"/.test(idx));
+check('settings index has the Korean Bookmarks row', /"browser-open-bookmarks",\s*"북마크"/.test(idx));
 check('address bar shows a Bookmarked indicator that opens the sheet', /findBookmark\(bookmarks, page\.url\)/.test(browser) && /accessibilityLabel=\{bookmarkCopy\.savedIndicator\}/.test(browser) && /<BookmarkSheet/.test(browser));
-check('indicator copy', /savedIndicator:\s*'Bookmarked'/.test(copy));
+check('Korean indicator copy', /savedIndicator:\s*'북마크 저장됨'/.test(copy));
 
 if (failed) { console.error(`\n${failed} check(s) failed`); process.exit(1); }
 console.log('\nbookmarks screen: all checks passed');

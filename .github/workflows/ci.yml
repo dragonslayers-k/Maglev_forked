@@ -4,7 +4,7 @@ name: CI
 # main requires these checks on the pull request itself; a run started by hand on the same commit does not count.
 on:
   # Flow: feature branches → PR into dev → dev (the main CI run, where features converge) → PR dev → main
-  # (the release build: all three ABIs, strict signing, APK set) → main reuses that PR's APKs (job `reuse`),
+  # (the release build: ARM64 APK, strict signing, optional APK set) → main reuses that PR's APKs (job `reuse`),
   # and release-apk.yml publishes them. Main only builds if the merge changed anything the PR didn't build.
   push:
     branches: [main, dev]
@@ -16,13 +16,15 @@ permissions:
   contents: read
 
 concurrency:
-  group: ci-${{ github.ref }}
+  # v3 separates the final validation from stale pending runs left by earlier recovery attempts.
+  group: ci-${{ github.ref }}-v3
   cancel-in-progress: true
 
 jobs:
   rust-test:
     name: Rust tests (no JNI feature)
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -38,6 +40,20 @@ jobs:
         with:
           workspaces: native/maglev-core
 
+      - name: Setup Go for WireGuard core tests
+        uses: actions/setup-go@v6
+        with:
+          go-version: '1.26.10'
+          cache-dependency-path: native/wireguard/go.sum
+
+      - name: Test app-local WireGuard userspace core
+        working-directory: native/wireguard
+        run: go test -count=1 .
+
+      - name: Vet app-local WireGuard userspace core
+        working-directory: native/wireguard
+        run: go vet .
+
       - name: Run tests
         run: cargo test --manifest-path native/maglev-core/Cargo.toml --no-default-features
 
@@ -46,11 +62,12 @@ jobs:
 
       - name: Clippy (non-blocking)
         continue-on-error: true
-        run: cargo clippy --manifest-path native/maglev-core/Cargo.toml --no-default-features -- -D warnings
+        run: cargo clippy --manifest-path native/maglev-core/Cargo.toml --no-default-features
 
   js:
     name: JS checks (typecheck, tests, assistant eval)
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     # Runs in parallel with the APK build (which takes far longer); a failure here still fails the run.
     steps:
       - name: Checkout repository
@@ -117,7 +134,7 @@ jobs:
           echo "Pull request CI run: $RUN"
           rm -rf pr-apks pr-set
           gh run download "$RUN" --name apks --dir pr-apks || { echo "Not reusing: run $RUN has no apks artifact"; exit 0; }
-          for abi in universal arm64-v8a armeabi-v7a x86_64; do
+          for abi in arm64-v8a; do
             test -f "pr-apks/app-${abi}-release.apk" || { echo "Not reusing: app-${abi}-release.apk missing (run $RUN was not a release build)"; exit 0; }
           done
           gh run download "$RUN" --name accrescent-apks --dir pr-set || echo "Run $RUN has no APK set (no signing secrets); none is reused"
@@ -148,21 +165,20 @@ jobs:
     if: ${{ !cancelled() && needs.reuse.outputs.found != 'true' }}
     uses: ./.github/workflows/_rust-android.yml
     with:
-      # Release builds (main, and pull requests into main) build all three ABIs; everything else builds arm64 only.
-      abis: ${{ (github.ref == 'refs/heads/main' || github.base_ref == 'main') && 'arm64-v8a,armeabi-v7a,x86_64' || 'arm64-v8a' }}
+      # Build the user-facing ARM64 APK only; other ABIs are opt-in builds.
+      abis: 'arm64-v8a'
 
   apk:
     name: Build APK
-    needs: rust-android
-    # Explicit: rust-android's own `needs` (reuse) is skipped off main, which would otherwise skip this job too.
-    if: ${{ !cancelled() && needs.rust-android.result == 'success' }}
+    # Never publish an APK from a commit whose JS, Rust, or contract checks failed.
+    needs: [rust-android, rust-test, js, contracts]
+    if: ${{ !cancelled() && needs.rust-android.result == 'success' && needs.rust-test.result == 'success' && needs.js.result == 'success' && needs.contracts.result == 'success' }}
     runs-on: ubuntu-latest
     env:
       ANDROID_HOME: /usr/local/lib/android/sdk
       GRADLE_OPTS: "-Xmx4g -Dorg.gradle.jvmargs=-Xmx4g -Dorg.gradle.daemon=false -Dorg.gradle.caching=true"
-      # Everyday CI builds arm64 only (plugins/withAbiSplits.js). main and pull requests into main build all three;
-      # main reuses a pull request's set when nothing changed (job reuse), and release-apk.yml reuses main's `apks` artifact (app-{universal,arm64-v8a,armeabi-v7a,x86_64}-release.apk).
-      MAGLEV_ABIS: ${{ (github.ref == 'refs/heads/main' || github.base_ref == 'main') && 'arm64-v8a,armeabi-v7a,x86_64' || 'arm64-v8a' }}
+      # Build and publish only the user-facing ARM64 APK by default. Other ABIs can be built explicitly.
+      MAGLEV_ABIS: 'arm64-v8a'
 
     steps:
       - name: Checkout repository
@@ -206,6 +222,31 @@ jobs:
           pattern: jniLibs-*
           merge-multiple: true
           path: modules/maglev-engine/android/src/main/jniLibs
+
+      - name: Setup Go for Android WireGuard native library
+        uses: actions/setup-go@v6
+        with:
+          go-version: '1.26.10'
+          cache-dependency-path: native/wireguard/go.sum
+
+      - name: Build app-local WireGuard userspace proxy (no system VPN)
+        shell: bash
+        run: |
+          set -euo pipefail
+          NDK="$ANDROID_HOME/ndk/27.1.12297006"
+          HOST="$NDK/toolchains/llvm/prebuilt/linux-x86_64/bin"
+          test -x "$HOST/aarch64-linux-android26-clang"
+          mkdir -p modules/maglev-engine/android/src/main/jniLibs/arm64-v8a
+          (
+            cd native/wireguard
+            GOOS=android GOARCH=arm64 CGO_ENABLED=1 CC="$HOST/aarch64-linux-android26-clang" \
+              go build -tags jni -buildmode=c-shared -trimpath -buildvcs=false \
+              -ldflags="-s -w -linkmode=external -extldflags=-Wl,-z,max-page-size=16384" \
+              -o "$RUNNER_TEMP/libmorphewireguard.so" ./cmd/jni
+          )
+          cp "$RUNNER_TEMP/libmorphewireguard.so" modules/maglev-engine/android/src/main/jniLibs/arm64-v8a/
+          test -s modules/maglev-engine/android/src/main/jniLibs/arm64-v8a/libmorphewireguard.so
+          "$HOST/llvm-readelf" -lW modules/maglev-engine/android/src/main/jniLibs/arm64-v8a/libmorphewireguard.so | awk '$1 == "LOAD" { if ($NF != "0x4000") bad=1; found=1 } END { if (!found || bad) exit 1 }'
 
       - name: Verify jniLibs layout
         run: |
@@ -280,7 +321,7 @@ jobs:
       - name: List APKs
         run: ls -lh android/app/build/outputs/apk/release/*.apk
 
-      - name: Verify versionCodes (base*10 + ABI digit; universal is base*10)
+      - name: Verify versionCodes (base*10 + ABI digit)
         shell: bash
         run: |
           AAPT2=$(ls -d "$ANDROID_HOME"/build-tools/*/aapt2 | sort -V | tail -n 1)
@@ -293,14 +334,6 @@ jobs:
             echo "$NAME: versionCode $GOT (want $WANT)"
             [ "$GOT" = "$WANT" ] || { echo "::error::$NAME has versionCode $GOT, expected $WANT"; exit 1; }
           done
-
-      - name: Upload APKs
-        uses: actions/upload-artifact@v7
-        with:
-          name: apks
-          path: android/app/build/outputs/apk/release/*.apk
-          if-no-files-found: error
-          retention-days: 7
 
       - name: Build signed APK set for Accrescent (main, pull requests into main and tags, when signing secrets exist)
         if: env.MAGLEV_KEYSTORE_PATH != '' && (github.ref == 'refs/heads/main' || github.base_ref == 'main' || startsWith(github.ref, 'refs/tags/'))
@@ -335,6 +368,21 @@ jobs:
             --ks-pass="file:$RUNNER_TEMP/ks.pass" --key-pass="file:$RUNNER_TEMP/key.pass"
           ls -lh apkset/maglev.apks
 
+      # After the upload, so a test failure never costs us the APK. AGP 9 creates host tests for debug only.
+      - name: Kotlin unit tests (schedule, feed rules, restart policy)
+        run: |
+          cd android
+          ./gradlew :maglev-engine:testDebugUnitTest --stacktrace
+
+      # Upload only after every validation in this APK job passes; no artifact from a failing build.
+      - name: Upload APKs
+        uses: actions/upload-artifact@v7
+        with:
+          name: apks
+          path: android/app/build/outputs/apk/release/*.apk
+          if-no-files-found: error
+          retention-days: 7
+
       - name: Upload APK set
         if: env.MAGLEV_KEYSTORE_PATH != '' && (github.ref == 'refs/heads/main' || github.base_ref == 'main' || startsWith(github.ref, 'refs/tags/'))
         uses: actions/upload-artifact@v7
@@ -344,15 +392,10 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-      # After the upload, so a test failure never costs us the APK. AGP 9 creates host tests for debug only.
-      - name: Kotlin unit tests (schedule, feed rules, restart policy)
-        run: |
-          cd android
-          ./gradlew :maglev-engine:testDebugUnitTest --stacktrace
-
   contracts:
     name: Contract tests
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7

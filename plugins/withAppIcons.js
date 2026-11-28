@@ -20,7 +20,7 @@ const ICON_IDS = [
   'm-bare-lime', 'm-bare-teal', 'm-bare-mono', 'nose', 'dash', 'crt', 'amber',
 ];
 const DEFAULT_ICON = 'teal';
-const PACKAGE = 'com.maglev';
+const PACKAGE = 'com.maglev.plus';
 const RES_PREFIX = 'ic_launcher_alt_';
 const RES_DIRS = ['drawable', 'mipmap-anydpi', 'mipmap-anydpi-v26', 'values'];
 
@@ -88,6 +88,30 @@ function withAppIcons(config) {
         for (const file of fs.readdirSync(src)) {
           if (file.startsWith(RES_PREFIX)) fs.copyFileSync(path.join(src, file), path.join(res, dir, file));
         }
+      }
+      // Maglev+ identity badge: keep the upstream train mark intact and add a distinct top-right plus.
+      const badgeCircle = 'M84 11 C90.075 11 95 15.925 95 22 C95 28.075 90.075 33 84 33 C77.925 33 73 28.075 73 22 C73 15.925 77.925 11 84 11 Z';
+      const badgePlus = 'M82 16 H86 V20 H90 V24 H86 V28 H82 V24 H78 V20 H82 Z';
+      const colorBadge = [
+        `    <path android:fillColor="#FFB000" android:pathData="${badgeCircle}" />\n`,
+        `    <path android:fillColor="#05070A" android:pathData="${badgePlus}" />\n`,
+      ].join('');
+      const monoBadge = `    <path android:fillColor="#FFFFFFFF" android:pathData="${badgePlus}" />\n`;
+      const appendVectorPaths = (file, paths) => {
+        let xml = fs.readFileSync(file, 'utf8');
+        const missing = paths.filter((p) => !xml.includes(p));
+        if (!missing.length || !xml.includes('</vector>')) return;
+        fs.writeFileSync(file, xml.replace('</vector>', missing.join('') + '</vector>'));
+      };
+      for (const file of fs.readdirSync(path.join(res, 'drawable'))) {
+        if (!file.startsWith(RES_PREFIX) || !file.endsWith('.xml')) continue;
+        const full = path.join(res, 'drawable', file);
+        if (file.endsWith('_fg.xml')) appendVectorPaths(full, [badgeCircle, badgePlus].map((d, i) =>
+          `    <path android:fillColor="${i === 0 ? '#FFB000' : '#05070A'}" android:pathData="${d}" />\n`));
+        else if (/^ic_launcher_alt_mono_(dash|keycap|m|nose|train)\.xml$/.test(file)) appendVectorPaths(full, [monoBadge.trim()]);
+      }
+      for (const file of fs.readdirSync(path.join(res, 'mipmap-anydpi'))) {
+        if (file.startsWith(RES_PREFIX) && file.endsWith('.xml')) appendVectorPaths(path.join(res, 'mipmap-anydpi', file), colorBadge.trim().split('\n'));
       }
       // Every icon needs its two mipmaps, and every drawable or colour they name must have arrived.
       const have = (dir, file) => fs.existsSync(path.join(res, dir, file));

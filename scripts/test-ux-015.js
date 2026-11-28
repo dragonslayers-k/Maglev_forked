@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// 0.15 UX: empty Transfers, GitHub star ticket in About, Settings "More below" hint, hold-and-drag tabs.
+// 0.15 UX: empty Transfers, About integration ticket, Settings "More below" hint, hold-and-drag tabs.
 // Pure helpers run from TypeScript source (Node 22.18+); the rest are static wiring checks.
 process.removeAllListeners('warning');
 const fs = require('fs');
@@ -17,8 +17,8 @@ const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 const emptyState = read('components/transfers/TeachingEmptyState.tsx');
 const copy = read('constants/copy.ts');
 const index = read('app/(tabs)/index.tsx');
-check('empty title is "Nothing downloading"', /title: 'Nothing downloading'/.test(copy));
-check('empty body names a link, a .torrent file and finding something', /Add a link or a \.torrent file, or find something\./.test(copy));
+check('empty title is Korean', /title: '다운로드 중인 항목이 없습니다'/.test(copy));
+check('Korean empty body names a link, a .torrent file and search', /링크나 \.torrent 파일을 추가하거나 검색해 보세요\./.test(copy));
 check('empty state has a primary "Add a link" button', /label="Add a link"[^>]*icon="link"|icon="link"[^>]*label="Add a link"/.test(emptyState) && /fullWidth/.test(emptyState));
 check('empty state has "Open a .torrent file"', /label="Open a \.torrent file"/.test(emptyState));
 check('empty state has no "Paste link" or "Copy a link first"', !/Paste link|Copy a link first/.test(emptyState + index.slice(index.indexOf('<TeachingEmptyState'), index.indexOf('<TeachingEmptyState') + 400)));
@@ -32,18 +32,18 @@ check('empty state uses no raw hex', !/#[0-9a-fA-F]{3,8}\b/.test(emptyState));
 // 2. Star ticket and About
 const ticket = read('components/settings/StarTicket.tsx');
 const about = read('app/settings/about.tsx');
-check('REPO_URL is the Maglev repo', /export const REPO_URL = 'https:\/\/github\.com\/Kaos599\/Maglev'/.test(ticket));
-for (const t of ['FREE · NO ADS · OPEN SOURCE', 'Like Maglev? Give it a star', 'It takes a second on GitHub and helps others find the app.', 'STAR', 'Opens Maglev on GitHub']) {
+check('REPO_URL is the Maglev+ project repo', /export const REPO_URL = 'https:\/\/github\.com\/dragonslayers-k\/Maglev_forked'/.test(ticket));
+for (const t of ['MAGLEV+ · INTEGRATION STATUS', '기능 통합·검증 현황', '참고 프로젝트별 반영 범위와 미완성 항목을 확인합니다.', 'INFO', '통합 구성 문서를 엽니다']) {
   check(`ticket copy: ${t}`, ticket.includes(t));
 }
-check('ticket label for screen readers', ticket.includes('Like Maglev? Give it a star on GitHub') && /accessibilityRole="button"/.test(ticket));
-check('ticket opens the repo and is one PressableScale', /Linking\.openURL\(REPO_URL\)/.test(ticket) && /<PressableScale/.test(ticket));
+check('ticket label for screen readers', ticket.includes('기능 통합 및 검증 현황 확인') && /accessibilityRole="button"/.test(ticket));
+check('ticket opens the implementation status doc and is one PressableScale', ticket.includes('FINAL_SOURCE_IMPLEMENTATION_MATRIX_KO.md') && /Linking\.openURL\(/.test(ticket) && /<PressableScale/.test(ticket));
 check('ticket title is one line', /numberOfLines=\{1\}\s+adjustsFontSizeToFit/.test(ticket));
 check('ticket burst respects reduce motion', /useReduceMotion/.test(ticket) && /if \(!reduceMotion\)/.test(ticket));
 check('ticket has no shadow or hex', !/shadow|elevation/.test(ticket) && !/#[0-9a-fA-F]{3,8}\b/.test(ticket));
 check('About renders the ticket', /<StarTicket \/>/.test(about));
 check('About has no License row', !/License/.test(about));
-check('About row says "Built by Kaos" with source subtitle', /title="Built by Kaos"/.test(about) && /subtitle="Source code on GitHub"/.test(about) && /icon="github"/.test(about) && !/Made with love/.test(about));
+check('About identifies the Maglev+ integrated community build', about.includes('title="Maglev+ 통합 다운로드 앱"') && about.includes('subtitle="Maglev+ 기반 · 공개 추출기와 다운로드 엔진을 통합한 커뮤니티 빌드"') && /icon="github"/.test(about) && !/Made with love/.test(about));
 
 // 3. Settings "More below"
 const settings = read('app/(tabs)/settings.tsx');
@@ -67,10 +67,10 @@ check('moveItem moves back', same(tabs.moveItem(['a', 'b', 'c', 'd'], 3, 1), ['a
 check('moveItem same slot or out of range is a copy', same(tabs.moveItem(['a', 'b'], 1, 1), ['a', 'b']) && same(tabs.moveItem(['a', 'b'], 0, 5), ['a', 'b']));
 check('moveItem does not mutate', (() => { const l = ['a', 'b', 'c']; tabs.moveItem(l, 0, 2); return same(l, ['a', 'b', 'c']); })());
 const d = tabs.defaultTabPrefs();
-check('reorderTabs drops a row into a slot', same(tabs.reorderTabs(d, d.order, 0, 2).order, ['search', 'feeds', 'index', 'settings', 'assistant', 'browse']));
+check('reorderTabs drops a row into a slot', same(tabs.reorderTabs(d, d.order, 0, 2).order, ['search', 'feeds', 'index', 'settings', 'browse']));
 check('reorderTabs leaves unlisted tabs in place', (() => {
-  const listed = d.order.filter((x) => x !== 'assistant');
-  return same(tabs.reorderTabs(d, listed, 0, 3).order, ['search', 'feeds', 'settings', 'index', 'assistant', 'browse']);
+  const listed = d.order;
+  return same(tabs.reorderTabs(d, listed, 0, 3).order, ['search', 'feeds', 'settings', 'index', 'browse']);
 })());
 check('reorderTabs keeps hidden tabs and is a no-op when nothing moves', same(tabs.reorderTabs(d, d.order, 1, 3).hidden, d.hidden) && tabs.reorderTabs(d, d.order, 2, 2) === d);
 check('section uses GestureDetector with a long-press pan', /GestureDetector/.test(section) && /usePanGesture/.test(section) && /activateAfterLongPress: LONG_PRESS_MS/.test(section) && /LONG_PRESS_MS = 250/.test(section));
@@ -78,8 +78,8 @@ check('section no longer renders MoveButton arrows', !/MoveButton/.test(section)
 check('section keeps Move up / Move down accessibility actions', /accessibilityActions=/.test(section) && /Move up/.test(section) && /Move down/.test(section) && /onAccessibilityAction/.test(section));
 check('section lifts with scale 1.03, lime border and no shadow', /LIFT_SCALE = 1\.03/.test(section) && /colors\.accent/.test(section) && !/shadow|elevation/.test(section));
 check('section buzzes on lift and on each slot change via the haptic vocabulary', /haptic\('tap'\)/.test(section) && /haptic\('select'\)/.test(section));
-check('section commits through reorderTabs and shows the caption', /reorderTabs\(/.test(section) && /Hold a tab and drag to reorder\./.test(copy) && /tabsCopy\.reorderHint/.test(section));
-check('section keeps locked rows and the Assistant filter', /LOCKED_TABS/.test(section) && /assistant\.enabled/.test(section));
+check('section commits through reorderTabs and shows the caption', /reorderTabs\(/.test(section) && /탭을 길게 눌러 드래그하면 순서를 바꿀 수 있습니다\./.test(copy) && /tabsCopy\.reorderHint/.test(section));
+check('section keeps locked rows and no longer exposes Assistant', /LOCKED_TABS/.test(section) && !section.includes('assistant'));
 check('app root is wrapped in GestureHandlerRootView', /<GestureHandlerRootView/.test(layout));
 
 if (failed) { console.error(`\n${failed} failed`); process.exit(1); }

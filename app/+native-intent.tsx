@@ -11,6 +11,7 @@ import { visibleTabs } from '../components/tabs/tabPrefs';
 import { getTabPrefs } from '../components/tabs/tabPrefsStore';
 import { shareBrowserRoute } from '../utils/browser/shareRoute';
 import { sharedDownloadRoute, stripShareMarker } from '../modules/maglev-engine/src/downloadLink';
+import { parseYouTubeIntent } from '../utils/browser/youtube';
 
 const ADD_ROUTE = '/add-torrent';
 
@@ -29,7 +30,7 @@ export function redirectSystemPath({ path }: { path: string; initial: boolean })
     // maglev://browser?url= fills the address bar and never loads (NATIVE_CONTRACT 24.7).
     const browser = browserIntentRoute(raw);
     // With the Browser tab on, it opens in that tab (tab bar stays); otherwise the /browser stack screen.
-    if (browser) return shareBrowserRoute(browser, visibleTabs(getTabPrefs(), { assistantEnabled: false }).includes('browse'));
+    if (browser) return shareBrowserRoute(browser, visibleTabs(getTabPrefs()).includes('browse'));
     // Several files shared at once: open the first now, queue the rest for the Transfers screen.
     const packed = parsePackedShare(raw);
     if (packed) {
@@ -37,6 +38,12 @@ export function redirectSystemPath({ path }: { path: string; initial: boolean })
       setShareQueue(packed.slice(1));
       return addRoute(packed[0]);
     }
+    // Explicit internal YouTube route from the share activity. Normalize the custom scheme to a router path.
+    const internalPath = appPath(raw);
+    if (/^\/?youtube-download(?:\/)?(?:\?|$)/i.test(internalPath)) return stripShareMarker(internalPath);
+    // Some Android/Expo versions provide the full URL; others provide only its path and query.
+    const youtube = parseYouTubeIntent(raw) ?? parseYouTubeIntent(internalPath);
+    if (youtube) return `/youtube-download?url=${encodeURIComponent(youtube.canonicalUrl)}`;
     if (/^magnet:/i.test(raw)) return addRoute(raw);
     if (/^content:\/\//i.test(raw) || /^file:\/\//i.test(raw)) return addRoute(raw);
     if (/^https?:\/\//i.test(raw) && isTorrentLocation(raw)) return addRoute(raw);

@@ -101,13 +101,13 @@ function check(name, cond, extra) {
   check('search: Browser button, labelled, hidden when the Browser tab shows', />\s*Browser\s*</.test(code) && /Open the browser/.test(code) && /useTabPrefs/.test(code) && /'browse'/.test(code));
   check('search: header dot instead of a count badge', /dot=\{/.test(code) && !/badge=\{prefs\.enabled/.test(code));
   const copySrc = read('constants/copy.ts');
-  check('search: idle title and body come from copy', /empty\.search\.idle\(enabledCount\)/.test(code) && /sources at once/.test(copySrc) && /Tap the box to see your recent searches\./.test(copySrc));
+  check('search: Korean idle title and body come from copy', /empty\.search\.idle\(enabledCount\)/.test(code) && /개 사이트 검색/.test(copySrc) && /검색창을 눌러 최근 검색어를 확인하세요\./.test(copySrc));
   check('search: recent dropdown on focus, with remove and Clear', /onFocus/.test(code) && /onBlur/.test(code) && /removeRecentSearch/.test(code) && /Clear/.test(code));
-  check('search: one progress line while searching', /Searching… \$\{[^}]+\} of \$\{[^}]+\}/.test(code) && !/sources answered, results appear/.test(code));
-  check('search: exactly one Stop button', (code.match(/label="Stop"/g) || []).length === 1);
-  check('search: result count line', /'results'/.test(code));
+  check('search: one Korean progress line while searching', /검색 중… \$\{[^}]+\} \/ \$\{[^}]+\}개 사이트 응답/.test(code) && !/sources answered, results appear/.test(code));
+  check('search: exactly one Korean Stop button', (code.match(/label="중지"/g) || []).length === 1);
+  check('search: Korean result count line', /\$\{shown\.length\}개 검색 결과/.test(code));
   check('search: source filter lives in the sort sheet', /Source/.test(code) && /sourceFilter/.test(code) && /setSourceFilter/.test(code));
-  check('search: fix line copy and actions', /need[s]? a quick check/.test(code) && /They'll add more results\./.test(code) && /Fix/.test(code) && /fixHintDismissedAt/.test(code) && /shouldShowFixHint/.test(code));
+  check('search: Korean fix line copy and actions', /개 검색 사이트를 확인해야 합니다/.test(code) && /확인하면 검색 결과가 더 늘어납니다/.test(code) && /label="수정"/.test(code) && /fixHintDismissedAt/.test(code) && /shouldShowFixHint/.test(code));
   check('search: remembers needsCheck after a search and on solve', /nextNeedsCheck/.test(code) && /needsCheck/.test(code));
   const ib = read('components/ui/IconButton.tsx');
   check('IconButton: dot prop, badge kept', /dot\?: boolean/.test(ib) && /badge\?: number/.test(ib));
@@ -124,7 +124,7 @@ function check(name, cond, extra) {
 
   console.log('\n[settings: search sources]');
   const sp = read('app/settings/search-providers.tsx');
-  check('sources: needs-a-check section on top', /Needs a quick check/.test(sp) && /Tap \? to open the site once/.test(sp) && sp.indexOf('Needs a quick check') < sp.indexOf('What sources to show'));
+  check('sources: Korean needs-a-check section on top', /확인이 필요한 사이트/.test(sp) && /\?를 눌러 사이트를 한 번 열어 확인하세요/.test(sp) && sp.indexOf('확인이 필요한 사이트') < sp.indexOf('표시할 검색 사이트'));
   check('sources: opens the solver and clears the flag on solve', /CloudflareSolverSheet/.test(sp) && /needsCheck/.test(sp));
   const pr = read('components/search-providers/ProviderRow.tsx');
   check('provider row: a ? button', /onCheck/.test(pr) && /\?/.test(pr));

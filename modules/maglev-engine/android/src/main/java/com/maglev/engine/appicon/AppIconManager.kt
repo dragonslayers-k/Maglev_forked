@@ -28,7 +28,7 @@ object AppIconManager {
         "m-bare-lime", "m-bare-teal", "m-bare-mono", "nose", "dash", "crt", "amber",
     )
 
-    private const val PACKAGE = "com.maglev"
+    private const val PACKAGE = "com.maglev.plus"
 
     /** The icon chosen in this session but not applied yet. */
     @Volatile
@@ -36,7 +36,7 @@ object AppIconManager {
 
     fun isValid(id: String): Boolean = id in IDS
 
-    /** Fully qualified alias class, as written by the plugin: `com.maglev.MaglevIcon_all_dark`. */
+    /** Fully qualified alias class, as written by the plugin: `com.maglev.plus.MaglevIcon_all_dark`. */
     fun aliasClass(id: String): String = "$PACKAGE.MaglevIcon_" + id.replace('-', '_')
 
     private fun component(context: Context, id: String) = ComponentName(context.packageName, aliasClass(id))

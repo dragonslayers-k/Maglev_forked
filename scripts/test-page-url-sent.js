@@ -29,11 +29,19 @@ let pageUrlOption = () => { throw new Error('missing'); };
 let startFound = null;
 if (hasHelper) {
   let privateOn = false;
-  ({ pageUrlOption } = load(helperPath, { '../../utils/prefs/browser': { getBrowserPrefs: () => ({ privateBrowsing: privateOn }) } }));
+  const browserPrefsStub = { getBrowserPrefs: () => ({ privateBrowsing: privateOn }) };
+  ({ pageUrlOption } = load(helperPath, {
+    '../../utils/prefs/browser': browserPrefsStub,
+    '../../utils/prefs/browser.ts': browserPrefsStub,
+  }));
   privateOn = true;
   check('nothing is sent while Private browsing is on', JSON.stringify(pageUrlOption('https://site.test/watch')) === '{}');
   privateOn = false;
-  ({ startFound } = load('components/browser/startFound.ts', { './pageUrlOption': { pageUrlOption } }));
+  ({ startFound } = load('components/browser/startFound.ts', {
+    './pageUrlOption': { pageUrlOption },
+    './pageUrlOption.ts': { pageUrlOption },
+    '../../utils/browser/naverClip.ts': { parseNaverClipMediaId: () => null, resolveNaverClip: async () => ({ url: '' }) },
+  }));
 }
 const safe = (f) => { try { return f(); } catch { return 'threw'; } };
 check('https page is sent', JSON.stringify(safe(() => pageUrlOption('https://site.test/watch?v=1'))) === '{"pageUrl":"https://site.test/watch?v=1"}');
@@ -71,7 +79,7 @@ check('empty, undefined, about: and file: are not sent', ['', undefined, null, '
   const host = read('modules/maglev-engine/android/src/main/java/com/maglev/engine/EngineHost.kt');
   const rs = read('native/maglev-core/src/http_dl/driver.rs');
   check('bridge forwards the options object unchanged', /addDownload\(url: string, options: DownloadOptions = \{\}\)[\s\S]{0,120}route\('addDownload', url, options\)/.test(bridge));
-  check('EngineHost snakeifies options (pageUrl -> page_url)', /Json\.snakeify\(options\)/.test(host.slice(host.indexOf('fun addDownload('), host.indexOf('fun pauseDownload('))));
+  check('EngineHost snakeifies options (pageUrl -> page_url)', host.includes('Json.snakeify(cleanOptions)'));
   check('Rust DownloadOptions reads page_url', /pub page_url: Option<String>,/.test(rs));
 
   process.exit(failed ? 1 : 0);

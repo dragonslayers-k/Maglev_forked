@@ -151,8 +151,8 @@ const makeStyles = (c: ThemeColors) =>
     noteText: { ...type.body, fontSize: type.size.md, lineHeight: 18, color: c.textMuted, flex: 1 },
   });
 
-/** A little longer than the fade out (motion `base`), so the Modal's window is gone before `fn` runs. */
-const AFTER_CLOSE_MS = 360;
+/** Wait beyond the native Modal dismiss transition; Android may retain the sheet window briefly after the JS fade finishes, which can be captured in PiP. */
+const AFTER_CLOSE_MS = 700;
 
 /**
  * Runs `fn` once a FloatingSheet that was just closed has left the screen. A sheet is a Modal, its own window on

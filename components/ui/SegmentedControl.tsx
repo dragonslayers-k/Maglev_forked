@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { ThemeColors, radius, type, touch } from '../../constants/theme';
+import { koUiText } from '../../constants/korean';
 import { PressableScale } from './PressableScale';
 
 export interface SegmentOption<T extends string> {
@@ -38,12 +39,12 @@ export function SegmentedControl<T extends string>({
             onPress={() => !active && onChange(o.value)}
             haptic={active ? false : 'select'}
             accessibilityRole="radio"
-            accessibilityLabel={o.accessibilityLabel ?? o.label}
+            accessibilityLabel={koUiText(o.accessibilityLabel ?? o.label)}
             accessibilityState={{ selected: active, checked: active }}
             style={(pressed) => [styles.seg, active ? styles.active : pressed && styles.pressed]}
           >
             <Text style={[styles.label, { color: active ? colors.onAccent : colors.textMuted }]} numberOfLines={1}>
-              {o.label}
+              {koUiText(o.label)}
             </Text>
           </PressableScale>
         );

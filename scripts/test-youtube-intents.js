@@ -1,0 +1,135 @@
+#!/usr/bin/env node
+// Regression tests for YouTube links delivered through Android/Expo native intents.
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+
+async function main() {
+  const { parseYouTubeIntent, parseYouTubeLink } = await import('../utils/browser/youtube.ts');
+  const id = 'dQw4w9WgXcQ';
+  const canonical = 'https://www.youtube.com/watch?v=' + id;
+  const cases = [
+    ['full watch URL', canonical],
+    ['non-www watch URL', 'https://youtube.com/watch?v=' + id],
+    ['www host without scheme', 'www.youtube.com/watch?v=' + id],
+    ['short URL', 'https://youtu.be/' + id],
+    ['scheme-less short URL', 'youtu.be/' + id],
+    ['short URL with trailing slash', 'youtu.be/' + id + '/'],
+    ['shorts URL', 'https://youtube.com/shorts/' + id],
+    ['live URL', 'https://m.youtube.com/live/' + id],
+    ['scheme-less host', 'youtube.com/watch?v=' + id],
+    ['path-only watch', '/watch?v=' + id],
+    ['path-only shorts', '/shorts/' + id],
+    ['custom-scheme direct route', 'maglev://youtube-download?url=' + encodeURIComponent(canonical)],
+  ];
+  for (const [name, input] of cases) {
+    const parsed = parseYouTubeIntent(input);
+    assert.equal(parsed?.videoId, id, name);
+    assert.equal(parsed?.canonicalUrl, canonical, name + ' canonical URL');
+  }
+  assert.equal(parseYouTubeLink('youtu.be/' + id)?.videoId, id, 'direct parser must accept scheme-less short URL');
+  assert.equal(parseYouTubeIntent('/watch?v=bad'), null, 'reject malformed video id');
+  assert.equal(parseYouTubeIntent('/article?id=' + id), null, 'do not normalize arbitrary paths');
+  assert.equal(parseYouTubeIntent('https://youtube.com.evil.example/watch?v=' + id), null, 'reject lookalike host');
+
+  const root = path.join(__dirname, '..');
+  const nativeIntent = fs.readFileSync(path.join(root, 'app/+native-intent.tsx'), 'utf8');
+  const quickShare = fs.readFileSync(path.join(root, 'modules/maglev-engine/android/src/main/java/com/maglev/engine/share/QuickShareActivity.kt'), 'utf8');
+  assert.ok(nativeIntent.includes('return stripShareMarker(internalPath)'), 'router must preserve the internal YouTube route');
+  assert.match(nativeIntent, /parseYouTubeIntent\(raw\)\s*\?\?\s*parseYouTubeIntent\(internalPath\)/, 'router must accept full and path-only intent URLs');
+  assert.match(quickShare, /maglev:\/\/youtube-download\?url=/, 'QuickShare must launch the direct internal download route');
+
+  const browser = fs.readFileSync(path.join(root, 'app/browser.tsx'), 'utf8');
+  assert.match(browser, /parseYouTubeIntent\(text\)/, 'browser paste must recognize YouTube URLs before generic navigation');
+  assert.match(browser, /pathname: '\/youtube-download'/, 'browser paste must open the dedicated downloader screen');
+
+  const youtubeAdapter = fs.readFileSync(path.join(root, 'modules/maglev-engine/android/src/main/java/com/maglev/engine/youtube/YoutubeDownload.kt'), 'utf8');
+  const youtubeScreen = fs.readFileSync(path.join(root, 'app/youtube-download.tsx'), 'utf8');
+  const nativeModule = fs.readFileSync(path.join(root, 'modules/maglev-engine/android/src/main/java/com/maglev/engine/MaglevEngineModule.kt'), 'utf8');
+  const newPipe = fs.readFileSync(path.join(root, 'modules/maglev-engine/android/src/main/java/com/maglev/engine/youtube/NewPipeYoutube.kt'), 'utf8');
+  const ytdlGradle = fs.readFileSync(path.join(root, 'modules/maglev-engine/android/build.gradle'), 'utf8');
+  const poToken = fs.readFileSync(path.join(root, 'modules/maglev-engine/android/src/main/java/com/maglev/engine/youtube/potoken/NewPipePoTokenGenerator.kt'), 'utf8');
+  assert.ok(newPipe.includes('info.dashMpdUrl'), 'NewPipe adaptive DASH manifest supplies selectable high-resolution formats');
+  assert.ok(newPipe.includes('EngineHost.probeStream') && newPipe.includes('"audioId"'), 'selected video quality must mux a separate audio track in the existing queue');
+  assert.ok(newPipe.includes('info.audioStreams'), 'audio-only choices must enumerate real NewPipe audio formats and bitrates');
+  assert.ok(ytdlGradle.includes('NewPipeExtractor:v0.26.5'), 'use the same NewPipe extractor version as YTDLnis');
+  assert.ok(poToken.includes('NewPipePoTokenGenerator') && poToken.includes('getWebClientPoToken'), "generate Web PO tokens to avoid YouTube's 360p-only fallback");
+
+  assert.ok(youtubeAdapter.includes('PLAYER_CLIENTS = listOf("android_vr", "web_safari", "web_embedded")'), 'fast NewPipe extraction is primary with two yt-dlp fallbacks');
+  assert.ok(youtubeAdapter.includes('playerClient != "generic"'), 'generic extraction does not force a YouTube player client');
+  assert.ok(youtubeAdapter.includes('addOption("--no-warnings")'), 'missing optional FFmpeg must not pollute the user-facing extractor diagnostics');
+  assert.ok(youtubeAdapter.includes('httpMediaUrl(rawUrl)'), 'generic extraction validates HTTP(S) page URLs');
+  assert.ok(youtubeAdapter.includes('playerClient == "generic"'), 'generic page formats are tagged separately from YouTube clients');
+  assert.ok(youtubeAdapter.includes('EngineHost.probeStream'), 'HLS/DASH formats must use Maglev stream engine');
+  assert.ok(youtubeAdapter.includes('youtube:player_client='), 'selected format must be re-extracted with its original client');
+  assert.ok(nativeModule.includes('formatKind: String, audioBitrateKbps: Double?, outputContainer: String'), 'native bridge must carry format kind, audio bitrate ceiling and output container');
+  assert.ok(youtubeAdapter.includes('targetAudioBps') && youtubeAdapter.includes('YOUTUBE_AUDIO_BITRATE_UNAVAILABLE'), 'adaptive video downloads must enforce the selected separate-audio bitrate ceiling');
+  assert.ok(youtubeScreen.includes('format.playerClient, format.kind, audioBitrateKbps ?? null, outputContainer'), 'chosen format kind, audio quality and output container must reach native download');
+  assert.ok(youtubeAdapter.includes('ytdlp.init(app)') && youtubeAdapter.includes('field.set(ytdlp, File(app.applicationInfo.nativeLibraryDir))'), 'initialize bundled yt-dlp and reset the wrapper ffmpeg path without downloading updates');
+  assert.ok(youtubeAdapter.includes('groupBy { it["formatId"].toString() }'), 'duplicate format IDs from different player clients must collapse to one row');
+  const formatInventory = youtubeAdapter.slice(youtubeAdapter.indexOf('val videoFormats = grouped["video"]'), youtubeAdapter.indexOf('val choices = videoFormats + audioFormats'));
+  assert.ok(formatInventory.length > 0 && !formatInventory.includes('.take('), 'format inventory must not silently hide available video qualities or audio bitrates');
+  assert.ok(youtubeAdapter.includes('formatId.startsWith("bestaudio")'), 'yt-dlp fallback still recognizes its bestaudio selector');
+  assert.ok(youtubeAdapter.includes('availableFormats.filter'), 'audio fallback selects an actual audio-only format from the extractor metadata');
+  assert.ok(youtubeAdapter.includes('maxAudioKbps') && youtubeAdapter.includes('audioFormats.filter { it.abr <= maxAudioKbps }.maxByOrNull'), 'audio bitrate presets must enforce a strict ceiling and never silently exceed the selected source bitrate');
+  assert.ok(!youtubeAdapter.includes('capped.ifEmpty { audioFormats }'), 'a missing bitrate ceiling must fail visibly instead of selecting a higher bitrate');
+
+  assert.ok(youtubeAdapter.includes('NewPipeYoutube.get(app, sourceUrl)'), 'YouTube metadata uses the fast NewPipe extractor first');
+  assert.ok(youtubeAdapter.includes('getQueryParameter("maglev_ytdlp") == "1"') && youtubeAdapter.includes('link != null && !forceYtDlp'), 'on-demand format refresh must bypass NewPipe and force yt-dlp');
+  assert.ok(youtubeAdapter.includes('fastFormats.any { it["kind"] == "audio" }'), 'only return NewPipe primary formats when real audio choices exist');
+  assert.ok(youtubeAdapter.includes('NewPipeYoutube.add(app, sourceUrl, formatId, audioBitrateKbps, outputContainer)'), 'NewPipe format selection and chosen audio bitrate are handled by the native adapter');
+  assert.ok(youtubeAdapter.includes('getDeclaredField("ffmpegPath")') && youtubeAdapter.includes('field.set(ytdlp, File(app.applicationInfo.nativeLibraryDir))'), 'reset the wrapper stale FFmpeg path after its unconditional append');
+  assert.ok(youtubeAdapter.includes('YOUTUBE_AUDIO_FORMAT_UNRESOLVED'), 'audio-only must fail explicitly when yt-dlp did not resolve an audio-only requested format');
+  assert.ok(youtubeAdapter.includes('YOUTUBE_AUDIO_URL_MISSING'), 'audio-only must not fall back to the default video URL');
+  assert.ok(youtubeAdapter.includes('val completeSet = hasVideo && hasAudio && maxVideoHeight >= 720') && youtubeAdapter.includes('maxVideoHeight >= 1080 || client == PLAYER_CLIENTS.last()'), 'forced format refresh must keep scanning below 720p, then stop once video quality and audio are sufficient');
+  assert.ok(youtubeAdapter.includes('"sizeEstimated" to (exactBytes == null && estimatedBytes != null)'), 'unknown extractor sizes must be estimated from bitrate and duration when possible');
+  assert.ok(youtubeAdapter.includes('fallbackKbps = when'), 'missing bitrate must still get a labeled resolution-based estimate');
+  assert.ok(youtubeAdapter.includes('height <= 360 -> 750.0') && youtubeAdapter.includes('height <= 1080 -> 5_500.0'), 'resolution fallback must cover common YouTube qualities');
+  assert.ok(youtubeAdapter.includes('toFormat(format, client, current.duration)'), 'format size estimates must use the actual media duration');
+
+  assert.ok(youtubeAdapter.includes('!hasVideo && hasAudio -> "audio"'), 'audio-only formats must be recognized even when exposed as a manifest');
+  assert.match(youtubeAdapter, /safeDiagnostic\(e\)/, 'extractor errors must surface a sanitized diagnostic');
+
+  const nativeModuleSource = fs.readFileSync(path.join(root, 'modules/maglev-engine/android/src/main/java/com/maglev/engine/MaglevEngineModule.kt'), 'utf8');
+  assert.ok(nativeModuleSource.includes('Native IO call failed:'), 'native IO failures must be logged with exception type');
+  assert.ok(nativeModuleSource.includes('cause=${root.javaClass.name}'), 'native IO failures must expose the root cause type');
+  assert.ok(nativeModuleSource.includes('root.message ?: root.javaClass.simpleName'), 'native IO failures must not collapse to generic Engine call failed');
+  assert.ok(nativeModuleSource.includes('Regex("""https?://[^\\s]+""", RegexOption.IGNORE_CASE)'), 'native diagnostics must redact complete URLs including query tokens');
+  const screen = fs.readFileSync(path.join(root, 'app/youtube-download.tsx'), 'utf8');
+  assert.ok(screen.includes('...[320, 256, 192, 128].map') && screen.includes('formatId: `bestaudio_${kbps}`'), 'audio fallback must expose selectable source bitrate caps');
+  assert.ok(screen.includes('maglev_ytdlp=1') && screen.includes('추가 화질·오디오 형식 조회'), 'slow yt-dlp formats are fetched only on user request, after fast NewPipe results');
+  assert.ok(youtubeAdapter.includes('val completeSet = hasVideo && hasAudio && maxVideoHeight >= 720') && youtubeAdapter.includes('maxVideoHeight >= 1080 || client == PLAYER_CLIENTS.last()'), 'explicit refresh aggregates clients until a useful video/audio format set is available');
+  assert.ok(screen.includes('maglevEngine.getYouTubeInfo'), 'YouTube screen must use the existing native extractor');
+  assert.ok(screen.includes('maglevEngine.addYouTubeDownload'), 'selected formats must enter the shared native transfer queue');
+  assert.ok(screen.includes('setSelectedVideo(formatKey(format))') && screen.includes('setSelectedAudio(formatKey(format))'), 'formats must be selected before adding a download');
+  assert.ok(screen.includes('선택한 동영상 다운로드') && screen.includes('선택한 오디오 다운로드'), 'separate start actions must confirm the selected video or audio format');
+
+  assert.ok(screen.includes('format.playerClient'), 'the selected extractor client must be preserved');
+  assert.ok(screen.includes("formatId: 'bestaudio'"), 'a bestaudio fallback remains available only when no real audio formats were extracted');
+  assert.ok(screen.includes("formatId: 'bestaudio', playerClient: 'android_vr'"), 'the placeholder bestaudio must route to yt-dlp, not NewPipe format-ID parsing');
+  assert.ok(screen.includes('const audioChoices = visibleAudios.length > 0 ? visibleAudios : selectedAudioExt === \'all\' ? audioFallbacks : [];') && screen.includes('selectedAudioFormat = audioChoices.find'), 'real audio bitrate/format choices remain primary and fallback presets are used only when needed');
+  assert.ok(screen.includes('오디오만 · 최고 음질'), 'audio-only fallback label is Korean');
+  assert.ok(screen.includes('setVideoFormatsSheet(true)') && screen.includes('visibleVideos.map((format) => (') && !screen.includes('videoFormatsExpanded'), 'video formats are compacted into a selection sheet');
+  assert.ok(screen.includes('setAudioFormatsSheet(true)') && screen.includes('audioChoices.map((format, index) => (') && !screen.includes('audioFormatsExpanded'), 'audio formats are compacted into a selection sheet');
+  assert.ok(screen.includes('setVideoExtensionSheet(true)') && screen.includes('setAudioExtensionSheet(true)'), 'source extension filters are selected in sheets instead of long inline lists');
+  assert.ok(!screen.includes('ytdlpEngine.download'), 'screen must not create a second standalone download queue');
+  const packageJson = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
+  assert.equal(packageJson.dependencies?.['ytdlp-engine'], undefined, 'do not install a second yt-dlp Expo module/queue');
+  assert.ok(!fs.existsSync(path.join(root, 'modules/ytdlp-engine')), 'the standalone duplicate prototype must stay out of the product tree');
+  assert.ok(screen.includes('maglevEngine.addYouTubeDownload'), 'YouTube formats must be added through the existing Maglev queue');
+  const addDownload = fs.readFileSync(path.join(root, 'app/add-download.tsx'), 'utf8');
+  assert.ok(addDownload.includes('yt-dlp로 페이지 분석'), 'NOT_A_FILE pages expose explicit yt-dlp analysis');
+  const browserScreen = fs.readFileSync(path.join(root, 'app/browser.tsx'), 'utf8');
+  assert.ok(browserScreen.includes('yt-dlp로 페이지 분석'), 'browser page menu exposes explicit generic site analysis');
+  assert.ok(browserScreen.includes('notices.browser.mseCaptureUnavailable'), 'unsupported buffer recording is stated honestly in-app');
+  const copy = fs.readFileSync(path.join(root, 'constants/copy.ts'), 'utf8');
+  assert.ok(copy.includes('mseCaptureUnavailable:'), 'unsupported browser recording notice is localized in shared copy');
+  assert.ok(!browserScreen.includes('MPMux 사용 안내') && !browserScreen.includes('Chrome 확장 프로그램'), 'Android browser does not show misleading external MPMux/Chrome extension popup links');
+  const streamSheet = fs.readFileSync(path.join(root, 'components/browser/StreamSheet.tsx'), 'utf8');
+  assert.ok(!streamSheet.includes('PC MPMux 안내') && !streamSheet.includes('mpmux.com/ko'), 'Android stream sheet does not offer a PC-only recorder as an app feature');
+  assert.ok(browserScreen.includes('notices.browser.drm'), 'browser routes DRM detections to the shared refusal notice');
+  assert.ok(copy.includes("drm: 'DRM 보호 영상은 저장할 수 없습니다.'"), 'shared copy keeps the explicit DRM refusal in Korean');
+  assert.ok(!browserScreen.includes('decryptDrm') && !browserScreen.includes('widevineDecrypt'), 'no DRM decryption adapter is shipped');
+  console.log('test-youtube-intents: all assertions passed');
+}
+main().catch((e) => { console.error(e); process.exit(1); });

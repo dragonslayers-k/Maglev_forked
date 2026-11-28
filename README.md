@@ -1,3 +1,5 @@
+> **한국어 안내:** [한국어 프로젝트 문서](README_KO.md)에서 개발 목적, 현재 구현 범위, 라이선스 및 실기기 검증 절차를 확인할 수 있습니다. 이 저장소는 Maglev GPL-3.0-only 기반의 공개 개발 포크입니다.
+
 <p align="center">
   <img src="assets/brand/readme-header.svg" alt="Maglev, an open-source download manager, video downloader and torrent client for Android" width="100%">
 </p>
@@ -16,7 +18,7 @@
   <a href="https://www.opensourcealternatives.to"><img src="https://www.opensourcealternatives.to/badge-osa.svg" alt="As seen on Open Source Alternatives" height="40"></a>
 </p>
 
-<h3 align="center">Maglev: open-source download manager, video downloader and torrent client for Android</h3>
+<h3 align="center">Maglev+: open-source download manager, video downloader and torrent client for Android</h3>
 
 ## Table of contents
 
@@ -38,7 +40,7 @@
 
 ## Intro
 
-Maglev is a free, open-source download manager for Android. It saves videos from websites (including HLS and m3u8 streams), downloads ordinary links with pause and resume, and works as a torrent client for magnet links and `.torrent` files. It also finds subtitles for the videos you've downloaded.
+**Maglev+** is this fork's independently installable Android app (application ID `com.maglev.plus`), distinct from upstream Maglev (`com.maglev`). It is a free, open-source download manager for Android. It saves videos from websites (including HLS and m3u8 streams), downloads ordinary links with pause and resume, and works as a torrent client for magnet links and `.torrent` files. It also finds subtitles for the videos you've downloaded.
 
 It replaces a torrent client, a download manager and a video downloader with one small app that has no ads, no tracking and no account. It runs on Android 7 and later, and its source is under the GPL-3.0 licence.
 

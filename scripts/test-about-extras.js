@@ -26,6 +26,9 @@ const exists = (p) => fs.existsSync(path.join(root, p));
   check('LICENSE at repo root is GPL v3', /GNU GENERAL PUBLIC LICENSE\s+Version 3/.test(licenceFile));
 
   const about = read('app/settings/about.tsx');
+  const ticket = read('components/settings/StarTicket.tsx');
+  check('About ticket describes integration status, not a star request', ticket.includes('기능 통합·검증 현황') && !ticket.includes('Give it a star') && !ticket.includes('updateStarState'));
+  check('About wordmark displays Maglev+ plus mark', read('components/settings/Wordmark.tsx').includes('Circle cx={300}') && read('components/settings/Wordmark.tsx').includes('accessibilityLabel="Maglev plus"'));
   const layout = read('app/_layout.tsx');
   check('About has an Open-source licence row valued GPL-3.0', /Open-source licence/.test(about + read('constants/aboutCopy.ts')) && /GPL-3\.0/.test(about + read('constants/aboutCopy.ts')));
   check('licence row opens /settings/licenses', about.includes("/settings/licenses"));
@@ -58,7 +61,7 @@ const exists = (p) => fs.existsSync(path.join(root, p));
   const rn = await import('../constants/releaseNotes.generated.ts');
   check('bundled notes include the installed version or an older one', typeof rn.RELEASE_NOTES === 'object' && Object.keys(rn.RELEASE_NOTES).length > 5);
   check('bundled notes match release-notes/*.md', fs.readdirSync(path.join(root, 'release-notes')).filter((f) => /^\d+\.\d+\.md$/.test(f)).every((f) => rn.RELEASE_NOTES[f.replace('.md', '')]));
-  check('footer still opens Updates', about.includes("openUpdates") && /Opens Updates/.test(about));
+  check('version footer is informational and no longer opens app Updates', about.includes('<View style={s.footer}>') && !about.includes('openUpdates') && !/Opens Updates/.test(about));
 
   if (failed) {
     console.error(`${failed} check(s) failed`);

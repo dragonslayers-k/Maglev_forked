@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { ThemeColors, alpha, radius, spacing, type } from '../../constants/theme';
+import { koUiText } from '../../constants/korean';
 import { PixelIcon, PixelIconName } from '../PixelIcon';
 import { Button } from './Button';
 import { IconButton } from './IconButton';
@@ -45,8 +46,8 @@ export function Banner({ tone = 'info', title, body, actionLabel, onAction, onDi
         <PixelIcon name={ICONS[tone]} size={20} color={tint} />
       </View>
       <View style={styles.text}>
-        <Text style={styles.title}>{title}</Text>
-        {body ? <Text style={styles.body}>{body}</Text> : null}
+        <Text style={styles.title}>{koUiText(title)}</Text>
+        {body ? <Text style={styles.body}>{koUiText(body)}</Text> : null}
         {(actionLabel && onAction) || extraAction ? (
           <View style={styles.action}>
             {actionLabel && onAction ? <Button label={actionLabel} onPress={onAction} variant="secondary" /> : null}
@@ -54,7 +55,7 @@ export function Banner({ tone = 'info', title, body, actionLabel, onAction, onDi
           </View>
         ) : null}
       </View>
-      {onDismiss ? <IconButton icon="close" size={16} onPress={onDismiss} accessibilityLabel="Dismiss" /> : null}
+      {onDismiss ? <IconButton icon="close" size={16} onPress={onDismiss} accessibilityLabel="닫기" /> : null}
     </View>
   );
 }

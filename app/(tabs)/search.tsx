@@ -233,7 +233,7 @@ export default function SearchScreen() {
     const debounce = setTimeout(() => {
       if (spoken.current.start !== mine) {
         spoken.current.start = mine;
-        announce(`Searching ${plural(eligible.length, 'source', 'sources')}`);
+        announce(`${eligible.length}개 검색 사이트 검색 중`);
       }
       const current = getSearchPrefs();
       loadExtraProviders(current.torznab).then((extraProviders) =>
@@ -351,7 +351,7 @@ export default function SearchScreen() {
       }
       if (r.directUrl && !r.magnet) {
         // A plain file over http (a mirror override): the link flow only takes https, and it is not a torrent.
-        show({ tone: 'danger', title: "This link isn't secure, so Maglev won't download it" });
+        show({ tone: 'danger', title: "안전하지 않은 링크라 다운로드하지 않습니다" });
         return;
       }
       const busyKey = r.infoHash;
@@ -465,7 +465,7 @@ export default function SearchScreen() {
       show({
         tone: 'success',
         title: status === 'already' ? `Already following ${target.title}` : `Following ${target.title}`,
-        actionLabel: 'Open Feeds',
+        actionLabel: '피드 열기',
         onAction: () => router.push('/feeds' as never),
       });
     },
@@ -556,11 +556,11 @@ export default function SearchScreen() {
   }, [challenged]);
   const needsCheckOn = prefs.needsCheck.filter((id) => prefs.enabled.includes(id)).length > 0;
 
-  const fixLine = `${plural(challenged.length, 'source needs', 'sources need')} a quick check. They'll add more results.`;
-  const fixTitleText = challenged.length === 1 ? '1 source needs a quick check' : `${challenged.length} sources need a quick check`;
+  const fixLine = `${challenged.length}개 검색 사이트를 확인해야 합니다. 확인하면 검색 결과가 더 늘어납니다.`;
+  const fixTitleText = `${challenged.length}개 검색 사이트 확인 필요`;
   const dismissFix = useCallback(() => {
     updatePrefs({ fixHintDismissedAt: Date.now() });
-    announce('Hidden for a day');
+    announce('하루 동안 숨겼습니다');
     focusView(inputRef.current);
   }, [updatePrefs]);
   // Said once per search, the first time the line shows.
@@ -583,10 +583,10 @@ export default function SearchScreen() {
           </View>
           <View style={styles.fixText} accessible accessibilityLabel={fixLine}>
             <Text style={styles.fixTitle}>{fixTitleText}</Text>
-            <Text style={styles.fixBody}>They'll add more results.</Text>
+            <Text style={styles.fixBody}>검색 사이트를 추가하면 더 많은 결과를 확인할 수 있습니다.</Text>
           </View>
-          <Button label="Fix" variant="ghost" buttonRef={fixBtnRef} onPress={startFix} accessibilityLabel="Fix sources that need a quick check" />
-          <IconButton icon="close" size={16} onPress={dismissFix} accessibilityLabel="Dismiss" />
+          <Button label="수정" variant="ghost" buttonRef={fixBtnRef} onPress={startFix} accessibilityLabel="확인이 필요한 검색 사이트 수정" />
+          <IconButton icon="close" size={16} onPress={dismissFix} accessibilityLabel="닫기" />
         </View>
       </Reveal>
     ),
@@ -636,11 +636,11 @@ export default function SearchScreen() {
     if (searching || trimmed.length < MIN_QUERY || failed || (!update && !stopped)) return;
     if (spoken.current.end === reqId.current) return;
     spoken.current.end = reqId.current;
-    announce(shown.length === 0 ? 'No results' : plural(shown.length, 'result', 'results'));
+    announce(shown.length === 0 ? '검색 결과가 없습니다' : `${shown.length}개 검색 결과`);
   }, [searching, trimmed, failed, update, stopped, shown.length]);
   const showRecents = focused && idle && recents.length > 0;
   useEffect(() => {
-    if (showRecents) announce(`Recent searches, ${recents.length}`);
+    if (showRecents) announce(`최근 검색어 ${recents.length}개`);
     // Said when the list opens, not on each change.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showRecents]);
@@ -649,7 +649,7 @@ export default function SearchScreen() {
       const at = recents.indexOf(text);
       const next = removeRecentSearch(text);
       setRecents(next);
-      announce(`Removed ${text}`);
+      announce(`${text} 검색어 삭제`);
       const nextText = next[at] ?? next[at - 1];
       focusView(nextText !== undefined ? recentRows.current.get(nextText) : inputRef.current);
     },
@@ -657,7 +657,7 @@ export default function SearchScreen() {
   );
   const clearRecents = useCallback(() => {
     setRecents(clearRecentSearches());
-    announce('Recent searches cleared');
+    announce('최근 검색어를 지웠습니다');
     focusView(inputRef.current);
   }, []);
   const hasResults = (update?.results.length ?? 0) > 0;
@@ -672,7 +672,7 @@ export default function SearchScreen() {
           icon="search"
           title={empty.search.noSource.title}
           body={empty.search.noSource.body}
-          primary={{ label: 'Change sources', onPress: openProviders }}
+          primary={{ label: '검색 사이트 변경', onPress: openProviders }}
         />
       ) : (
         <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.idle}>
@@ -694,7 +694,7 @@ export default function SearchScreen() {
         error
         title={empty.search.unavailable.title}
         body={empty.search.unavailable.body}
-        primary={{ label: 'Retry', icon: 'retry', onPress: () => setRetryTick((n) => n + 1) }}
+        primary={{ label: '다시 시도', icon: 'retry', onPress: () => setRetryTick((n) => n + 1) }}
       />
     );
   } else if (eligible.length === 0) {
@@ -703,7 +703,7 @@ export default function SearchScreen() {
         icon="search"
         title={empty.search.noSource.title}
         body={empty.search.noSource.body}
-        primary={{ label: 'Change sources', onPress: openProviders }}
+        primary={{ label: '검색 사이트 변경', onPress: openProviders }}
       />
     );
   } else {
@@ -714,7 +714,7 @@ export default function SearchScreen() {
           error
           title={empty.search.noAnswer.title}
           body={empty.search.noAnswer.body}
-          primary={{ label: 'Retry', icon: 'retry', onPress: () => setRetryTick((n) => n + 1) }}
+          primary={{ label: '다시 시도', icon: 'retry', onPress: () => setRetryTick((n) => n + 1) }}
         />
       ) : (
         // 45.5: sources that are off could have answered. Changing them restarts the search through `searchKey`.
@@ -760,8 +760,8 @@ export default function SearchScreen() {
           {searching ? (
             <>
               <View style={styles.summaryRow}>
-                <Text style={styles.summary}>{`Searching… ${answered} of ${total || eligible.length} sources`}</Text>
-                <Button label="Stop" variant="ghost" onPress={stop} accessibilityLabel="Stop searching" />
+                <Text style={styles.summary}>{`검색 중… ${answered} / ${total || eligible.length}개 사이트 응답`}</Text>
+                <Button label="중지" variant="ghost" onPress={stop} accessibilityLabel="검색 중지" />
               </View>
               <View style={styles.track} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
                 <View style={[styles.trackFill, { width: `${Math.min(100, Math.round((answered / Math.max(1, total || eligible.length)) * 100))}%` }]} />
@@ -770,7 +770,7 @@ export default function SearchScreen() {
           ) : (
             <View style={styles.summaryRow}>
               <View style={styles.summaryText}>
-                <Text style={styles.count} numberOfLines={1}>{`${stopped ? 'Stopped · ' : ''}${shown.length} ${shown.length === 1 ? 'result' : 'results'}`}</Text>
+                <Text style={styles.count} numberOfLines={1}>{`${stopped ? '중지됨 · ' : ''}${shown.length} ${shown.length === 1 ? '개 결과' : '개 결과'}`}</Text>
                 {srcLine ? (
                   <View style={styles.noteRow}>
                     <PressableScale
@@ -818,7 +818,7 @@ export default function SearchScreen() {
 
   return (
     <Screen
-      title="Search"
+      title="검색"
       actions={
         <>
           {/* Labelled, not icon-only: people could not tell the globe opened the browser. Hidden when the Browser tab is on. */}
@@ -846,7 +846,7 @@ export default function SearchScreen() {
         <TextField
           leadingIcon="search"
           clearable
-          clearLabel="Clear search"
+          clearLabel="검색어 지우기"
           size="lg"
           value={query}
           onChangeText={setQuery}
@@ -866,12 +866,12 @@ export default function SearchScreen() {
         <Reveal visible={showRecents}>
           {/* A scroll view with handled taps: a tap on a row registers before the field loses focus. */}
           <ScrollView keyboardShouldPersistTaps="handled" scrollEnabled={false} style={styles.recentsWrap}>
-            <View style={styles.recentsCard} accessibilityLabel="Recent searches">
+            <View style={styles.recentsCard} accessibilityLabel="최근 검색어">
               <View style={styles.recentsHead}>
                 <Text style={styles.sectionLabel} accessibilityRole="header">
                   Recent
                 </Text>
-                <Button label="Clear" variant="ghost" onPress={clearRecents} accessibilityLabel="Clear recent searches" />
+                <Button label="지우기" variant="ghost" onPress={clearRecents} accessibilityLabel="Clear recent searches" />
               </View>
               {recents.map((r) => (
                 <View key={r} style={styles.recentRow}>
@@ -902,7 +902,7 @@ export default function SearchScreen() {
           </ScrollView>
         </Reveal>
       </View>
-      <View accessibilityRole="radiogroup" accessibilityLabel="Category">
+      <View accessibilityRole="radiogroup" accessibilityLabel="검색 범주">
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.catScroll} contentContainerStyle={styles.chips}>
         {categories.map((c) => (
           <Chip key={c} role="radio" label={CATEGORY_LABEL[c]} selected={c === category} onPress={() => updatePrefs({ lastCategory: c })} />
@@ -990,10 +990,10 @@ export default function SearchScreen() {
         }}
       />
       {tray.node}
-      <Sheet visible={!!confirm} onClose={() => setConfirm(null)} title="Add from a risky source?" subtitle={confirm?.reason}>
+      <Sheet visible={!!confirm} onClose={() => setConfirm(null)} title="위험한 출처에서 추가하시겠습니까?" subtitle={confirm?.reason}>
         <View style={styles.confirmActions}>
           <Button
-            label="Add anyway"
+            label="그래도 추가"
             fullWidth
             onPress={() => {
               const r = confirm?.result;
@@ -1001,7 +1001,7 @@ export default function SearchScreen() {
               if (r) void handleAdd(r);
             }}
           />
-          <Button label="Cancel" variant="secondary" fullWidth onPress={() => setConfirm(null)} />
+          <Button label="취소" variant="secondary" fullWidth onPress={() => setConfirm(null)} />
         </View>
       </Sheet>
     </Screen>

@@ -124,13 +124,15 @@ check('icons come from PixelIcon only', [sw, menu, card].every((s) => !/@expo\/v
 check('the test is chained after test-browser-tabs.js', /node scripts\/test-browser-tabs\.js && node scripts\/test-browser-tabs-ui\.js/.test(pkg));
 
 const tabRoute = read('app/(tabs)/browse.tsx');
-check('in the tab bar the screen skips the bottom inset (the tab bar already pads for it)', /<BrowserScreen inTab \/>/.test(tabRoute) && /edges=\{inTab \? \['top', 'left', 'right'\] : \['top', 'left', 'right', 'bottom'\]\}/.test(scr));
+check('in the tab bar the screen skips the bottom inset (the tab bar already pads for it)', /<BrowserScreen inTab \/>/.test(tabRoute) && /pipCompact \? \[\] : inTab \? \['top', 'left', 'right'\] : \['top', 'left', 'right', 'bottom'\]/.test(scr));
+check('PiP compact mode is requested and activates on resized/background viewport; chrome and found overlays are hidden', /pipCompact = pipRequested && \(viewportWidth < screenWidth \* 0\.9 \|\| !appForeground\)/.test(scr) && /!pipCompact && \(findOpen \?/.test(scr) && /!pipCompact && hasPage \? \(/.test(scr));
+check('PiP native request is deferred until sheets dismiss, then uses selected video aspect ratio', /afterSheetCloses\(\(\) => \{[\s\S]{0,500}enterBrowserPictureInPicture\(aspectRatio\)/.test(scr) && /const aspectRatio = video \? \(video\.width! \/ video\.height!\) : 16 \/ 9/.test(scr));
 
 // 24.11 history from a blank tab
 const recent = read('components/browser/StartPage.tsx'); // the Recent list now lives in StartPage (RecentHistory.tsx is gone)
-check('⋮ is enabled on a blank tab (gated on ready, not on a page)', /icon="more" accessibilityLabel="More" disabled=\{!ready\}/.test(scr) && !/icon="more"[^\n]*disabled=\{!hasPage\}/.test(scr));
-check('with no page the sheet is titled Browser', /title=\{hasPage \? historyCopy\.menuTitlePage : historyCopy\.menuTitleBlank\}/.test(scr) && /menuTitleBlank: 'Browser'/.test(read('constants/copy.ts')));
-check('page-only rows sit behind hasPage; Bookmarks, History and Browser settings do not', /\{hasPage \? \(\s*<>[\s\S]*?title="Forward"[\s\S]*?findCopy\.menuRow[\s\S]*?textSizeCopy\.menuRow[\s\S]*?Desktop site[\s\S]*?Copy page link[\s\S]*?<\/>\s*\) : null\}\s*<ListRow\s+icon="bookmark"[\s\S]*?<ListRow\s+icon="clock"/.test(scr));
+check('⋮ is enabled on a blank tab (gated on ready, not on a page)', /icon="more" accessibilityLabel="더보기" disabled=\{!ready\}/.test(scr) && !/icon="more"[^\n]*disabled=\{!hasPage\}/.test(scr));
+check('with no page the sheet is titled Browser', /title=\{hasPage \? historyCopy\.menuTitlePage : historyCopy\.menuTitleBlank\}/.test(scr) && /menuTitleBlank: '브라우저'/.test(read('constants/copy.ts')));
+check('page-only rows sit behind hasPage; Bookmarks, History and Browser settings do not', /\{hasPage \? \(\s*<>[\s\S]*?title="앞으로"[\s\S]*?findCopy\.menuRow[\s\S]*?textSizeCopy\.menuRow[\s\S]*?데스크톱 사이트[\s\S]*?페이지 링크 복사[\s\S]*?<\/>\s*\) : null\}\s*<ListRow\s+icon="bookmark"[\s\S]*?<ListRow\s+icon="clock"/.test(scr));
 check('a blank tab shows the start page (Recent folded in, with its own empty state)', /<StartPage[\s\S]{0,200}onOpen=/.test(scr) && /<EmptyBlock icon="bookmark"/.test(recent));
 check('Recent lists 6 from history, refreshes on change, and links to the History screen', /listHistory\(\{ limit: HISTORY_SAMPLE \}\)/.test(recent) && /START_RECENT_LIMIT = 6/.test(recent) && /useHistoryVersion\(\)/.test(recent) && /\/browser-history/.test(recent) && /bookmarkCopy\.seeAll/.test(recent));
 check('Recent shows nothing when Save history is off or the store fails', /saveHistory/.test(recent) && /\(\) => live && setRows\(\[\]\)/.test(recent));

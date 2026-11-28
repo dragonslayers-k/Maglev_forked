@@ -31,6 +31,7 @@ export type MenuItemId =
   | 'save-image'
   | 'download-video'
   | 'download-stream'
+  | 'play-video'
   | 'save-poster'
   | 'open-tab'
   | 'copy'
@@ -41,7 +42,7 @@ export type MenuItemId =
 export interface MenuItem {
   id: MenuItemId;
   title: string;
-  icon: 'download' | 'plus' | 'copy' | 'share' | 'folder' | 'link' | 'stream';
+  icon: 'download' | 'plus' | 'copy' | 'share' | 'folder' | 'link' | 'stream' | 'play';
   /** The address the row acts on. Null for show-found and link-options. */
   url: string | null;
 }
@@ -53,21 +54,22 @@ export interface MediaMenu {
 }
 
 export const mediaMenuCopy = {
-  saveImage: 'Save image',
-  openImageNewTab: 'Open image in new tab',
-  copyImageAddress: 'Copy image address',
-  shareImageLink: 'Share image link',
-  downloadVideo: 'Download video',
-  downloadStream: 'Download stream',
-  savePoster: 'Save preview image',
-  openVideoNewTab: 'Open video in new tab',
-  copyVideoAddress: 'Copy video address',
-  showFound: 'Show files found on this page',
-  linkOptions: 'Link options',
-  imageInline: "This image is part of the page, so Maglev can't save it from here.",
-  videoBlob: "This video plays in a way Maglev can't save directly. Try the files found on this page.",
-  videoInline: "This video is part of the page, so Maglev can't save it from here.",
-  videoNone: 'This video has no address Maglev can save.',
+  saveImage: '이미지 저장',
+  openImageNewTab: '새 탭에서 이미지 열기',
+  copyImageAddress: '이미지 주소 복사',
+  shareImageLink: '이미지 링크 공유',
+  playVideo: '앱에서 재생',
+  downloadVideo: '동영상 다운로드',
+  downloadStream: '스트림 다운로드',
+  savePoster: '미리보기 이미지 저장',
+  openVideoNewTab: '새 탭에서 동영상 열기',
+  copyVideoAddress: '동영상 주소 복사',
+  showFound: '이 페이지에서 감지한 파일 보기',
+  linkOptions: '링크 옵션',
+  imageInline: '페이지에 포함된 이미지라 여기에서 저장할 수 없습니다.',
+  videoBlob: '이 영상은 직접 저장할 수 없는 방식으로 재생됩니다. 감지 파일 목록을 확인하세요.',
+  videoInline: '페이지에 포함된 영상이라 여기에서 저장할 수 없습니다.',
+  videoNone: '저장할 수 있는 영상 주소를 찾지 못했습니다.',
 } as const;
 
 const MAX_URL = 4096;
@@ -121,6 +123,24 @@ export function resolveHttpUrl(ref: unknown, pageUrl: string): string | null {
   const [p, ...q] = noFrag.split('?');
   const dir = base.path.slice(0, base.path.lastIndexOf('/') + 1);
   return `${origin}${normalizePath(dir + p)}${q.length ? `?${q.join('?')}` : ''}`;
+}
+
+/** MIME hint for the native Media3 player. Empty means let the extractor sniff the response. */
+export function guessMediaMime(url: string): string {
+  const path = url.split(/[?#]/, 1)[0].toLowerCase();
+  if (path.endsWith('.m3u8')) return 'application/vnd.apple.mpegurl';
+  if (path.endsWith('.mpd')) return 'application/dash+xml';
+  if (path.endsWith('.mp4')) return 'video/mp4';
+  if (path.endsWith('.m4v')) return 'video/x-m4v';
+  if (path.endsWith('.webm')) return 'video/webm';
+  if (path.endsWith('.mkv')) return 'video/x-matroska';
+  if (path.endsWith('.mov')) return 'video/quicktime';
+  if (path.endsWith('.mp3')) return 'audio/mpeg';
+  if (path.endsWith('.m4a')) return 'audio/mp4';
+  if (path.endsWith('.aac')) return 'audio/aac';
+  if (path.endsWith('.ogg') || path.endsWith('.opus')) return 'audio/ogg';
+  if (path.endsWith('.wav')) return 'audio/wav';
+  return '';
 }
 
 /** The first non-http raw address kind, for choosing what to tell the user. */
@@ -190,8 +210,11 @@ export function buildMediaMenu(hit: MediaHit): MediaMenu {
     } else note = C.imageInline;
   } else {
     const cls = hit.videoClass;
-    if (hit.url && cls === 'direct') items.push({ id: 'download-video', title: C.downloadVideo, icon: 'download', url: hit.url });
-    else if (hit.url && (cls === 'hls' || cls === 'dash')) items.push({ id: 'download-stream', title: C.downloadVideo, icon: 'stream', url: hit.url });
+    if (hit.url && (cls === 'direct' || cls === 'hls' || cls === 'dash')) {
+      items.push({ id: 'play-video', title: C.playVideo, icon: 'play', url: hit.url });
+      if (cls === 'direct') items.push({ id: 'download-video', title: C.downloadVideo, icon: 'download', url: hit.url });
+      else items.push({ id: 'download-stream', title: C.downloadVideo, icon: 'stream', url: hit.url });
+    }
     else {
       if (hit.poster) items.push({ id: 'save-poster', title: C.savePoster, icon: 'download', url: hit.poster });
       note = cls === 'blob' ? C.videoBlob : cls === 'data' ? C.videoInline : C.videoNone;

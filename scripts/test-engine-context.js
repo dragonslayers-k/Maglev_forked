@@ -20,7 +20,7 @@ function check(name, cond, extra) {
 const ctx = read('context/EngineContext.tsx');
 const layout = read('app/_layout.tsx');
 const noticeHost = read('components/ui/NoticeHost.tsx');
-const starPrompt = read('components/StarPrompt.tsx');
+const starPromptExists = fs.existsSync(path.join(root, 'components/StarPrompt.tsx'));
 
 // ---- provider values are memoized, never inline
 check('no inline value={{ in EngineContext.tsx', !/value=\{\{/.test(ctx));
@@ -56,10 +56,11 @@ if (am) {
 
 // ---- root layout and hosts use the narrowest hook
 check('_layout.tsx does not call useMaglevEngine', !/useMaglevEngine/.test(layout));
+check('YouTube download is engine-first on cold share launch', /youtube-download/.test(layout.match(/const ENGINE_FIRST_ROUTE = ([^;]+);/)?.[1] ?? ''));
 check('_layout.tsx reads useEngineStatus', /useEngineStatus\(\)/.test(layout));
 check('Stack screenOptions is not inline', !/screenOptions=\{\{/.test(layout));
 check('NoticeHost uses useEngineNotice', /useEngineNotice\(\)/.test(noticeHost) && !/useMaglevEngine/.test(noticeHost));
-check('StarPrompt uses useEngineLastCompleted', /useEngineLastCompleted\(\)/.test(starPrompt) && !/useMaglevEngine/.test(starPrompt));
+check('global star solicitation prompt is removed', !starPromptExists && !layout.includes('StarPrompt'));
 
 // ---- fonts embedded at build time
 const app = JSON.parse(read('app.json')).expo;

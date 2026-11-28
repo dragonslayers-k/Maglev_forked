@@ -276,11 +276,11 @@ async function main() {
   console.log('settings order');
   const settings = read('app/(tabs)/settings.tsx');
   const appAt = settings.indexOf('const appRows');
-  const about = settings.indexOf("title: 'About'", appAt);
-  const updates = settings.indexOf("title: 'Updates'", appAt);
+  const about = settings.indexOf("title: '앱 정보'", appAt);
+  const updates = settings.indexOf("title: '목록 업데이트'", appAt);
   const map = settings.indexOf('appRows.map');
   const statsRow = settings.indexOf('<StatsRow />', map);
-  check('App rows are About, then Updates', appAt > 0 && about > appAt && updates > about);
+  check('앱 정보 행 다음 업데이트 행', appAt > 0 && about > appAt && updates > about);
   check('Stats comes after the appRows', map > updates && statsRow > map);
   check('nothing sits between the appRows and Stats', !/<SettingsRow|<\w+Row \/>/.test(settings.slice(map, statsRow).replace('<SettingsRow key={r.route} {...r} />', '')));
   check('Stats is the last row of the App card', /<StatsRow \/>\s*<\/Card>/.test(settings.slice(statsRow - 5, statsRow + 60)));

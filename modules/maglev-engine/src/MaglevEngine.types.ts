@@ -619,6 +619,35 @@ export interface DownloadOptions {
   stream?: StreamSelection;
 }
 
+export interface YouTubeFormat {
+  formatId: string;
+  playerClient: string;
+  kind: 'video' | 'audio';
+  ext: string;
+  height: number;
+  width: number;
+  fps: number;
+  tbr: number;
+  abr: number;
+  size: number | null;
+  /** True when size is calculated from bitrate × duration rather than reported by the extractor. */
+  sizeEstimated?: boolean;
+  /** Whether the selected video stream contains audio already. */
+  hasAudio?: boolean;
+  format: string | null;
+}
+
+export interface YouTubeInfo {
+  videoId: string;
+  title: string;
+  uploader: string | null;
+  /** yt-dlp extractor name (e.g. Youtube, Vimeo), used for diagnostics and UI labels. */
+  extractor?: string | null;
+  duration: number;
+  thumbnail: string | null;
+  formats: YouTubeFormat[];
+}
+
 export interface UrlProbe {
   name: string;
   size: number | null;
@@ -832,6 +861,8 @@ export interface MaglevEngineApi {
   moveStorage(id: string, target: MoveTarget): Promise<EngineResult>;
   /** Opens the stream in a player chooser. UNSUPPORTED when no player is installed. */
   openStream(url: string, mime: string, title: string): Promise<EngineResult>;
+  /** Starts native in-app playback; Media3 handles progressive, HLS and DASH media. */
+  playInAppMedia(url: string, mime: string, title: string, headers?: Record<string, string>): Promise<EngineResult>;
   setSchedule(config: ScheduleConfig): Promise<EngineResult>;
   getScheduleStatus(): Promise<ScheduleStatus>;
   setFeedAutomation(config: FeedAutomationConfig): Promise<EngineResult>;
@@ -888,6 +919,20 @@ export interface MaglevEngineApi {
   /** NATIVE_CONTRACT 24.8. Errors: STREAM_PROTECTED, STREAM_LIVE, STREAM_UNSUPPORTED, plus the probeUrl ones. */
   probeStream(url: string, options: DownloadOptions, timeoutMs: number): Promise<EngineResult<StreamProbe>>;
   addDownload(url: string, options: DownloadOptions): Promise<EngineResult<{ id: string }>>;
+  /** Extracts public, non-DRM YouTube metadata and progressive video/audio formats via yt-dlp. */
+  getYouTubeInfo(url: string): Promise<EngineResult<YouTubeInfo>>;
+  /** Adds a selected YouTube format. Optional audio bitrate is a ceiling for separate adaptive audio tracks. */
+  addYouTubeDownload(url: string, formatId: string, playerClient: string, formatKind: 'video' | 'audio', audioBitrateKbps?: number | null, outputContainer?: string): Promise<EngineResult<{ id: string }>>;
+  /** Requests Android's system picture-in-picture mode for the currently playing browser video. */
+  enterBrowserPictureInPicture(aspectRatio: number): Promise<EngineResult>;
+  /** App-local WireGuard profile status. This is not the Android system VPN state. */
+  getAppWireGuardStatus(): Promise<EngineResult<{ enabled: boolean; hasProfile: boolean; running: boolean }>>;
+  /** Imports and validates a WireGuard .conf document; private key is stored encrypted at rest. */
+  /** Performs a real HTTPS request through the app-local WireGuard tunnel and reports the observed exit. */
+  testAppWireGuardConnection(): Promise<EngineResult<{ ip: string; country: string; country_code: string; message: string }>>;
+  importAppWireGuardProfile(uri: string): Promise<EngineResult<{ hasProfile: boolean }>>;
+  /** Enables app-local HTTP(S) download routing; no VpnService or APN/system route changes. */
+  setAppWireGuardEnabled(enabled: boolean): Promise<EngineResult<{ enabled: boolean }>>;
   pauseDownload(id: string): Promise<EngineResult>;
   resumeDownload(id: string): Promise<EngineResult>;
   /** NATIVE_CONTRACT 25.1: the same for a link download. */

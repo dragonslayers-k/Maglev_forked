@@ -21,7 +21,7 @@ const host = read('modules/maglev-engine/android/src/main/java/com/maglev/engine
 const json = read('modules/maglev-engine/android/src/main/java/com/maglev/engine/util/Json.kt');
 const add = host.slice(host.indexOf('fun addDownload('), host.indexOf('fun pauseDownload('));
 const refresh = host.slice(host.indexOf('fun refreshDownloadUrl('), host.indexOf('fun allowLanHost('));
-check('kotlin: addDownload snakeifies every option (pageUrl reaches Rust as page_url)', /Json\.snakeify\(options\)/.test(add));
+check('kotlin: addDownload snakeifies cleaned options (pageUrl reaches Rust as page_url)', add.includes('Json.snakeify(cleanOptions)'));
 check('kotlin: refreshDownloadUrl snakeifies every option', /Json\.snakeify\(options\)/.test(refresh));
 check('kotlin: snapshot keys are camelized centrally (page_url comes back as pageUrl)', /fun camelize\(/.test(json) && /snakeToCamel/.test(json));
 check('kotlin: no per-field option whitelist for downloads', !/options\["pageUrl"\]|options\.get\("pageUrl"\)/.test(host));

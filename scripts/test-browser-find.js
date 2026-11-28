@@ -67,7 +67,7 @@ async function main() {
   check('every live tab view gets textZoom and a tab-id onFindResult', /textZoom=\{textZoom\}/.test(tab) && /onFindResult=\{\(e\) => h\.onFindResult\(id, e\)\}/.test(tab) && /textZoom=\{prefs\.browserTextZoom\}/.test(scr));
 
   console.log('find bar');
-  check('the bar replaces the address row while find is open', /\{findOpen \? \(\s*<FindBar[\s\S]*?\) : \(\s*<View style=\{styles\.bar\}>/.test(scr));
+  check('the bar replaces the address row while find is open', /\{!pipCompact && \(findOpen \? \(\s*<FindBar[\s\S]*?\) : \(\s*<View style=\{styles\.bar\}>/.test(scr));
   check('the input autofocuses', /autoFocus/.test(bar));
   check('typing is debounced 150 ms', /FIND_DEBOUNCE_MS = 150/.test(bar) && /setTimeout\([\s\S]{0,120}FIND_DEBOUNCE_MS\)/.test(bar));
   check('Enter means next', /onSubmitEditing/.test(bar) && /step\(true\)/.test(bar));
@@ -80,7 +80,7 @@ async function main() {
   check('switching tabs closes find', /findTab\.current !== activeId\) closeFind\(\)/.test(scr));
   check('a new document closes find', /newDocument && id === findTab\.current\) closeFind\(\)/.test(scr));
   check('the menu has Find in page and Text size rows', /findCopy\.menuRow/.test(scr) && /textSizeCopy\.menuRow/.test(scr));
-  check('copy: find and text size strings', /export const findCopy/.test(copy) && /'Find in page'/.test(copy) && /'No matches'/.test(copy) && /`Match \$\{n\} of \$\{total\}`/.test(copy) && /'Previous match'/.test(copy) && /'Next match'/.test(copy) && /'Close find'/.test(copy) && /export const textSizeCopy/.test(copy));
+  check('copy: Korean find and text size strings', /export const findCopy/.test(copy) && /'페이지에서 찾기'/.test(copy) && /'일치하는 항목이 없습니다'/.test(copy) && copy.includes('`${total}개 중 ${n}번째 항목`') && /'이전 항목'/.test(copy) && /'다음 항목'/.test(copy) && /'찾기 닫기'/.test(copy) && /export const textSizeCopy/.test(copy));
 
   console.log('text size');
   const P = await import('../utils/prefs/browser.ts');

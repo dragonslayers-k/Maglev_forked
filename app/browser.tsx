@@ -1,10 +1,11 @@
 import React, { useCallback, useEffect, useId, useMemo, useRef, useState, useSyncExternalStore } from 'react';
-import { AppState, BackHandler, Keyboard, Share, StyleSheet, Text, View } from 'react-native';
+import { AppState, BackHandler, Dimensions, Keyboard, Linking, Share, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { useFocusEffect, useIsFocused, useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Clipboard from 'expo-clipboard';
 import {
   clearCookies,
+  maglevEngine,
   nameFromUrl,
   type BrowserDownloadRequestEvent,
   type BrowserLongPressEvent,
@@ -48,7 +49,8 @@ import { dismissAllVisible, dismissIds, restoreIds, visibleFound } from '../comp
 import { getBrowserPrefs, updateBrowserPrefs, useBrowserPrefs } from '../utils/prefs/browser';
 import { keepHosts, privateSession } from '../utils/browser/privateSession';
 import { hostsToWipe } from '../utils/browser/privateHosts';
-import { buildMediaMenu, hasMenu, parseMediaHit, type MediaHit } from '../utils/browser/mediaHit';
+import { buildMediaMenu, guessMediaMime, hasMenu, parseMediaHit, type MediaHit } from '../utils/browser/mediaHit';
+import { parseNaverClipMediaId } from '../utils/browser/naverClip';
 import { flushTabs, recordVisit } from '../utils/history';
 import { activeTab, backTarget, getTab, isBlank, liveTabs, switcherOrder } from '../utils/browser/tabs';
 import * as popupsApi from '../utils/browser/popups';
@@ -69,6 +71,7 @@ import {
 import { DOWNLOAD_HELD_ACTION, DOWNLOAD_HELD_NOTICE, FOUND_HINT_MS, foundHintDue, foundHintText, opensSaveSheet } from '../utils/browser/hardening';
 import { hostAllowed, type PopupRequest, type PopupsState } from '../utils/browser/popups';
 import { hostOf, isAllowedHost, noticeAllowed, siteKey, toBrowserUrl, toggleAllowedHost } from '../utils/browserUrl';
+import { parseYouTubeIntent } from '../utils/browser/youtube';
 
 /** A quiet notice for these, at most one every 5 seconds. */
 const QUIET_NOTICE: Partial<Record<BrowserRefusalReason, string>> = {
@@ -86,6 +89,13 @@ let mountedScreens = 0;
 /** inTab: shown inside the tab bar, which already pads for the system navigation area, so the bottom inset is skipped. */
 export default function BrowserScreen({ inTab = false }: { inTab?: boolean }) {
   const { colors, dark } = useTheme();
+  const { width: viewportWidth } = useWindowDimensions();
+  const [pipRequested, setPipRequested] = useState(false);
+  const [appForeground, setAppForeground] = useState(AppState.currentState === 'active');
+  const screenWidth = Math.max(1, Dimensions.get('screen').width);
+  // Keep the WebView active during PiP transitions; compact its chrome when Android resizes the Activity
+  // or backgrounds it. Width-relative detection also works for portrait video PiP on Samsung.
+  const pipCompact = pipRequested && (viewportWidth < screenWidth * 0.9 || !appForeground);
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const router = useRouter();
   const params = useLocalSearchParams<{ url?: string; prefill?: string; open?: string; newTab?: string }>();
@@ -99,11 +109,16 @@ export default function BrowserScreen({ inTab = false }: { inTab?: boolean }) {
   // instance mounts native views (it takes the owner token on focus), and a blurred or backgrounded browser pauses them.
   const instanceId = useId();
   const focused = useIsFocused();
-  const [appForeground, setAppForeground] = useState(AppState.currentState === 'active');
+
   useEffect(() => {
     const sub = AppState.addEventListener('change', (st) => setAppForeground(st === 'active'));
     return () => sub.remove();
   }, []);
+  useEffect(() => {
+    if (!pipRequested || !appForeground || viewportWidth < screenWidth * 0.9) return;
+    const timeout = setTimeout(() => setPipRequested(false), 5000);
+    return () => clearTimeout(timeout);
+  }, [pipRequested, appForeground, viewportWidth, screenWidth]);
   const isOwner = useSyncExternalStore(subscribeTabData, () => getViewOwner() === instanceId, () => false);
   useEffect(() => () => releaseViewOwner(instanceId), [instanceId]);
   // Shared per-tab data and pop-up prompts changed (any instance): render again.
@@ -140,9 +155,34 @@ export default function BrowserScreen({ inTab = false }: { inTab?: boolean }) {
   const blocked = data.blocked;
   const foundAll = data.found;
   const dismissed = data.dismissed;
+  const naverClipMediaId = page?.url ? parseNaverClipMediaId(page.url) : null;
+  const naverClipPageUrl = naverClipMediaId ? page?.url ?? null : null;
   const [undo, setUndo] = useState<{ message: string; ids: string[] } | null>(null);
   const undoTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const found = useMemo(() => visibleFound(foundAll, dismissed), [foundAll, dismissed]);
+  const found = useMemo(() => {
+    const visible = visibleFound(foundAll, dismissed);
+    if (!naverClipMediaId || !naverClipPageUrl) return visible;
+    const syntheticId = 'naverclip:' + naverClipMediaId;
+    if (dismissed.has(syntheticId)) return visible.filter(item => item.kind !== 'video');
+    // The page exposes a carousel of TS fragments; present one actionable whole-clip item instead.
+    const nonVideo = visible.filter(item => item.kind !== 'video');
+    const clip: FoundItem = {
+      id: syntheticId,
+      url: naverClipPageUrl,
+      kind: 'video',
+      mime: 'video/mp4',
+      ext: 'mp4',
+      name: (page?.title?.trim() || 'NAVER Clip') + '.mp4',
+      size: null,
+      width: null,
+      height: null,
+      source: 'page',
+      stream: null,
+      pageUrl: naverClipPageUrl,
+      pageTitle: page?.title ?? '',
+    };
+    return [...nonVideo, clip];
+  }, [foundAll, dismissed, naverClipMediaId, naverClipPageUrl, page?.title]);
   const [trayOpen, setTrayOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const bookmarks = useBookmarks();
@@ -271,12 +311,17 @@ export default function BrowserScreen({ inTab = false }: { inTab?: boolean }) {
 
   const go = useCallback(
     (text: string) => {
+      const youtube = parseYouTubeIntent(text);
+      if (youtube) {
+        router.push({ pathname: '/youtube-download', params: { url: youtube.canonicalUrl } });
+        return;
+      }
       const t = toBrowserUrl(text, prefs.searchEngine);
       if (t.kind === 'empty') return;
       if (t.kind === 'magnet') return toAddTorrent(t.uri);
       open(t.url);
     },
-    [prefs.searchEngine, open, toAddTorrent],
+    [prefs.searchEngine, open, toAddTorrent, router],
   );
 
   // `url` comes from this app (Add download, Open in browser) and opens in a new active tab (the active one when it is blank).
@@ -289,6 +334,11 @@ export default function BrowserScreen({ inTab = false }: { inTab?: boolean }) {
     handled.current = key;
     const cur = tabs.ref.current ? activeTab(tabs.ref.current) : null;
     if (typeof params.url === 'string' && params.url.trim()) {
+      const youtube = parseYouTubeIntent(params.url);
+      if (youtube) {
+        router.push({ pathname: '/youtube-download', params: { url: youtube.canonicalUrl } });
+        return;
+      }
       const t = toBrowserUrl(params.url, prefs.searchEngine);
       if (t.kind === 'magnet') return toAddTorrent(t.uri);
       if (t.kind === 'empty') return;
@@ -298,7 +348,7 @@ export default function BrowserScreen({ inTab = false }: { inTab?: boolean }) {
       if (cur && !isBlank(cur)) openTabChecked({});
       setPrefillText(params.prefill);
     }
-  }, [ready, params.url, params.prefill, params.open, params.newTab, prefs.searchEngine, open, openTabChecked, toAddTorrent, tabs.ref]);
+  }, [ready, params.url, params.prefill, params.open, params.newTab, prefs.searchEngine, open, openTabChecked, toAddTorrent, tabs.ref, router]);
 
   // ---- tabs ----
   const closeWithUndo = useCallback(
@@ -564,7 +614,7 @@ export default function BrowserScreen({ inTab = false }: { inTab?: boolean }) {
       const d = getData(id);
       if (id !== activeIdRef.current || d.notes.has(e.note)) return;
       d.notes.add(e.note);
-      showNotice({ message: e.note === 'drm' ? notices.browser.drm : notices.browser.blob }, 5000);
+      showNotice({ message: e.note === 'drm' ? notices.browser.drm : notices.browser.mseCaptureUnavailable }, 4500);
     },
     onNewWindow: (id, e) => void openTabChecked({ url: e.url, opener: id }),
     onPopupRequest: (id, e) => setPopups((p) => popupsApi.request(p, id, { url: e.url, kind: e.kind, sourceUrl: e.sourceUrl })),
@@ -721,9 +771,32 @@ export default function BrowserScreen({ inTab = false }: { inTab?: boolean }) {
     setMenuOpen(false);
   };
 
+  const enterPictureInPicture = useCallback(() => {
+    setMenuOpen(false);
+    setPipRequested(true);
+    // Wait until the modal sheet closes and request the selected video's aspect ratio.
+    afterSheetCloses(() => {
+      const videos = found.filter((item) => item.kind === 'video' && (item.width ?? 0) > 0 && (item.height ?? 0) > 0);
+      videos.sort((a, b) => ((b.width ?? 0) * (b.height ?? 0)) - ((a.width ?? 0) * (a.height ?? 0)));
+      const video = videos[0];
+      const aspectRatio = video ? (video.width! / video.height!) : 16 / 9;
+      void maglevEngine.enterBrowserPictureInPicture(aspectRatio).then((result) => {
+        if (result.ok) {
+          if ((result as any).pending !== true) showNotice({ message: notices.browser.pipStarted }, 2500);
+        } else {
+          setPipRequested(false);
+          showNotice({ message: result.message || notices.browser.pipFailed }, 4000);
+        }
+      }).catch(() => {
+        setPipRequested(false);
+        showNotice({ message: notices.browser.pipFailed }, 4000);
+      });
+    });
+  }, [showNotice, found]);
+
   return (
-    <SafeAreaView style={styles.root} edges={inTab ? ['top', 'left', 'right'] : ['top', 'left', 'right', 'bottom']}>
-      {findOpen ? (
+    <SafeAreaView style={styles.root} edges={pipCompact ? [] : inTab ? ['top', 'left', 'right'] : ['top', 'left', 'right', 'bottom']}>
+      {!pipCompact && (findOpen ? (
         <FindBar
           result={findResult}
           onSearch={(q) => {
@@ -741,7 +814,7 @@ export default function BrowserScreen({ inTab = false }: { inTab?: boolean }) {
       <View style={styles.bar}>
         <IconButton
           icon="back"
-          accessibilityLabel="Go back"
+          accessibilityLabel="뒤로"
           onPress={() => {
             if (!handleBack()) leave();
           }}
@@ -776,7 +849,7 @@ export default function BrowserScreen({ inTab = false }: { inTab?: boolean }) {
               name={page.secure ? 'lock' : 'warning'}
               size={16}
               color={page.secure ? colors.textMuted : colors.warning}
-              accessibilityLabel={page.secure ? 'Secure connection' : 'Not secure'}
+              accessibilityLabel={page.secure ? '보안 연결' : '보안되지 않은 연결'}
             />
           ) : null}
           <TextField
@@ -808,16 +881,16 @@ export default function BrowserScreen({ inTab = false }: { inTab?: boolean }) {
             autoCapitalize="none"
             autoCorrect={false}
             spellCheck={false}
-            placeholder="Search or type an address"
+            placeholder="주소 또는 검색어 입력"
             style={styles.input}
             numberOfLines={1}
-            accessibilityLabel="Address"
+            accessibilityLabel="주소"
           />
         </View>
         </AddressSwipe>
         <IconButton
           icon={loading ? 'stop' : 'retry'}
-          accessibilityLabel={loading ? 'Stop loading' : 'Reload'}
+          accessibilityLabel={loading ? '로딩 중지' : '새로고침'}
           disabled={!hasPage}
           onPress={() => {
             haptic('tap');
@@ -844,10 +917,10 @@ export default function BrowserScreen({ inTab = false }: { inTab?: boolean }) {
             </Text>
           </View>
         </PressableScale>
-        <IconButton icon="more" accessibilityLabel="More" disabled={!ready} onPress={() => setMenuOpen(true)} />
+        <IconButton icon="more" accessibilityLabel="더보기" disabled={!ready} onPress={() => setMenuOpen(true)} />
       </View>
-      )}
-      <View style={styles.progress}>{loading ? <ProgressBar progress={(page?.progress ?? 0) / 100} indeterminate={!page || page.progress <= 0} /> : null}</View>
+      ))}
+      {!pipCompact ? <View style={styles.progress}>{loading ? <ProgressBar progress={(page?.progress ?? 0) / 100} indeterminate={!page || page.progress <= 0} /> : null}</View> : null}
 
       <View style={styles.body}>
         {tabsState && isOwner
@@ -918,7 +991,7 @@ export default function BrowserScreen({ inTab = false }: { inTab?: boolean }) {
               title={empty.browser.crashed.title}
               body={empty.browser.crashed.body}
               primary={{
-                label: 'Reload',
+                label: '새로고침',
                 onPress: () => {
                   haptic('tap');
                   patch(activeId, (d) => void (d.crashed = false));
@@ -928,7 +1001,7 @@ export default function BrowserScreen({ inTab = false }: { inTab?: boolean }) {
             />
           </View>
         ) : null}
-        {hasPage ? (
+        {!pipCompact && hasPage ? (
           <View style={styles.overlay} pointerEvents="box-none">
             {active ? (
               <PressableScale
@@ -946,10 +1019,10 @@ export default function BrowserScreen({ inTab = false }: { inTab?: boolean }) {
               </PressableScale>
             ) : null}
             <Button
-              label={`Files · ${found.length}`}
+              label={`파일 · ${found.length}`}
               icon="file"
               variant="secondary"
-              accessibilityLabel={`Files, ${found.length} found`}
+              accessibilityLabel={`감지된 파일 ${found.length}개`}
               onPress={() => {
                 haptic('select');
                 setTrayOpen(true);
@@ -957,7 +1030,7 @@ export default function BrowserScreen({ inTab = false }: { inTab?: boolean }) {
             />
           </View>
         ) : null}
-        {hintShown ? (
+        {!pipCompact && hintShown ? (
           <View style={styles.hint} pointerEvents="none" accessibilityLiveRegion="polite">
             <Text style={styles.hintText}>{foundHintText(found.length)}</Text>
           </View>
@@ -983,6 +1056,18 @@ export default function BrowserScreen({ inTab = false }: { inTab?: boolean }) {
         onClose={() => setMediaHit(null)}
         onSave={(_h, u) => downloadLink(u)}
         onStream={streamFromHit}
+        onPlay={async (hit, u) => {
+          try {
+            const pageUrl = hit.pageUrl || page?.url || tab?.url || '';
+            const rawHeaders = await downloadHeaders({ url: u, pageUrl, userAgent: page?.userAgent || '' });
+            const headers = Object.fromEntries(Object.entries(rawHeaders).filter(([, value]) => typeof value === 'string')) as Record<string, string>;
+            const title = hit.alt || page?.title || nameFromUrl(u);
+            const result = await maglevEngine.playInAppMedia(u, guessMediaMime(u), title, headers);
+            if (!result.ok) showNotice({ message: result.message || '앱 내 미디어 플레이어를 열지 못했습니다.' });
+          } catch (error) {
+            showNotice({ message: String((error as Error)?.message || '앱 내 미디어 플레이어를 열지 못했습니다.') });
+          }
+        }}
         onOpenNewTab={(u) => openLinkInTab(u, false)}
         onCopy={(u) => void copy(u)}
         onShare={(u) => {
@@ -998,7 +1083,7 @@ export default function BrowserScreen({ inTab = false }: { inTab?: boolean }) {
           <>
         <ListRow
           icon="forward"
-          title="Forward"
+          title="앞으로"
           disabled={!page?.canGoForward}
           onPress={() => {
             setMenuOpen(false);
@@ -1017,14 +1102,14 @@ export default function BrowserScreen({ inTab = false }: { inTab?: boolean }) {
         />
         <ListRow
           icon="interface"
-          title="Desktop site"
-          accessory={<Toggle value={desktop} onValueChange={setDesktop} accessibilityLabel="Desktop site" />}
+          title="데스크톱 사이트"
+          accessory={<Toggle value={desktop} onValueChange={setDesktop} accessibilityLabel="데스크톱 사이트" />}
         />
         {prefs.adBlock && pageHost ? (
           <ListRow
             icon="shield"
-            title={allowedHere ? 'Block ads on this site' : 'Allow ads on this site'}
-            subtitle={allowedHere ? 'Ads are allowed here' : blocked > 0 ? `${blocked} blocked on this page` : undefined}
+            title={allowedHere ? '이 사이트 광고 차단' : '이 사이트 광고 허용'}
+            subtitle={allowedHere ? '이 사이트의 광고를 허용 중입니다' : blocked > 0 ? `이 페이지에서 ${blocked}개 차단` : undefined}
             onPress={toggleAds}
           />
         ) : null}
@@ -1039,13 +1124,32 @@ export default function BrowserScreen({ inTab = false }: { inTab?: boolean }) {
         ) : null}
         <ListRow
           icon="copy"
-          title="Copy page link"
+          title="페이지 링크 복사"
           disabled={!page?.url}
           onPress={() => {
             setMenuOpen(false);
             if (page?.url) void copy(page.url);
           }}
         />
+        <ListRow
+          icon="download"
+          title="yt-dlp로 페이지 분석"
+          subtitle="지원 사이트의 동영상·오디오 형식 확인"
+          disabled={!/^https?:\/\//i.test(page?.url ?? '')}
+          onPress={() => {
+            const url = page?.url;
+            setMenuOpen(false);
+            if (url) router.push({ pathname: '/youtube-download', params: { url } });
+          }}
+        />
+
+        {found.some((item) => item.kind === 'video' || item.kind === 'audio') ? (
+          <ListRow
+            title="화면 속 화면(PiP)"
+            subtitle="현재 페이지에서 감지된 영상·음악을 작은 창으로 계속 재생"
+            onPress={() => void enterPictureInPicture()}
+          />
+        ) : null}
         <BookmarkToggle url={page?.url ?? tab?.url ?? ''} title={page?.title ?? tab?.title ?? ''} onDone={() => setMenuOpen(false)} />
         {/^https?:\/\//i.test(page?.url ?? '') ? (
           <ListRow
@@ -1077,7 +1181,7 @@ export default function BrowserScreen({ inTab = false }: { inTab?: boolean }) {
         />
         <ListRow
           icon="settings"
-          title="Browser settings"
+          title="브라우저 설정"
           onPress={() => {
             setMenuOpen(false);
             router.push('/settings/browser');
@@ -1092,7 +1196,7 @@ export default function BrowserScreen({ inTab = false }: { inTab?: boolean }) {
         actions={
           <>
             <Button label={browserTabs.thisPage.clearSiteAction} variant="danger" fullWidth onPress={() => void clearSiteData()} />
-            <Button label="Cancel" variant="secondary" fullWidth onPress={() => setClearSiteOpen(false)} />
+            <Button label="취소" variant="secondary" fullWidth onPress={() => setClearSiteOpen(false)} />
           </>
         }
       >

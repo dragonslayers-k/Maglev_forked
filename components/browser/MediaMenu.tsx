@@ -13,6 +13,8 @@ export interface MediaMenuProps {
   onSave: (hit: MediaHit, url: string) => void;
   /** A stream manifest (HLS or DASH). Falls back to `onSave` when not given. */
   onStream?: (hit: MediaHit, url: string, kind: 'hls' | 'dash') => void;
+  /** Plays a resolved direct or manifest URL in the native Media3 player. */
+  onPlay?: (hit: MediaHit, url: string) => void;
   onOpenNewTab: (url: string) => void;
   onCopy: (url: string) => void;
   onShare: (url: string) => void;
@@ -23,7 +25,7 @@ export interface MediaMenuProps {
 }
 
 /** The long-press menu for an image or a video. Every action closes the menu first, like LinkMenu. */
-export function MediaMenu({ hit, onClose, onSave, onStream, onOpenNewTab, onCopy, onShare, onShowFound, onLinkOptions }: MediaMenuProps) {
+export function MediaMenu({ hit, onClose, onSave, onStream, onPlay, onOpenNewTab, onCopy, onShare, onShowFound, onLinkOptions }: MediaMenuProps) {
   const last = useRef<MediaHit | null>(hit);
   if (hit) last.current = hit;
   const h = hit ?? last.current;
@@ -37,6 +39,9 @@ export function MediaMenu({ hit, onClose, onSave, onStream, onOpenNewTab, onCopy
       case 'download-video':
       case 'save-poster':
         if (url) onSave(h, url);
+        break;
+      case 'play-video':
+        if (url) onPlay?.(h, url);
         break;
       case 'download-stream':
         if (url) {
@@ -63,7 +68,7 @@ export function MediaMenu({ hit, onClose, onSave, onStream, onOpenNewTab, onCopy
     }
   };
 
-  const items = menu.items.filter((i) => i.id !== 'link-options' || onLinkOptions);
+  const items = menu.items.filter((i) => (i.id !== 'link-options' || onLinkOptions) && (i.id !== 'play-video' || onPlay));
   return (
     <FloatingSheet visible={hit != null} onClose={onClose} title={middleTruncate(h.url ?? h.poster ?? (h.alt || (h.kind === 'video' ? 'Video' : 'Image')))}>
       {menu.note ? <NoteRow text={menu.note} /> : null}

@@ -30,6 +30,7 @@ const view = stripKotlinComments(read(`${BROWSER}/MaglevBrowserView.kt`));
 const mod = stripKotlinComments(read(`${ENGINE}/android/src/main/java/com/maglev/engine/MaglevEngineModule.kt`));
 const ts = read(`${ENGINE}/src/MaglevBrowser.tsx`);
 const scan = read(`${BROWSER}/PageScan.kt`);
+const classifier = stripKotlinComments(read(`${BROWSER}/FoundClassifier.kt`));
 
 // Section 24.2
 const EVENTS = ['onPage', 'onFound', 'onBlockedCount', 'onDownloadRequest', 'onMagnet', 'onRefused', 'onCrashed'];
@@ -150,6 +151,24 @@ check('page scan bridge exposes exactly one method and validates input', () => {
   assert(scan.includes('requestMediaKeySystemAccess'), 'EME detection');
   assert(/addJavascriptInterface\(bridge, PageScan\.BRIDGE_NAME\)/.test(view), 'only the scan bridge is added');
   assert.strictEqual((view.match(/addJavascriptInterface\(/g) || []).length, 1, 'no other JS interface');
+});
+
+check('dynamic media detection observes fetch, XHR, resource timing and Service Worker GET requests', () => {
+  for (const marker of ['window.fetch', 'XMLHttpRequest', "getEntriesByType('resource')", 'application/vnd.apple.mpegurl', 'application/dash+xml']) {
+    assert(scan.includes(marker), 'page scan missing ' + marker);
+  }
+  assert(scan.includes('MAX_MIME_CHARS') && scan.includes('mimeTypePattern'), 'bounded MIME validation');
+  assert(view.includes('ServiceWorkerController') && view.includes('ServiceWorkerClient'), 'Service Worker observer not installed');
+  assert(view.includes('noteServiceWorkerRequest') && view.includes('request.method'), 'Service Worker requests are attributable and GET-filtered');
+  assert(view.includes('serviceWorkerObserver.compareAndSet(this, null)'), 'inactive/destroyed browser releases the observer');
+  assert(view.includes('FoundClassifier.isStreamSegment(url, hlsSeen, dashSeen)'), 'network observer shares the HLS/DASH segment filter');
+  assert(view.includes('dashSeen = false') && view.includes('item.stream == "dash"'), 'DASH detection state is reset and updated from page reports');
+  assert(view.includes('@Volatile private var active = true'), 'active tab state is visible across WebView threads');
+  for (const marker of ['streamSeen', 'video/mp2t']) {
+    assert(scan.includes(marker), 'page scan segment suppression missing ' + marker);
+  }
+  assert(classifier.includes('isStreamSegment') && ['.ts', '.m4s', '.cmfv', '.cmfa'].every((ext) => classifier.includes(ext)),
+    'shared classifier must suppress known HLS/DASH segment suffixes');
 });
 
 check('blocklist store: https only, atomic write, 10 MB cap, 30 s timeouts', () => {

@@ -12,13 +12,11 @@ import { PixelIconName } from '../../components/PixelIcon';
 import { useSearchPrefs } from '../../utils/prefs/search';
 import { scheduleSummary, useSchedule } from '../../utils/prefs/schedule';
 import { feedAutomationSummary, useFeedAutomation } from '../../utils/prefs/feedAutomation';
-import { useAssistantPrefs } from '../../utils/prefs/assistantApp';
 import { useBrowserPrefs } from '../../utils/prefs/browser';
 import { Card, formatLimit, friendlyPath } from '../../components/settings/SettingsParts';
 import { spacing } from '../../constants/theme';
 import { banners, watchCopy } from '../../constants/copy';
 import { useWatches } from '../../utils/watch/store';
-import { useUpdatePrefs } from '../../utils/prefs/update';
 import { useStatsPrefs } from '../../utils/stats/prefs';
 import { useLinkDownloadPrefs } from '../../utils/prefs/linkDownloads';
 import { useSubtitleSettings } from '../../components/subtitles-settings/useSubtitleSettings';
@@ -34,7 +32,7 @@ const ACCENT_LABEL = {
   amber: 'Amber',
   mint: 'Mint',
 } as const;
-const MODE_LABEL = { oled: 'OLED', dim: 'Dim', light: 'Light', system: 'System' } as const;
+const MODE_LABEL = { oled: 'OLED', dim: '어둡게', light: '밝게', system: '시스템' } as const;
 
 interface RowSpec {
   icon: PixelIconName;
@@ -55,7 +53,7 @@ function StatsRow() {
   const keep = useStatsPrefs().keepStats;
   const router = useRouter();
   const onPress = useCallback(() => router.push('/stats' as never), [router]);
-  return <ListRow icon="grid" title="Stats" value={keep ? 'Your downloads, by day' : 'Off'} onPress={onPress} />;
+  return <ListRow icon="grid" title="통계" value={keep ? '날짜별 다운로드' : '꺼짐'} onPress={onPress} />;
 }
 
 /** Storage row: the only row that reads the engine, kept apart so the rest of the list stays still. */
@@ -63,7 +61,7 @@ function StorageRow() {
   const { settings } = useSettings();
   const { storageStatus, defaultStoragePath } = useEngine();
   const folder = settings.downloadFolder?.displayName ?? friendlyPath(storageStatus?.path || defaultStoragePath);
-  return <SettingsRow icon="folder" title="Storage" value={folder} route="storage" />;
+  return <SettingsRow icon="folder" title="저장 공간" value={folder} route="storage" />;
 }
 
 /** Warning banners. Reads engine state itself, so engine ticks re-render only this block. */
@@ -82,7 +80,7 @@ function NeedsAttention() {
           tone="warning"
           title={banners.settings.notificationsOff.title}
           body={banners.settings.notificationsOff.body}
-          actionLabel="Open settings"
+          actionLabel="설정 열기"
           onAction={() => void Linking.openSettings()}
         />,
       );
@@ -93,7 +91,7 @@ function NeedsAttention() {
           key="battery"
           tone="warning"
           title={banners.settings.batteryRestricted.title}
-          actionLabel="Allow background"
+          actionLabel="백그라운드 허용"
           onAction={() => void maglevEngine.openBatterySettings().then(refreshPermissions)}
         />,
       );
@@ -105,7 +103,7 @@ function NeedsAttention() {
           tone="warning"
           title={banners.settings.legacyStorageDenied.title}
           body={banners.settings.legacyStorageDenied.body}
-          actionLabel="Grant access"
+          actionLabel="권한 허용"
           onAction={() => void maglevEngine.requestLegacyStorage().then(refreshPermissions)}
         />,
       );
@@ -117,7 +115,7 @@ function NeedsAttention() {
           tone="danger"
           title={banners.storage.folderAccessLost.title}
           body={banners.storage.folderAccessLost.body}
-          actionLabel="Pick again"
+          actionLabel="다시 선택"
           onAction={() => router.push('/settings/storage')}
         />,
       );
@@ -128,7 +126,7 @@ function NeedsAttention() {
           tone="warning"
           title={banners.storage.appStorageFallback.title}
           body={banners.storage.appStorageFallback.body}
-          actionLabel="Fix"
+          actionLabel="수정"
           onAction={() => router.push('/settings/storage')}
         />,
       );
@@ -139,7 +137,7 @@ function NeedsAttention() {
   if (attention.length === 0) return null;
   return (
     <View style={styles.section}>
-      <SectionHeader title="Needs attention" />
+      <SectionHeader title="확인 필요" />
       {attention}
     </View>
   );
@@ -153,10 +151,8 @@ export default function SettingsIndex() {
   const [searchPrefs] = useSearchPrefs();
   const [schedule] = useSchedule();
   const [feedAuto] = useFeedAutomation();
-  const assistant = useAssistantPrefs();
   const watches = useWatches();
   const [browserPrefs] = useBrowserPrefs();
-  const [updatePrefs] = useUpdatePrefs();
   const [linkPrefs] = useLinkDownloadPrefs();
   const [subtitles] = useSubtitleSettings();
   const [query, setQuery] = useState('');
@@ -180,7 +176,7 @@ export default function SettingsIndex() {
       ? `Pause below ${p.batteryCutoffThreshold}%`
       : p.downloadOnlyWhileCharging
         ? 'Charging only'
-        : 'Off';
+        : '꺼짐';
   const queue = `${b.maxActiveDownloads} at a time`;
   const interfaceValue = `${MODE_LABEL[a.mode]} · ${ACCENT_LABEL[a.accent]}`;
   const network = n.wifiOnly ? 'Wi-Fi only' : 'Any network';
@@ -189,31 +185,30 @@ export default function SettingsIndex() {
   const auto = feedAutomationSummary(feedAuto);
 
   const downloadsValue = linkPrefs.downloadParts === 1 ? '1 part' : `${linkPrefs.downloadParts} parts`;
-  const alerts = permissionStatus?.notifications === 'granted' ? 'On' : 'Off';
+  const alerts = permissionStatus?.notifications === 'granted' ? '켜짐' : '꺼짐';
 
   const generalRows: RowSpec[] = [
-    { icon: 'interface', title: 'Appearance', value: interfaceValue, route: 'interface' },
-    { icon: 'assistant', title: 'Assistant', value: assistant.enabled ? 'Experimental · On' : 'Experimental · Off', route: 'assistant' },
-    { icon: 'bell', title: 'Notifications', value: alerts, route: 'notifications' },
-    { icon: 'upload', title: 'Backup and restore', value: 'Settings and torrents', route: 'backup' },
+    { icon: 'interface', title: '화면 모양', value: interfaceValue, route: 'interface' },
+    { icon: 'bell', title: '알림', value: alerts, route: 'notifications' },
+    { icon: 'upload', title: '백업 및 복원', value: '설정 및 토렌트', route: 'backup' },
   ];
   const findRows: RowSpec[] = [
-    { icon: 'search', title: 'Search sources', value: providers, route: 'search-providers' },
-    { icon: 'feeds', title: 'Auto-download', value: auto, route: 'feeds' },
-    { icon: 'subtitles', title: 'Subtitles', value: subtitles.enabled ? 'On' : 'Off', route: 'subtitles' },
+    { icon: 'search', title: '검색 사이트', value: providers, route: 'search-providers' },
+    { icon: 'feeds', title: '자동 다운로드', value: auto, route: 'feeds' },
+    { icon: 'subtitles', title: '자막', value: subtitles.enabled ? '켜짐' : '꺼짐', route: 'subtitles' },
   ];
-  const downloadsRow: RowSpec = { icon: 'arrow-down', title: 'Adding and finishing', value: downloadsValue, route: 'downloads' };
-  const speedRow: RowSpec = { icon: 'bandwidth', title: 'Speed and sharing', value: `${limits} · ${queue}`, route: 'speed' };
-  const scheduleRow: RowSpec = { icon: 'schedule', title: 'Scheduling', value: scheduling, route: 'scheduling' };
+  const downloadsRow: RowSpec = { icon: 'arrow-down', title: '추가 및 완료', value: downloadsValue, route: 'downloads' };
+  const speedRow: RowSpec = { icon: 'bandwidth', title: '속도 및 공유', value: `${limits} · ${queue}`, route: 'speed' };
+  const scheduleRow: RowSpec = { icon: 'schedule', title: '예약', value: scheduling, route: 'scheduling' };
   const watchRow: RowSpec = { icon: 'alarm', title: watchCopy.rowTitle, value: watchCopy.rowValue(watches.length), route: 'watch' };
   const networkRows: RowSpec[] = [
-    { icon: 'network', title: 'Network', value: network, route: 'network' },
-    { icon: 'power', title: 'Power', value: power, route: 'power' },
-    { icon: 'network', title: 'Browser', value: browserPrefs.adBlock ? 'Ad blocking on' : 'Ad blocking off', route: 'browser' },
+    { icon: 'network', title: '네트워크', value: network, route: 'network' },
+    { icon: 'power', title: '전원', value: power, route: 'power' },
+    { icon: 'network', title: '브라우저', value: browserPrefs.adBlock ? '광고 차단 켜짐' : '광고 차단 꺼짐', route: 'browser' },
   ];
   const appRows: RowSpec[] = [
-    { icon: 'about', title: 'About', value: APP_VERSION, route: 'about' },
-    { icon: 'download', title: 'Updates', value: updatePrefs.updateAutoCheck ? 'Checks daily' : 'Manual', route: 'updates' },
+    { icon: 'about', title: '앱 정보', value: APP_VERSION, route: 'about' },
+    { icon: 'download', title: '목록 업데이트', value: '광고 차단·검색 사이트 목록', route: 'updates' },
   ];
 
   // "More below": a fade over the bottom edge until the end is near, and a pill that stays until the end has been reached once (or it is tapped).
@@ -247,7 +242,7 @@ export default function SettingsIndex() {
   }, [dismissHint]);
 
   return (
-    <Screen title="SETTINGS" contentStyle={styles.body}>
+    <Screen title="설정" contentStyle={styles.body}>
       <ScrollView
         ref={scrollRef}
         style={styles.body}
@@ -271,7 +266,7 @@ export default function SettingsIndex() {
           <>
             <NeedsAttention />
             <View style={styles.section}>
-              <SectionHeader title="App" />
+              <SectionHeader title="앱" />
               <Card>
                 {appRows.map((r) => (
                   <SettingsRow key={r.route} {...r} />
@@ -280,7 +275,7 @@ export default function SettingsIndex() {
               </Card>
             </View>
             <View style={styles.section}>
-              <SectionHeader title="General" />
+              <SectionHeader title="일반" />
               <Card>
                 {generalRows.map((r) => (
                   <SettingsRow key={r.route} {...r} />
@@ -288,7 +283,7 @@ export default function SettingsIndex() {
               </Card>
             </View>
             <View style={styles.section}>
-              <SectionHeader title="Finding things" />
+              <SectionHeader title="콘텐츠 찾기" />
               <Card>
                 {findRows.map((r) => (
                   <SettingsRow key={r.route} {...r} />
@@ -296,7 +291,7 @@ export default function SettingsIndex() {
               </Card>
             </View>
             <View style={styles.section}>
-              <SectionHeader title="Transfers" />
+              <SectionHeader title="전송" />
               <Card>
                 <SettingsRow {...downloadsRow} />
                 <SettingsRow {...speedRow} />
@@ -306,7 +301,7 @@ export default function SettingsIndex() {
               </Card>
             </View>
             <View style={styles.section}>
-              <SectionHeader title="Network and power" />
+              <SectionHeader title="네트워크 및 전원" />
               <Card>
                 {networkRows.map((r) => (
                   <SettingsRow key={r.route} {...r} />

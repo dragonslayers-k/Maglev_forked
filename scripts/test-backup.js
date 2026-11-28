@@ -209,7 +209,7 @@ async function main() {
   const screen = read('app/settings/backup.tsx');
   check('screen reads copy from constants/copy.ts', /backupCopy/.test(screen));
   check('screen has no raw colours', !/#[0-9a-fA-F]{3,8}\b/.test(screen));
-  check('copy says secrets are never saved', /never saved/.test(read('constants/copy.ts')));
+  check('Korean backup copy says secrets are not included', /백업에 포함되지 않습니다/.test(read('constants/copy.ts')));
   if (require('./lib/privateDocs').readPrivateDoc('contracts-0.19/backup.md') !== null) check('contract doc exists', true);
 
   if (failed) {
