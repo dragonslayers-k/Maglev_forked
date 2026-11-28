@@ -31,29 +31,34 @@ class MaglevWatchModule : Module() {
             } else if (activity == null) {
                 promise.resolve(mapOf("ok" to false, "code" to "NOT_READY", "message" to "The app screen is not available."))
             } else if (!MaglevBrowserView.fullscreenVideoActive) {
-                // Do not synthesize a WebView fullscreen click from evaluateJavascript:
-                // that call has no transient user activation, so Chromium may reject
-                // requestFullscreen() and leave the browser-menu PiP request stuck.
-                // Android PiP is an Activity operation and can start directly while the
-                // inline HTML video keeps playing in its WebView Surface.
-                val ratio = if (requestedAspectRatio.isFinite()) {
-                    requestedAspectRatio.coerceIn(0.42, 2.39)
-                } else {
-                    (16.0 / 9.0)
-                }
-                val numerator = (ratio * 1000.0).toInt().coerceAtLeast(1)
-                val params = PictureInPictureParams.Builder()
-                    .setAspectRatio(Rational(numerator, 1000))
-                    .build()
-                activity.runOnUiThread {
-                    try {
-                        val entered = activity.enterPictureInPictureMode(params)
-                        promise.resolve(
-                            if (entered) mapOf("ok" to true)
-                            else mapOf("ok" to false, "code" to "PIP_DENIED", "message" to "Android에서 PiP 전환을 거부했습니다. 영상이 재생 중인지 확인하고 다시 시도하세요.")
-                        )
-                    } catch (_: Throwable) {
-                        promise.resolve(mapOf("ok" to false, "code" to "INTERNAL", "message" to "Android에서 PiP를 시작하지 못했습니다."))
+                // Validate the currently playing visible video in WebView first. Never enter
+                // PiP based only on stale media-scan dimensions or an arbitrary 16:9 fallback.
+                MaglevBrowserView.measureActiveVideoForPip { measuredRatio, reason ->
+                    if (measuredRatio == null) {
+                        val code = if (reason == "BAD_RATIO") "BAD_VIDEO_RATIO" else "VIDEO_NOT_FOUND"
+                        val message = if (code == "BAD_VIDEO_RATIO") {
+                            "영상 비율을 확인할 수 없습니다."
+                        } else {
+                            "현재 탭에서 재생 중인 동영상을 찾지 못했습니다. 영상을 재생한 뒤 다시 시도하세요."
+                        }
+                        promise.resolve(mapOf("ok" to false, "code" to code, "message" to message))
+                    } else {
+                        val ratio = measuredRatio.coerceIn(0.42, 2.39)
+                        val numerator = (ratio * 1000.0).toInt().coerceAtLeast(1)
+                        val params = PictureInPictureParams.Builder()
+                            .setAspectRatio(Rational(numerator, 1000))
+                            .build()
+                        activity.runOnUiThread {
+                            try {
+                                val entered = activity.enterPictureInPictureMode(params)
+                                promise.resolve(
+                                    if (entered) mapOf("ok" to true)
+                                    else mapOf("ok" to false, "code" to "PIP_DENIED", "message" to "Android에서 PiP 전환을 거부했습니다. 영상이 재생 중인지 확인하고 다시 시도하세요.")
+                                )
+                            } catch (_: Throwable) {
+                                promise.resolve(mapOf("ok" to false, "code" to "INTERNAL", "message" to "Android에서 PiP를 시작하지 못했습니다."))
+                            }
+                        }
                     }
                 }
             } else {
