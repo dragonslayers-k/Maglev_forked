@@ -114,3 +114,13 @@ Next work is WP0/WP1 evidence only: inventory repository branches/PRs/workflows/
 - Official upstream `Kaos599/Maglev` v0.33 SHA `baaf83f0f3afd65d2eac135cce8b8bbabea8fbb3` verified. Fork `main` and `dev` each compare **identical** to that exact upstream SHA (0 ahead/0 behind). This closes the upstream/main/dev identity check, not the full WP0/WP1 gate.
 - PR #10 description updated to reflect CI #781 and the newer master gate; PR remains Draft.
 - CI #781 APK signing verification, versionCode verification and 16 KB LOAD alignment all passed; exact APK SHA recorded above.
+
+
+## CI #787 complete + cancellation policy fixed (2026-11-28)
+
+- Current head: `3835f6f56a84b87b8c9a2a7ebc2ef9b4efad3ec6`.
+- CI #787: https://github.com/dragonslayers-k/Maglev_forked/actions/runs/46117853265 — Contract tests, JS typecheck/unit/contract/assistant tests, Rust tests, ABI plan, ARM64 native build (including 16 KB LOAD alignment), APK build, signing, versionCode and upload all succeeded.
+- Downloaded ARM64 APK artifact ID `15252424631`; SHA-256 `03b6742acc4105b106c42e68ce53ec0db48408900cc5530c13a65b6c859ca259`. CI build evidence only; no Galaxy runtime acceptance is claimed.
+- Repeated canceled runs #782–#785 were caused by workflow concurrency `cancel-in-progress: true` while rapid follow-up commits entered the same branch group. Changed `.github/workflows/ci.yml` in commit `3835f6f`: concurrency group v4 and `cancel-in-progress: false`. This lets active full builds finish; GitHub may still replace a pending queued run in the same group.
+- #786 also passed before the concurrency fix; #787 is the first full run on the corrected policy and is green.
+- Current next gate remains the master spec/Issue #8 ordered acceptance: complete baseline regression review and WP0/WP1 ADR approval, then WP2 core task/direct recovery. Do not add unrelated features, merge PR #10, alter #702, or release before Galaxy acceptance.
