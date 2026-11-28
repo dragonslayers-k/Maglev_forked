@@ -40,13 +40,10 @@ if (!browser.includes('youtubeAdScript') || !browser.includes('ytp-ad-skip-butto
 if ((!browser.includes('v.getClientRects().length > 0') && !browser.includes('v.getClientRects().length>0')) ||
     (!browser.includes("s.visibility !== 'hidden'") && !browser.includes("s.visibility!=='hidden'")) ||
     !browser.includes('setSeamlessResizeEnabled(true)') ||
-    !browser.includes('requestFullscreenVideoForPipInternal(requestedAspectRatio, onResult)') ||
-    !pipNative.includes('MaglevBrowserView.requestFullscreenVideoForPip(requestedAspectRatio)') ||
-    !browser.includes('if (fullscreenVideoActive) onResult(true, null)') ||
-    !browser.includes('mainHandler.postDelayed(checkFullscreen, 100L)') ||
-    !browser.includes('onResult(false, "FULLSCREEN_TIMEOUT")') ||
-    !browser.includes('onResult(false, response ?: "NO_RESPONSE")')) {
-  throw new Error('PiP must validate visible video, return a diagnostic reason, and wait for the native fullscreen surface before reporting success');
+    !pipNative.includes('activity.enterPictureInPictureMode(params)') ||
+    !pipNative.includes('if (!MaglevBrowserView.fullscreenVideoActive)') ||
+    !pipNative.includes('PIP_DENIED')) {
+  throw new Error('Browser-menu PiP must enter the Activity directly instead of relying on a synthetic fullscreen gesture');
 }
 // Regression guard for Samsung/WebView black PiP: attach the untouched custom media
 // view at the Activity window root, not android.R.id.content, and do not paint over it.
