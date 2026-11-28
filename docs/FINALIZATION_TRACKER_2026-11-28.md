@@ -271,3 +271,15 @@ Do not continue document-only “feature progress.” Next source commits must f
 - Downloaded #811 artifact `apks` (artifact id `15262790510`) and verified ZIP digest `b02c1fc30037017139f4fb24a4a897e10a75d23efc9f107dec889912ebc2cb` matches Actions artifact metadata.
 - ZIP contains `app-arm64-v8a-release.apk` (64,671,164 bytes); extracted APK SHA-256: `2d37b09df73acd5c288a38123fd3ca88b7345a7540bdf6a87cdc417df4658014`.
 - This is an installable PR #1 build candidate with the 8-segment request + safe metadata diagnostic. It is not a final release and has not been Galaxy runtime accepted. Test for audio-only throughput, verify diagnostic logs and confirm known-good WireGuard/video still work.
+
+
+## Galaxy 설치 후기 #814/#815 — 영상 검토 및 다음 수정 근거 (2026-11-28 KST)
+
+- 사용자가 제공한 두 화면 녹화 파일을 실제로 검토함. #814는 약 42.6초, #815는 약 119.9초.
+- **#814 PiP 오류를 코드 원인까지 확인:** 화면에 `MaglevWatch.enterBrowserPictureInPicture` 거부와 `A WebView method was called on thread 'expo.modules.AsyncFunctionQueue'`가 표시됨. recovery 브랜치의 `measureActiveVideoForPipInternal`가 Expo AsyncFunctionQueue에서 직접 `webView.evaluateJavascript`를 호출하는 경로가 원인과 일치. `MaglevBrowserView.kt`에서 WebView 자체의 `post { }`로 UI/main thread에 전달하도록 수정함. commit `217536a34fd9f9edd2f9a6a884bb495faa6f6891`; CI #817 run `46146887603` queued 시점.
+- PiP thread dispatch를 고정하는 회귀 계약을 `scripts/test-page-scan-mse.js`에 추가함. commit `44ddd421cbd3a98f02cade43e2a52833058a7d20`; 같은 PR10/recovery CI #817에서 함께 검사 예정.
+- **#815 다운로드 속도 수치 확인:** 화면상 34.5 KB/s, 평균 34 KB/s, 연결 1개, 272 KB / 2.7 MB, 경과 8초, 남은 시간 1분 12초. 따라서 “속도가 느리다”는 체감만이 아니라 실제 단일 연결 저속이 기록됨. #811의 audio segments=8 변경이 해당 다운로드에서 8개 연결로 동작하지 않았음. native Range/probe/validator/split fallback의 실제 분기 로그가 필요하며, 8개로 고정하는 변경만으로 해결됐다고 볼 수 없음.
+- **#815 음질 오류 확인:** `bestaudio_320` 프리셋은 UI에서 `android_vr`로 고정되어 있으나, 메타데이터는 여러 player client에서 합쳐짐. 다운로드 추가 시에는 고정 client 하나만 다시 조회하여 오디오 형식이 사라지면 `YOUTUBE_AUDIO_BITRATE_UNAVAILABLE`를 반환하는 구조. PR #1 canonical branch에서 해당 프리셋이 선택 client에 없을 때 다른 허용 player client를 다시 조회하고, 320 kbps ceiling을 넘지 않는 오디오만 선택하도록 수정함. commit `7941b6232f99f2fb8f8e044cd1bc5ec9fab571cf`; CI #816 run `46146798226` in progress 시점. 이 변경은 컴파일/CI와 실기기 재검증 전까지 미검증.
+- #814/#815 모두: WireGuard 정상 작동 유지. PiP, 백그라운드 미디어, 미디어 인식/다운로드, 오디오 품질·속도는 여전히 FAIL. #815 영상 화질별 인식이 일부 개선됐다는 사용자 보고는 반영하되 전체 기능 완료로 간주하지 않음.
+- 현재 우선순위: (1) #816/#817 CI 결과 확인 및 APK/artifact identity 검증, (2) 새 후보 APK에서 PiP main-thread error 재검증, (3) audio preset alternate-client fallback과 format URL resolution 확인, (4) native transfer의 Range/probe/split/fallback reason을 redacted diagnostics로 기록하고 단일 연결 저속 원인 수정, (5) MediaSession/background playback 및 browser candidate→queue E2E.
+- #702 baseline 유지, PR #10 Draft/recovery-only, PR #1 canonical. Merge/release/baseline promotion 금지. CI green은 Galaxy runtime acceptance가 아님.
