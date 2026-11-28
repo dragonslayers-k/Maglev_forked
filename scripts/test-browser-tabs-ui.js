@@ -26,7 +26,7 @@ const pkg = read('package.json');
 
 console.log('one view per live tab');
 check('the screen maps liveTabs to TabWebView', /liveTabs\(tabsState\)[\s\S]{0,600}<TabWebView/.test(scr));
-check('each view is keyed by its tab id and keeps active WebView during PiP', /key=\{t\.id\}/.test(scr) && /active=\\{focused && t.id === activeId\\}/.test(scr));
+check('each view is keyed by its tab id and keeps active WebView during PiP', /key=\{t\.id\}/.test(scr) && /active=\{focused && t.id === activeId\}/.test(scr));
 check('the screen no longer mounts MaglevBrowser itself', !/<MaglevBrowser\b/.test(scr));
 check('the view forwards active to the native view', /active=\{active\}/.test(view));
 check('an inactive view is hidden: opacity 0 and pointerEvents none', /opacity: 0/.test(view) && /pointerEvents=\{active \? 'auto' : 'none'\}/.test(view));
@@ -50,7 +50,7 @@ console.log('one screen, one tab set (section 30)');
 check('only the owner instance renders TabWebView', /tabsState && isOwner\s*\?\s*liveTabs\(tabsState\)/.test(scr));
 check('the owner token is set on focus and released on unmount', /setViewOwner\(instanceId\)/.test(scr) && /releaseViewOwner\(instanceId\)/.test(scr) && /export function setViewOwner/.test(shared));
 check('a blur alone does not release the token (a blurred browser keeps its pages)', !/blur[\s\S]{0,80}releaseViewOwner/.test(scr));
-check('active includes focus, app foreground, or PiP request', /useIsFocused\(\)/.test(scr) && /AppState\.addEventListener\('change'/.test(scr) && /active=\\{focused && t.id === activeId\\}/.test(scr));
+check('active includes focus, app foreground, or PiP request', /useIsFocused\(\)/.test(scr) && /AppState\.addEventListener\('change'/.test(scr) && /active=\{focused && t.id === activeId\}/.test(scr));
 check('found, page and pop-up state are shared between instances', /export const tabData = new Map/.test(shared) && /export function setPopupsState/.test(shared) && !/useReducer/.test(scr) && !/const dataRef/.test(scr));
 const sites = ['app/(tabs)/index.tsx', 'app/(tabs)/search.tsx', 'app/add-download.tsx', 'app/browser-history.tsx'];
 check('every /browser navigation goes through openBrowser', sites.every((f) => /openBrowser\(router/.test(read(f)) && /utils\/browser\/openBrowser/.test(read(f))));
@@ -127,7 +127,7 @@ const tabRoute = read('app/(tabs)/browse.tsx');
 check('in the tab bar the screen skips the bottom inset (the tab bar already pads for it)', /<BrowserScreen inTab \/>/.test(tabRoute) && /pipCompact \? \[\] : inTab \? \['top', 'left', 'right'\] : \['top', 'left', 'right', 'bottom'\]/.test(scr));
 check('PiP compact viewport hides browser chrome and found-file overlays', /pipRequested && \(viewportWidth < screenWidth \* 0\.9 \|\| !appForeground\)/.test(scr) && /!pipCompact && \(findOpen \?/.test(scr) && /!pipCompact && hasPage \? \(/.test(scr));
 check('PiP request waits for sheet dismissal and passes the largest detected aspect ratio', /afterSheetCloses\(\(\) => \{\s*const videos = found\.filter[\s\S]*?videos\.sort\(\(a, b\) => \(\(b\.width \?\? 0\) \* \(b\.height \?\? 0\)\) - \(\(a\.width \?\? 0\) \* \(a\.height \?\? 0\)\)\)[\s\S]*?const video = videos\[0\][\s\S]*?void maglevEngine\.enterBrowserPictureInPicture\(aspectRatio\)/.test(scr));
-check('PiP keeps the active WebView alive during background transition', /active=\\{focused && t.id === activeId\\}/.test(scr));
+check('PiP keeps the active WebView alive during background transition', /active=\{focused && t.id === activeId\}/.test(scr));
 check('PiP compact state resets when the Activity returns to full width', /setTimeout\(\(\) => setPipRequested\(false\), 5000\)/.test(scr));
 
 // 24.11 history from a blank tab
