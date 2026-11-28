@@ -16,6 +16,11 @@ assert(!/import android\\.net\\.VpnService|extends\\s+VpnService/.test(native), 
 assert(store.includes('AndroidKeyStore') && store.includes('AES/GCM/NoPadding') && store.includes('getNoBackupFilesDir'), 'profile must be AES-GCM encrypted in no-backup app storage');
 assert(controller.includes('installBrowserProxy(9, active = false)') && controller.includes('browserProxyApplied'), 'controller must fail-closed app WebView requests during tunnel startup');
 assert(controller.includes('ProxyController.getInstance().setProxyOverride') && controller.includes('127.0.0.1:$port') && controller.includes('browserProxyApplied'), 'app-local WireGuard must apply and report a process-scoped WebView proxy');
+assert(controller.includes('Handler(Looper.getMainLooper())') && controller.includes('mainHandler.post(command)'), 'WebView proxy completion must be dispatched on the WebView main executor');
+assert(controller.includes('MAIN_THREAD_BLOCKING_CALL') && controller.includes('SET_PROXY_CALLBACK_TIMEOUT') && controller.includes('PROXY_OVERRIDE_UNSUPPORTED'), 'WebView proxy failures must expose distinct actionable failure codes');
+assert(controller.includes('WebView.getCurrentWebViewPackage()') && controller.includes('browserProxyFailureSuffix()'), 'browser proxy failures must report WebView provider/version and sanitized failure reason');
+assert(controller.includes('browserProxyInstalled') && controller.includes('!browserProxyInstalled && !installBrowserProxy(9'), 'temporary closed proxy state must be tracked separately from the active WireGuard browser route');
+assert(!controller.includes('Executor { command -> command.run() }'), 'proxy callback must not run inline on an unspecified WebView thread');
 assert(browser.includes('onReceivedHttpAuthRequest') && browser.includes('browserProxyCredentials(host, realm)'), 'browser must authenticate only the dedicated loopback WireGuard proxy challenge');
 assert(settings.includes('앱 브라우저 + HTTP/HTTPS 다운로드') && settings.includes('휴대전화의 다른 앱과 시스템 네트워크는 터널에 포함하지 않습니다.'), 'settings must state app-only browser/download routing and isolation');
 assert(host.includes('WireGuardController.prepareDownload') && host.includes('setAppWireGuardProxy') && host.includes('http_download_proxy_url') && host.includes('restart_required'), 'app-local HTTP proxy must be applied to the dedicated download field');
