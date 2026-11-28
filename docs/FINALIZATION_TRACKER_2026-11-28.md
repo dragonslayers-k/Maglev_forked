@@ -213,3 +213,14 @@ Do not continue document-only “feature progress.” Next source commits must f
 - CI #802 is running against head `7e64c1fe390969768c45ebbea51828a11454ae0b`: https://github.com/dragonslayers-k/Maglev_forked/actions/runs/46134223904. Latest checked jobs are in progress; result not yet known.
 - V4 plan was updated with exact commits and the warning not to weaken legacy MSE/WireGuard contracts without equivalent evidence: commit `91680ace1ac2033bd25a524fe0ec40e1df27dec0`.
 - Do not mark WP0 complete until #802 result and any exposed regression are resolved; no merge/release/baseline promotion.
+
+
+## CI #802/#800/#804 final results + WP1 ADR draft — 2026-11-28
+
+- Actions latest audit: #804 SUCCESS (run 46134280830); #802 SUCCESS (run 46134223904); #800 SUCCESS (run 46134178615). #803 and #801 CANCELLED due branch advancement, not test failures.
+- #802 individual jobs all passed: JS checks/typecheck/tests/assistant eval, Contract tests, Rust tests, ABI plan, ARM64 native build and APK build. APK artifact ID `15259079950`; archive digest `sha256:38cab77b9891f97745334b0446286f43f9eeac47dbe15bee64641be2fc551765` (ZIP artifact digest, not APK SHA-256). No Galaxy acceptance is claimed.
+- Restored exact #702 regression scripts on canonical PR #1: `scripts/test-page-scan-mse.js` and `scripts/test-wireguard-decoupled.js`. WP0 regression restore CI gate PASS; do not weaken these contracts without equivalent stronger tests.
+- Added WP1 ADR proposal register `docs/ADR_DRAFT_REGISTER_WP1_2026-11-28.md`, commit `03f30b3d78a831232d8ba4eb7161003e5cf7378c`. ADR-001..013 are explicitly **draft/unapproved**. Proposed decisions cover baseline promotion, engine reuse, HLS/DASH, shared task model/persistence, browser observer/candidate queue, playback/MediaSession/PiP, network context, HLS live/MSE, and artifact/device release gate.
+- Updated V4 execution plan with this evidence in commit `badc99cdbe38a393a4ea497792ce3cadf9d95d3c`. V3 remains a user-device symptom/diagnostic reference; newer master spec + Issue #8 + WP0/WP1 reconciliation control the execution sequence.
+- Next action: review WP0/WP1 and selectively reconcile PR #10 candidate code into canonical PR #1; then instrument Gate B audio path and fix only evidence-supported root cause. Preserve #702 and user-confirmed working WG/YouTube video; PR #10 stays Draft; no merge/release/baseline promotion until exact candidate passes Galaxy acceptance.
+- #790 device failures still OPEN: audio-only 20–30 KB/s, PiP black/frozen, background playback unavailable, browser media detection/capture unusable. CI #802/#804 are not runtime fixes.
