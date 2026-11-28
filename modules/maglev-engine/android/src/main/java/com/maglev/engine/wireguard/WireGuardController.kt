@@ -80,15 +80,9 @@ object WireGuardController {
                     return@synchronized saved
                 }
             }
-            // Block app WebView requests during startup; never leave them on direct networking.
+            // Close native WebView and ServiceWorker request gates before startup. The temporary
+            // deny state must not depend on WebView ProxyController availability.
             browserTrafficBlocked = true
-            if (!installBrowserProxy(9, active = false)) {
-                browserTrafficBlocked = isEnabled(context)
-                if (pausedDownloadsForEnable.isNotEmpty()) EngineHost.resumeDownloadsAfterAppWireGuard(pausedDownloadsForEnable)
-                pausedDownloadsForEnable = emptyList()
-                return@synchronized Json.failure(
-                    "APP_WIREGUARD_BROWSER_PROXY_FAILED", "앱 브라우저를 연결 전 차단 상태로 전환하지 못했습니다. " + browserProxyFailureSuffix())
-            }
             context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putBoolean(ENABLED, true).apply()
             // Start the userspace tunnel and authenticated loopback proxy immediately when the
             // app-local switch is enabled; it is not deferred until the first download.
@@ -211,8 +205,9 @@ object WireGuardController {
                 "APP_WIREGUARD_BROWSER_PROXY_FAILED", "앱 브라우저의 WireGuard 프록시를 적용하지 못했습니다. " + browserProxyFailureSuffix())
             return mapOf("ok" to true, "proxy_url" to localProxy, "browser_proxy" to true)
         }
-        if (!browserProxyInstalled && !installBrowserProxy(9, active = false)) return Json.failure(
-            "APP_WIREGUARD_BROWSER_PROXY_FAILED", "WireGuard 시작 전 앱 브라우저를 차단 상태로 전환하지 못했습니다. " + browserProxyFailureSuffix())
+        // Native WebView/ServiceWorker request hooks enforce deny-all until the real authenticated
+        // tunnel proxy has been installed and its callback confirmed.
+        browserTrafficBlocked = true
         val random = ByteArray(32).also { SecureRandom().nextBytes(it) }
         val password = Base64.encodeToString(random, Base64.URL_SAFE or Base64.NO_PADDING or Base64.NO_WRAP)
         random.fill(0)
@@ -247,10 +242,12 @@ object WireGuardController {
             proxyPort = 0
             proxyUsername = null
             proxyPassword = null
-            installBrowserProxy(9, active = false)
+            // Keep the native request gate closed; do not fall back to a process-wide temporary or
+            // direct proxy when the authenticated route was not accepted.
+            browserTrafficBlocked = true
             return Json.failure(
                 "APP_WIREGUARD_BROWSER_PROXY_FAILED",
-                "앱 브라우저의 WireGuard 프록시를 적용하지 못했습니다. " + browserProxyFailureSuffix())
+                "앱 브라우저의 인증 프록시 적용에 실패했습니다. 브라우저는 직접 연결되지 않도록 차단 중입니다. " + browserProxyFailureSuffix())
         }
         return mapOf("ok" to true, "proxy_url" to url, "browser_proxy" to true)
     }
@@ -477,6 +474,9 @@ object WireGuardController {
                 lastBrowserProxyError = "code=PROXY_OVERRIDE_UNSUPPORTED_DURING_CLEAR, provider=$provider"
                 return false
             }
+            // No process-wide proxy override was installed. Persisted enabled state remains
+            // independently fail-closed through shouldBlockBrowserTraffic(context).
+            browserTrafficBlocked = false
             return true
         }
         if (Looper.myLooper() == Looper.getMainLooper()) {
@@ -555,8 +555,9 @@ object WireGuardController {
     /** Rehydrates the process-local tunnel/proxy after process death when the saved switch is on. */
     fun ensureBrowserProxy(context: Context): Map<String, Any?> {
         if (!isEnabled(context)) return mapOf("ok" to true, "browser_proxy" to false)
-        if (!browserProxyInstalled && !installBrowserProxy(9, active = false)) return Json.failure(
-            "APP_WIREGUARD_BROWSER_PROXY_FAILED", "앱 브라우저를 WireGuard 복구 전 차단 상태로 전환하지 못했습니다. " + browserProxyFailureSuffix())
+        // The enabled preference itself keeps every WebView/ServiceWorker request fail-closed
+        // until startTunnel applies the authenticated route.
+        browserTrafficBlocked = true
         val started = startTunnel(context)
         if (started["ok"] != true) return started
         if (EngineHost.isEngineInitialized()) {
