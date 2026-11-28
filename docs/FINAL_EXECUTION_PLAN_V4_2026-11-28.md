@@ -128,3 +128,9 @@ V4 remains the execution-order authority; V3 is symptom/reference only. More spe
 - Root-cause audit: YTDLnis includes managed runtime packages, comprehensive format/task model and worker/postprocess chain; Maglev currently has partial adapters and its own queue. Manifest-only PiP enablement is not full PiP lifecycle. No dedicated MediaSession playback service or verified MSE/live recording path was found in audited source.
 - Immediate work: inspect native segmenter fallback reason and actual audio format/abr/client mapping; fix the 320 kbps ceiling lookup with regression coverage. Then separate implementation gates for native PiP lifecycle, playback/MediaSession, browser candidate→Transfers, supported HLS live recording and Korean subtitle E2E. Preserve WireGuard and existing video download.
 - No merge/release/baseline promotion. #702 remains immutable; PR #1 canonical; PR #10 recovery Draft.
+
+
+## Audit correction — PiP and native split eligibility
+
+- Source audit correction (see `docs/YTDLNIS_SOURCE_PORTING_AUDIT_2026-11-28.md`): Maglev already has native custom fullscreen video and PiP enter/exit/restore code in `MaglevBrowserView.kt`. #814 failed due WebView measurement on the wrong thread; #817/#823 dispatches through `webView.post`. PiP is a real implementation with a targeted candidate fix, not an absent feature; Galaxy acceptance remains open.
+- #823 `segments.rs` uses a 2 MiB split threshold. The 2.7 MB #815 test file was below the previous #811 8 MiB threshold, so that build correctly remained single-connection. #823 is now eligible if Range probe/206/Content-Range/validator/resume conditions pass. Verify actual connection count and throughput before declaring audio speed fixed.
