@@ -20,6 +20,13 @@ assert(controller.includes('Handler(Looper.getMainLooper())') && controller.incl
 assert(controller.includes('MAIN_THREAD_BLOCKING_CALL') && controller.includes('SET_PROXY_CALLBACK_TIMEOUT') && controller.includes('PROXY_OVERRIDE_UNSUPPORTED'), 'WebView proxy failures must expose distinct actionable failure codes');
 assert(controller.includes('WebView.getCurrentWebViewPackage()') && controller.includes('browserProxyFailureSuffix()'), 'browser proxy failures must report WebView provider/version and sanitized failure reason');
 assert(controller.includes('browserProxyInstalled') && controller.includes('!browserProxyInstalled && !installBrowserProxy(9'), 'temporary closed proxy state must be tracked separately from the active WireGuard browser route');
+assert(controller.includes('shouldBlockBrowserTraffic(context)') && controller.includes('browserTrafficBlocked'), 'browser traffic must stay blocked while an enabled WireGuard route is not confirmed');
+assert(browser.includes('WireGuardController.shouldBlockBrowserTraffic(context)') && browser.includes('WireGuardController.shouldBlockBrowserTraffic(view.context)'), 'WebView and process-wide ServiceWorker requests must fail closed when the route is unavailable');
+assert(!controller.includes('Executor { command -> command.run() }'), 'proxy callback must not run inline on an unspecified WebView thread');
+assert(controller.includes('Handler(Looper.getMainLooper())') && controller.includes('mainHandler.post(command)'), 'WebView proxy completion must be dispatched on the WebView main executor');
+assert(controller.includes('MAIN_THREAD_BLOCKING_CALL') && controller.includes('SET_PROXY_CALLBACK_TIMEOUT') && controller.includes('PROXY_OVERRIDE_UNSUPPORTED'), 'WebView proxy failures must expose distinct actionable failure codes');
+assert(controller.includes('WebView.getCurrentWebViewPackage()') && controller.includes('browserProxyFailureSuffix()'), 'browser proxy failures must report WebView provider/version and sanitized failure reason');
+assert(controller.includes('browserProxyInstalled') && controller.includes('!browserProxyInstalled && !installBrowserProxy(9'), 'temporary closed proxy state must be tracked separately from the active WireGuard browser route');
 assert(!controller.includes('Executor { command -> command.run() }'), 'proxy callback must not run inline on an unspecified WebView thread');
 assert(browser.includes('onReceivedHttpAuthRequest') && browser.includes('browserProxyCredentials(host, realm)'), 'browser must authenticate only the dedicated loopback WireGuard proxy challenge');
 assert(settings.includes('앱 브라우저 + HTTP/HTTPS 다운로드') && settings.includes('휴대전화의 다른 앱과 시스템 네트워크는 터널에 포함하지 않습니다.'), 'settings must state app-only browser/download routing and isolation');
