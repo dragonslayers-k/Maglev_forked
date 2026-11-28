@@ -173,3 +173,14 @@ Verdict: **Galaxy acceptance FAIL**. Preserve the working WireGuard and YouTube 
 7. Barrel/MPMux feature audit: do not rebuild existing Range/HLS VOD engines. The latest MPMux audit identifies HLS Live and MSE SourceBuffer byte capture as gaps; integrate with shared queue/storage instead of creating duplicate downloaders.
 
 Do not continue document-only “feature progress.” Next source commits must fix one of these P1 runtime gates, include targeted tests and full CI, then be reported with the exact changed APK and acceptance status. CI green alone remains insufficient.
+
+
+## CI #795 / #796 and V3 replan — 2026-11-28
+
+- #795 failed in JS UI assertions because the active WebView/PiP test regex was incorrectly escaped; APK build skipped. Corrected the test expressions in commit `42b20264c484844b082dad5f431d4aee6e1c8ee9`.
+- CI #796 run https://github.com/dragonslayers-k/Maglev_forked/actions/runs/46128517642 completed successfully on that head: Contract tests, Rust tests, JS typecheck/unit/assistant eval, ABI plan, ARM64 native build/16 KB alignment, APK build, signing, versionCode and APK upload passed. PR APK reuse and Accrescent APK-set steps skipped by condition.
+- APK artifact ID `15257306995`; archive digest `sha256:5f982c851c45ed7b2aedde276f25d0abe87c8032a1bd000f820b3d3d920f1de6`. This commit corrects tests, not the user's runtime issues; do not recommend #796 as a functional fix or claim Galaxy acceptance.
+- Reconfirmed user #790 device verdict: WireGuard and YouTube video download work; audio-only is 20–30 KB/s, PiP black/frozen, background playback unavailable, browser media detection/capture not user-usable. #791 APK native classes.dex/manifest identical to #790; not a fix.
+- Re-read V2 against current master spec v1.0.1 (2026-11-27) and Issue #8. V2 is subordinate; master gate order and CI-vs-device acceptance remain controlling. V2's feature order is updated by new `docs/FINAL_REPLAN_V3_2026-11-28.md`.
+- V3 separates not-done items and reorders work runtime-first: Gate A preserve/reproduce; Gate B diagnose/fix audio throughput; Gate C actual playback + MediaSession background before PiP; Gate D observer→candidate selection→existing queue; Gate E supported HLS live capture/MSE only with proven byte path; Gate F Korean-first subtitles and lyrics. No baseline promotion, merge or release before exact APK Galaxy acceptance.
+- Next code action: Gate B audio-only end-to-end trace/repair. Do not ask user to install #796 as a feature fix. Report the next candidate only after full CI, APK identity/hash, and clear distinction between CI and device status.
