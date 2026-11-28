@@ -244,3 +244,13 @@ Do not continue document-only “feature progress.” Next source commits must f
 - PR #10 vs PR #1 comparison after PR #1 audio commit: branches diverge (PR #10 is 184 commits ahead / 45 behind); compare API reports 47-ish changed paths including broad browser, WireGuard, native engine and YouTube edits plus many recovery docs. Do **not** merge wholesale. Continue selective file-by-file reconciliation against #702 and PR #1.
 - Next: wait for #809 full CI and inspect exact APK/artifact; if green, provide candidate only with clearly marked unverified device status. Galaxy retest needs logcat filtered to `MaglevAudioDiag` plus transfer behavior. If requested 8 segments still falls back, next patch must instrument native probe/split decision and reason; do not keep increasing segment count. Playback/MediaSession and PiP remain separate gates after audio.
 - User #790 acceptance failures remain open. No baseline promotion, merge or release.
+
+
+## CI #809 failure audit + corrected source — 2026-11-28
+
+- CI #809 run https://github.com/dragonslayers-k/Maglev_forked/actions/runs/46139361816: JS checks, Rust tests, contract tests, ABI plan and ARM64 native build passed; `Build APK` failed at `:maglev-engine:compileReleaseKotlin`.
+- Root cause from compiler log: malformed Kotlin diagnostic string in `NewPipeYoutube.kt` (`requestedSegments=8` was missing its closing quote), causing syntax errors around lines 178–187. This was introduced by the audio diagnostic edit, not an Android SDK/NDK or dependency failure.
+- Corrected diagnostic to Kotlin string interpolation and corrected stale comment from four to up to eight bounded parts. Fix commit on canonical PR #1 branch `feature/p1-video-detection-observer`: `28579afc8ffec3e9cbe5a4ccf01b5dc0443e9e4f`.
+- CI #809 has no APK artifact; do not install or report it as a candidate. A new full Actions run is required on `28579af...`; validate APK build/artifact before device test.
+- V3 vs latest: V3 Gate B audio diagnosis is still the active user-facing runtime issue, but V4 + master spec v1.0.1 + Issue #8 + WP0/WP1 reconciliation control task ordering. #802 restored test gate passed; ADR-001..013 remain drafts, not approvals. Preserve #702; PR #10 Draft; PR #1 canonical.
+- Next: wait for full CI on the syntax fix. If green, verify APK identity and provide exact artifact; Galaxy test must capture MaglevAudioDiag and throughput. If native segmentation falls back, instrument native Range/probe/split reason before changing behavior. Keep playback/MediaSession, PiP, browser discovery/capture, Korean subtitles as separate unfinished gates.
