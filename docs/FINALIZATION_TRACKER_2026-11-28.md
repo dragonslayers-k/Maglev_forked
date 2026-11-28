@@ -72,3 +72,18 @@ https://github.com/dragonslayers-k/Maglev_forked/pull/10
 Compared the 2026-11-28 V2 execution blueprint with the newer user Library master guide and comprehensive survey (both updated 2026-11-27). The master documents add/clarify a single MediaIntake → Normalize → Discovery → Candidate merge → Capability resolver → user choice → EngineRouter → TaskOrchestrator pipeline, metadata-rich candidate records, request-context-scoped headers, observer refresh/debounce/deduplication, manifest analysis, and separate live-recording task lifecycle. These are not completed by CI #778 or the existing long-press/shadow-DOM patch.
 
 Next code gate: browser observer/candidate pipeline. Implement bounded, debounced DOM/media/resource observation and refresh; classify direct/HLS/DASH and collect only safe metadata; merge/dedupe candidates; preserve page-scoped referer/user-agent/auth context without logging secrets; feed candidate selection into the existing FoundDownload/StreamSheet and shared Transfers queue. Treat blob/MSE as opaque unless a source/segment path is demonstrably extractable. Keep live HLS recording as a separate later task state machine. Add fixture/contract tests and full CI before claiming this gate; then verify on Galaxy.
+
+
+## CI #781 completed — latest resource-observer candidate (2026-11-28)
+
+- Run: https://github.com/dragonslayers-k/Maglev_forked/actions/runs/46114427733
+- Head: `4a4a3a824ce3180619fe8a2f4779dc73eeb10249`
+- Contract tests, JS checks/typecheck/tests/assistant eval, Rust tests, ABI plan, ARM64 native build and APK build: **success**.
+- Artifact `apks` ID `15251800507`; ARM64 APK `app-arm64-v8a-release.apk` downloaded and inspected. APK SHA-256: `7537002de32d806a4903dd21a322776bf305411e4b32656710e8283840ed981e`. Artifact archive digest reported by Actions: `sha256:9e8de9044f61553009b301961b9741fd6206ffefa52bddc75dbcbbc480d9111d`.
+- Build/automated CI evidence only; no Galaxy PiP/media candidate/E2E acceptance recorded.
+
+## Corrected next gate after rereading the newest master documents
+
+The 2026-11-27 comprehensive survey and total development guide are newer/authoritative over the V2 task sequence. They explicitly say **do not continue feature implementation from the ad-hoc branch sequence** until WP0 source/baseline audit and WP1 architecture ADR approval are complete. Therefore the previous tracker suggestion to immediately proceed with more browser observer features is superseded. The Resource Timing observer is now a CI-verified candidate change, not a baseline promotion.
+
+Next work is WP0/WP1 evidence only: inventory repository branches/PRs/workflows/changed files/dependencies and baseline tests; record exact upstream Maglev commit/version; map existing Direct/Torrent/HLS/DASH/browser flows and failure cases; draft ADR-001..013 with context/options/decision/consequences/rejected alternatives/evidence/tests/review date. Keep PR #10 Draft and #702 immutable. No merge/release and no further feature scope until the blockers are reviewed/approved. After WP0/WP1, proceed in the master guide's WP2 core task/direct recovery gate, then WP3 discovery, then extractor/HLS/media processing/playback in sequence; P2 proxy/WireGuard/live recording remains deferred until P0/P1 contracts stabilize.
