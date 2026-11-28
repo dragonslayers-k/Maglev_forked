@@ -184,3 +184,11 @@ Do not continue document-only “feature progress.” Next source commits must f
 - Re-read V2 against current master spec v1.0.1 (2026-11-27) and Issue #8. V2 is subordinate; master gate order and CI-vs-device acceptance remain controlling. V2's feature order is updated by new `docs/FINAL_REPLAN_V3_2026-11-28.md`.
 - V3 separates not-done items and reorders work runtime-first: Gate A preserve/reproduce; Gate B diagnose/fix audio throughput; Gate C actual playback + MediaSession background before PiP; Gate D observer→candidate selection→existing queue; Gate E supported HLS live capture/MSE only with proven byte path; Gate F Korean-first subtitles and lyrics. No baseline promotion, merge or release before exact APK Galaxy acceptance.
 - Next code action: Gate B audio-only end-to-end trace/repair. Do not ask user to install #796 as a feature fix. Report the next candidate only after full CI, APK identity/hash, and clear distinction between CI and device status.
+
+
+## Gate B source audit — 2026-11-28 (not yet a code fix)
+
+- Inspected PR #10 source `NewPipeYoutube.kt`, `YoutubeDownload.kt`, and native `http_dl/driver/segments.rs`.
+- Both direct audio paths already request `segments=8`; HLS/DASH mux path uses 1 connection by design. Native split cap is 8 and only activates for >=8 MiB when a 206 byte-range probe and strong ETag/Last-Modified validator pass. Otherwise native transfer safely falls back to one connection.
+- Conclusion: do **not** merely increase segment count. Next source change must instrument selected audio format and transfer engine decision (range probe pass/fail, split count/fallback reason, bytes/time, speed limit/proxy state) with signed URL query/cookies/headers redacted; reproduce the reported 20–30 KB/s before changing behavior. Add fixture tests for the root cause, then full CI.
+- V3 doc updated with this source evidence in commit `1c81afd1c7b4370254a2104839fe460a20607b09`. No audio runtime fix or Galaxy acceptance claimed yet.
