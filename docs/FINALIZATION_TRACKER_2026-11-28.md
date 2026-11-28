@@ -142,3 +142,34 @@ Next work is WP0/WP1 evidence only: inventory repository branches/PRs/workflows/
 - CI #790 run https://github.com/dragonslayers-k/Maglev_forked/actions/runs/46120157400 completed successfully on tracker update head `d9ee991e33387f6e0692807690eae4131a8f5b4c`. All required contract/JS/Rust/ABI/ARM64/APK/signing/version/upload jobs succeeded; PR APK reuse and Accrescent APK-set steps were skipped by workflow conditions. APK artifact ID `15253253710`; extracted ARM64 APK SHA-256: `891186de835de622e506a01e4ed9a9c79c69de2d895e2e73a15e1f42bc23e3e9`.
 - #789 and #790 APKs have the same size (63,676,983 bytes) and identical `classes.dex` and `AndroidManifest.xml` hashes. #790 head is a tracker-only follow-up to #789, not a new feature implementation; do not claim new runtime functionality from #790.
 - Both are CI candidates only. No Galaxy test evidence is attached. WP2-A remains PASS; WP2-B remains OPEN. Preserve #702 baseline, keep PR #10 Draft, and do not merge/release. Next executable gate is Galaxy acceptance of the exact APK; once accepted, proceed to WP3 Discovery per master spec/Issue #8.
+
+
+## User Galaxy acceptance — CI #790 / #791 rejected (2026-11-28)
+
+User installed CI #790 and reported:
+- WireGuard works correctly.
+- YouTube video downloads work, but audio-only transfer is extremely slow (20–30 KB/s).
+- PiP still only shows a popup and does not play; picture is cropped/black on the previously reported video sample.
+- Background media playback is unavailable.
+- Browser capture still shows “브라우저 녹화는 아직 지원되지 않습니다. 직접 미디어 주소나 HLS/DASH를 확인하세요.” and cannot recognize media on tested Barrel/MPMux-style pages.
+
+Verdict: **Galaxy acceptance FAIL**. Preserve the working WireGuard and YouTube video paths. Treat audio throughput, real playback/PiP lifecycle, background MediaSession, browser candidate discovery, and supported capture as separate blocking regressions/gates. This feedback supersedes any earlier optimistic source-level or CI-only status.
+
+## CI #791 audited (2026-11-28)
+
+- Run: https://github.com/dragonslayers-k/Maglev_forked/actions/runs/46122175068; completed success on head `39c9b55c179c2158124fa2daf38592de51251d6a`.
+- Contract, JS/typecheck/tests, Rust, ABI plan, ARM64 native build/16 KB alignment, APK build, signing, versionCode and artifact upload passed; conditional PR APK reuse and Accrescent APK set were skipped.
+- Artifact `apks` ID `15255125010`; extracted ARM64 APK size 63,676,983 bytes; SHA-256 `2370f8381132ea46de21779d7e426397b93414f4927a0b9688cedc49c131d246`.
+- Compared #790 and #791 APKs: `classes.dex` and `AndroidManifest.xml` are byte-identical (same SHA-256). #791 is a documentation-only rebuild, **not a fix for the reported failures**. Do not ask the user to install #791 as if it contained a repair.
+
+## Corrected execution priorities after actual device failure
+
+1. **P0 preserve known-good**: keep #702 baseline immutable; retain the user-confirmed working WireGuard and YouTube video download. PR #10 remains Draft; no merge/release.
+2. **P1 playback foundation before PiP**: inspect the existing browser playback path and the native Media3 player/activity, ensure one actual video surface is attached, correct aspect/crop and black-frame behavior, request headers/cookies and lifecycle; test direct MP4, HLS and DASH. PiP must be offered only after the selected media is genuinely playing.
+3. **P1 background playback**: add a foreground MediaSession/Media3 service with audio focus, notification controls, task persistence and lifecycle; verify playback survives app backgrounding and screen-off. A PiP popup alone is not playback.
+4. **P1 audio throughput**: instrument the NewPipe/yt-dlp audio-only path to distinguish extractor URL, transfer engine, proxy/WireGuard route, throttling and conversion. Record bytes/sec, elapsed, provider, format, request headers and retries with secrets/URL tokens redacted. Compare identical source and network to video download; do not arbitrarily change bitrate or route around enabled WireGuard.
+5. **P1 browser discovery/selection**: page observer must produce media candidates from DOM, resource metadata and HLS/DASH manifests, with refresh/dedupe and correct source/quality; route the chosen candidate to existing transfer queue. Current message proves candidate pipeline is not user-usable.
+6. **P2 capture**: implement a separate supported HLS-live task state machine and finalization; MSE SourceBuffer capture only for accessible, non-DRM media with bounded native staging. Remove generic refusal only when an actual supported capture path exists; never claim DRM support or bypass.
+7. Barrel/MPMux feature audit: do not rebuild existing Range/HLS VOD engines. The latest MPMux audit identifies HLS Live and MSE SourceBuffer byte capture as gaps; integrate with shared queue/storage instead of creating duplicate downloaders.
+
+Do not continue document-only “feature progress.” Next source commits must fix one of these P1 runtime gates, include targeted tests and full CI, then be reported with the exact changed APK and acceptance status. CI green alone remains insufficient.
