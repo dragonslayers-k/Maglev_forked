@@ -47,3 +47,13 @@ https://github.com/dragonslayers-k/Maglev_forked/pull/10
 - Root cause: the regression test still required the superseded synthetic fullscreen handoff (`requestFullscreenVideoForPip`, `pipPendingFromBrowserMenu`, and the old pending callback), while the current native path validates the active visible playing video and directly calls Android Activity PiP.
 - Corrected the regression contract in commit `b890479c51f8548c5c1d8facbba6aa349edb3a57`; it now checks direct Activity PiP entry and active-video validation. Awaiting a fresh CI run on this head.
 - This is a test-contract correction, not proof of Galaxy runtime PiP. Keep #702 baseline, PR #10 Draft, and release gate unchanged.
+
+
+## Latest follow-up — CI #777 and blueprint reconciliation (2026-11-28)
+
+- Latest source head before this tracker-only update: `11db5fa9583865593ec5f031bc9c8009fc569b20`.
+- CI #777: https://github.com/dragonslayers-k/Maglev_forked/actions/runs/46113115786. ABI plan passed; Contract tests, JS checks, Rust tests and ARM64 native build were in progress at tracker update. No APK/build or device success claimed yet.
+- #774 failure log pinpointed stale test assertion at `scripts/test-page-scan-mse.js:29`: it still required `requestFullscreenVideoForPip` and pending fullscreen promotion. Current branch had already switched to direct Activity PiP with active-video validation. Contract test was corrected in `b890479c51f8548c5c1d8facbba6aa349edb3a57`; UI stale pending success handling was removed in `11db5fa9583865593ec5f031bc9c8009fc569b20`.
+- Compared V2 with the Library's latest `통합 미디어 다운로더 총괄 개발 가이드.md` and `통합_미디어_다운로더_전수조사_종합_설계기준서.md`: V2 remains consistent on one shared MediaIntake/Candidate/Task pipeline, browser observer rather than unsupported “recording” placeholder, active video native PiP, Korean-first subtitle provider adapters, user-supplied/licensed lyrics, and strict release/device gates. The newer comprehensive guide expands unified media identity, shared queue, session/header scoping, engine-specific proxy adapters and Galaxy E2E acceptance; these are incorporated as execution priorities rather than claiming implemented.
+- Next execution order after CI: (1) get a fresh signed ARM64 APK and hash, (2) validate PiP native lifecycle and callbacks / no stale compact UI, (3) browser observer candidate refresh and candidate-to-existing-queue handoff for direct/HLS/DASH, (4) supported HLS live recording state/finalization/recovery, (5) Korean subtitle search/download/attach/play workflow, (6) Korean lyrics/LRC and metadata, (7) full localization and regression.
+- Keep PR #10 Draft, #702 baseline immutable, and no release until user device acceptance. CI green is not Galaxy runtime acceptance.
