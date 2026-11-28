@@ -96,3 +96,21 @@ Restore `scripts/test-page-scan-mse.js` and `scripts/test-wireguard-decoupled.js
 - #809 remains failed due the Kotlin syntax issue now corrected; #811 proves the correction builds. #808/#810 docs/regression CI passed; #806 was cancelled due branch movement, not test failure.
 - V3 vs current execution: V3 remains diagnostic reference; V4/master spec v1.0.1/Issue #8/WP0-WP1 define task sequence. Actual source improvement is now included and compiles. Segment count change alone is not confirmed to fix 20–30 KB/s; device runtime must collect `MaglevAudioDiag` and native range/probe/split fallback reason.
 - **Next action**: install/test #811 artifact on Galaxy, check audio speed and logcat; if still slow, instrument native transfer decision and address fallback/root cause. Then work through PiP black/frozen, MediaSession/background playback, browser media capture, and Korean subtitle source integration. Preserve known-working WireGuard/video, keep PR #10 Draft, no release or baseline promotion until acceptance.
+
+
+## Galaxy 후기 #814/#815 반영 — 2026-11-28
+
+사용자 제공 #814/#815 화면 녹화 검토 결과를 기준으로 실행 순서를 갱신한다.
+
+1. **PiP thread 오류 (recovery/PR10):** #814에서 WebView 호출이 `expo.modules.AsyncFunctionQueue`에서 수행됐다는 예외를 확인. `measureActiveVideoForPipInternal`의 `evaluateJavascript`를 `webView.post` 안으로 옮김. source commit `217536a34fd9f9edd2f9a6a884bb495faa6f6891`, 회귀 테스트 commit `44ddd421cbd3a98f02cade43e2a52833058a7d20`; CI #817 run `46146887603`에서 검사.
+2. **오디오 프리셋 fallback (canonical PR1):** `bestaudio_320`가 `android_vr`에 고정되어 메타데이터에서 발견된 다른 client의 오디오 URL을 다운로드 단계에서 다시 찾지 못할 수 있음. 선택 client에서 unresolved일 때 다른 허용 client를 조회하되 320 kbps 이하만 선택하도록 수정. commit `7941b6232f99f2fb8f8e044cd1bc5ec9fab571cf`, CI #816 run `46146798226`에서 검사.
+3. **속도:** #815 화면의 34.5 KB/s, 1 connection, 272 KB / 2.7 MB at 8 s는 실제 저속과 단일 연결을 확인. audio segments=8 설정이 실제 병렬 전송으로 이어지지 않은 이유를 native probe/range/validator/split fallback 경로에서 진단해야 함. 다음 수정은 분기별 redacted diagnostics이며 segment 수의 추가 증가는 금지.
+4. **미완료 acceptance:** PiP thread fix는 CI 및 실기기에서 다시 확인할 때까지 미검증. PIP playback lifecycle, MediaSession/background/screen-off, audio-only real throughput, format-quality accuracy, browser candidate→selector→queue and HLS/DASH remain open. WG and video download working paths must remain unchanged.
+
+### V3와 최신 실행 문서 비교
+
+- V3: https://github.com/dragonslayers-k/Maglev_forked/blob/recovery/youtube-selection-reconcile-ci/docs/FINAL_REPLAN_V3_2026-11-28.md — 증상/실패 및 재설계 참고.
+- 최신 실행 순서: V4 (this document) — WP0/WP1 reconciliation, CI evidence, regression gate and user feedback incorporated.
+- V4보다 상세한 최신 architecture/reconciliation record: https://github.com/dragonslayers-k/Maglev_forked/blob/recovery/youtube-selection-reconcile-ci/docs/WP0_WP1_RECONCILIATION_2026-11-28.md
+- Master product spec gate: https://github.com/dragonslayers-k/Maglev_forked/blob/recovery/youtube-selection-reconcile-ci/docs/MASTER_MEDIA_DOWNLOADER_SPEC_KO.md (v1.0.1) and Issue #8.
+- Implementation blueprint reference: https://github.com/dragonslayers-k/Maglev_forked/blob/recovery/youtube-selection-reconcile-ci/docs/FINAL_IMPLEMENTATION_BLUEPRINT_KO_2026-11-28_V2.md
