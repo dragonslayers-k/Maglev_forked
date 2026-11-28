@@ -1812,10 +1812,10 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
             private set
 
         /** Used by the PiP menu to request fullscreen on the active tab's current HTML video. */
-        fun requestFullscreenVideoForPip(requestedAspectRatio: Double, onResult: (Boolean) -> Unit) {
+        fun requestFullscreenVideoForPip(requestedAspectRatio: Double, onResult: (Boolean, String?) -> Unit) {
             val view = serviceWorkerObserver.get()
             if (view == null || view.destroyed) {
-                onResult(false)
+                onResult(false, "NO_ACTIVE_TAB")
                 return
             }
             view.requestFullscreenVideoForPipInternal(requestedAspectRatio, onResult)
