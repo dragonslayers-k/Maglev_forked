@@ -40,12 +40,17 @@ object WireGuardController {
     @Volatile private var browserProxyApplied: Boolean = false
     /** True after any process-wide WebView proxy override, including the temporary closed proxy. */
     @Volatile private var browserProxyInstalled: Boolean = false
+    @Volatile private var browserTrafficBlocked: Boolean = false
     @Volatile private var lastBrowserProxyError: String? = null
     private val mainHandler = Handler(Looper.getMainLooper())
     private var pausedDownloadsForEnable: List<String> = emptyList()
 
     fun isEnabled(context: Context): Boolean =
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean(ENABLED, false)
+
+    /** Prevent browser requests from escaping directly while an enabled tunnel lacks an applied WebView route. */
+    fun shouldBlockBrowserTraffic(context: Context): Boolean =
+        browserTrafficBlocked || (isEnabled(context) && !browserProxyApplied)
 
     fun hasProfile(context: Context): Boolean = WireGuardProfileStore.hasProfile(context)
 
@@ -76,7 +81,9 @@ object WireGuardController {
                 }
             }
             // Block app WebView requests during startup; never leave them on direct networking.
+            browserTrafficBlocked = true
             if (!installBrowserProxy(9, active = false)) {
+                browserTrafficBlocked = isEnabled(context)
                 if (pausedDownloadsForEnable.isNotEmpty()) EngineHost.resumeDownloadsAfterAppWireGuard(pausedDownloadsForEnable)
                 pausedDownloadsForEnable = emptyList()
                 return@synchronized Json.failure(
@@ -374,6 +381,8 @@ object WireGuardController {
      * thread while waiting for the callback that must run there.
      */
     private fun installBrowserProxy(port: Int, active: Boolean = true): Boolean {
+        // Until the callback confirms the new route, the native WebView request hook blocks HTTP(S).
+        browserTrafficBlocked = true
         if (port !in 1..65535) {
             lastBrowserProxyError = "code=INVALID_PROXY_PORT"
             return false
@@ -430,6 +439,7 @@ object WireGuardController {
             if (result) {
                 browserProxyInstalled = true
                 browserProxyApplied = active
+                browserTrafficBlocked = !active
                 lastBrowserProxyError = null
             } else {
                 browserProxyApplied = false
@@ -452,6 +462,8 @@ object WireGuardController {
     }
 
     private fun clearBrowserProxy(): Boolean {
+        // Keep native request interception closed until WebView confirms the override is cleared.
+        browserTrafficBlocked = true
         val provider = webViewProviderSummary()
         val supported = try {
             WebViewFeature.isFeatureSupported(WebViewFeature.PROXY_OVERRIDE)
@@ -503,6 +515,7 @@ object WireGuardController {
             if (result) {
                 browserProxyInstalled = false
                 browserProxyApplied = false
+                browserTrafficBlocked = false
                 lastBrowserProxyError = null
             } else {
                 lastBrowserProxyError = "code=${failure.get() ?: "CLEAR_PROXY_NOT_CONFIRMED"}, provider=$provider"
