@@ -13,6 +13,9 @@ const required = [
   'SourceBuffer.prototype',
   'vs.appendBuffer',
   'post({ items: list, blob: blob, mse: mse })',
+  'PerformanceObserver',
+  'resourceObserver.observe({ type: \'resource\', buffered: true })',
+  'resourceCount >= 300',
   'o.optBoolean("mse", false)',
   'val mse: Boolean',
 ];
