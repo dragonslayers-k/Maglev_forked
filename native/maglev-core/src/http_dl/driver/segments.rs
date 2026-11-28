@@ -32,7 +32,7 @@ use crate::http_dl::rules::{parse_content_range, parse_retry_after, pick_validat
 use crate::http_dl::sidecar::{contiguous_prefix, held_of, Segment};
 
 /// Below this size a download is never split.
-pub(super) const MIN_SPLIT_BYTES: u64 = 8 * 1024 * 1024;
+pub(super) const MIN_SPLIT_BYTES: u64 = 2 * 1024 * 1024;
 /// The most connections one download may use (the options accept 1 to 8).
 pub(super) const MAX_PARTS: u32 = 8;
 
@@ -843,11 +843,15 @@ mod tests {
     }
 
     #[test]
-    fn eight_mib_is_the_threshold() {
+    fn two_mib_is_the_threshold_and_small_youtube_audio_can_split() {
         let mut f = facts(Some("\"v\""));
         f.size = Some(MIN_SPLIT_BYTES - 1);
         assert_eq!(split_count(&f), None);
         f.size = Some(MIN_SPLIT_BYTES);
+        assert_eq!(split_count(&f), Some(4));
+        // The 2.7 MB audio download reported by the Galaxy user must be eligible
+        // for splitting when the server has passed the Range/validator checks.
+        f.size = Some(2_700_000);
         assert_eq!(split_count(&f), Some(4));
         f.size = None;
         assert_eq!(split_count(&f), None);
