@@ -26,9 +26,6 @@ if (!pipNative.includes('requestedAspectRatio: Double') || !pipNative.includes('
 if (!pipUi.includes('enterBrowserPictureInPicture(aspectRatio)') || !pipUi.includes('video.width! / video.height!')) throw new Error('Browser PiP does not pass detected video aspect ratio');
 if (!pipTypes.includes('enterBrowserPictureInPicture(aspectRatio: number)')) throw new Error('PiP aspect ratio is missing from native TypeScript contract');
 if (!browser.includes('fullscreenPipButton') || !browser.includes('setAutoEnterEnabled(autoEnter)') || !browser.includes('activeVideoAspectRatioKnown')) throw new Error('Fullscreen video does not expose intrinsic-ratio PiP and auto-enter');
-if (!pipNative.includes('MaglevBrowserView.requestFullscreenVideoForPip') || !pipNative.includes('"pending" to true')) throw new Error('Inline video PiP does not request a fullscreen video surface before entering PiP');
-if (!browser.includes('pipPendingFromBrowserMenu') || !browser.includes('v.requestFullscreen') || !browser.includes('.ytp-fullscreen-button')) throw new Error('Browser PiP cannot promote an inline player to its fullscreen video surface');
-if (!pipUi.includes('(result as any).pending !== true')) throw new Error('PiP UI announces success before the native pending transition completes');
 if (!scan.includes('explicitMime') || !scan.includes('explicitType') ||
     scan.includes('videoplayback|video|videos|media|stream|segment|chunk')) {
   throw new Error('MSE candidates still use broad opaque-URL keyword matching');
@@ -36,6 +33,12 @@ if (!scan.includes('explicitMime') || !scan.includes('explicitType') ||
 if (!browser.includes('youtubeAdScript') || !browser.includes('ytp-ad-skip-button') ||
     !browser.includes('ytd-display-ad-renderer')) {
   throw new Error('YouTube ad surface/skip-button handler is missing');
+}
+if (!pipNative.includes('MaglevBrowserView.measureActiveVideoForPip') ||
+    !pipNative.includes('activity.enterPictureInPictureMode(params)') ||
+    !pipNative.includes('PIP_DENIED') || !pipNative.includes('VIDEO_NOT_FOUND') ||
+    !pipNative.includes('activity.runOnUiThread')) {
+  throw new Error('Browser-menu PiP must validate active video and enter Android Activity PiP directly');
 }
 if ((!browser.includes('v.getClientRects().length > 0') && !browser.includes('v.getClientRects().length>0')) ||
     (!browser.includes("s.visibility !== 'hidden'") && !browser.includes("s.visibility!=='hidden'")) ||
@@ -58,12 +61,6 @@ if (!browser.includes('val decor = activity.window.decorView as ViewGroup') ||
   throw new Error('PiP custom video view must remain untouched and attached to the Activity decor root');
 }
 const pipModule = fs.readFileSync(path.join(root, 'modules/maglev-engine/android/src/main/java/com/maglev/engine/MaglevEngineModule.kt'), 'utf8');
-if (!pipModule.includes('accepted, reason') || !pipModule.includes('when (reason)') ||
-    !pipModule.includes('"TAB_NOT_ACTIVE"') || !pipModule.includes('"BAD_VIDEO_RATIO"') ||
-    !pipModule.includes('"FULLSCREEN_UNAVAILABLE"') || !pipModule.includes('"FULLSCREEN_TIMEOUT"') ||
-    !pipModule.includes('"VIDEO_NOT_FOUND"') || !pipModule.includes('"FULLSCREEN_HANDOFF_FAILED"')) {
-  throw new Error('PiP native bridge must map fullscreen handoff refusal reasons to actionable diagnostics');
-}
 
 if (!pipUi.includes('videos.sort((a, b) => ((b.width ?? 0) * (b.height ?? 0))')) {
   throw new Error('PiP fallback does not select the largest known video');
