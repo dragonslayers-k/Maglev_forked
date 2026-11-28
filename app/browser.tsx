@@ -789,9 +789,8 @@ export default function BrowserScreen({ inTab = false }: { inTab?: boolean }) {
       void maglevEngine.enterBrowserPictureInPicture(aspectRatio).then((result) => {
         if (result.ok) {
           setPipRequested(true);
-          // A pending result means the active page is being promoted to fullscreen video first;
-          // native PiP entry follows from onShowCustomView, so don't announce success prematurely.
-          if ((result as any).pending !== true) showNotice({ message: notices.browser.pipStarted }, 2500);
+          // The native bridge resolves only after Android accepts Activity PiP.
+          showNotice({ message: notices.browser.pipStarted }, 2500);
         } else {
           setPipRequested(false);
           showNotice({ message: result.message || notices.browser.pipFailed }, 4000);
