@@ -1209,6 +1209,14 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
             val uri = request.url ?: return null
             val scheme = uri.scheme?.lowercase()
             if (scheme != "http" && scheme != "https") return null
+            // If app-local WireGuard is enabled but WebView has not confirmed the proxy route,
+            // block at the native request boundary rather than allowing a direct-network escape.
+            if (WireGuardController.shouldBlockBrowserTraffic(context)) {
+                blockedPage.incrementAndGet()
+                blockedTotal.incrementAndGet()
+                scheduleFlush()
+                return emptyResponse()
+            }
             val host = uri.host
             val page = pageHost
             if (adBlock && !request.isForMainFrame && host != null && !hostAllowsAds(page) &&
@@ -1233,6 +1241,12 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
         override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
             val uri = request.url ?: return true
             val scheme = uri.scheme?.lowercase()
+            if ((scheme == "http" || scheme == "https") && WireGuardController.shouldBlockBrowserTraffic(context)) {
+                blockedPage.incrementAndGet()
+                blockedTotal.incrementAndGet()
+                scheduleFlush()
+                return true
+            }
             if (scheme == "magnet") {
                 if (request.hasGesture()) onMagnet(mapOf("uri" to uri.toString())) else refuse(uri.toString(), "scheme")
                 return true
@@ -1891,8 +1905,14 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
                 try {
                     ServiceWorkerController.getInstance().setServiceWorkerClient(object : ServiceWorkerClient() {
                         override fun shouldInterceptRequest(request: WebResourceRequest): WebResourceResponse? {
-                            serviceWorkerObserver.get()?.noteServiceWorkerRequest(request)
-                            // Observation only. Never consume or replace the Service Worker response.
+                            val view = serviceWorkerObserver.get() ?: return null
+                            if (WireGuardController.shouldBlockBrowserTraffic(view.context)) {
+                                // Service Worker traffic is process-wide and bypasses the WebViewClient hook.
+                                // Apply the same fail-closed gate before the service worker can reach network.
+                                return view.emptyResponse()
+                            }
+                            view.noteServiceWorkerRequest(request)
+                            // Observation only when the app-local route is confirmed.
                             return null
                         }
                     })
