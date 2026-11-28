@@ -76,3 +76,13 @@ Restore `scripts/test-page-scan-mse.js` and `scripts/test-wireguard-decoupled.js
 - Added `docs/ADR_DRAFT_REGISTER_WP1_2026-11-28.md` (commit `03f30b3d78a831232d8ba4eb7161003e5cf7378c`) with ADR-001..013 proposed direction and explicit unapproved status. It records evidence, current device failure, and review/implementation order. No proposal is represented as user-approved.
 - Next: finish review of WP0/WP1 and selectively reconcile PR #10 vs canonical PR #1/#702; then runtime Gate B instrumentation/diagnosis of audio transfer. Do not increase segment count blindly. Preserve #702, keep PR #10 Draft, no merge/release/baseline promotion.
 - #790 Galaxy verdict remains FAIL for audio-only speed, PiP playback, background playback, and browser media detection/capture. #802/#804 are regression/documentation CI, not runtime repairs.
+
+
+## CI #809 failure audit + corrected source — 2026-11-28
+
+- CI #809 run https://github.com/dragonslayers-k/Maglev_forked/actions/runs/46139361816: JS checks, Rust tests, contract tests, ABI plan and ARM64 native build passed; `Build APK` failed at `:maglev-engine:compileReleaseKotlin`.
+- Root cause from compiler log: malformed Kotlin diagnostic string in `NewPipeYoutube.kt` (`requestedSegments=8` was missing its closing quote), causing syntax errors around lines 178–187. This was introduced by the audio diagnostic edit, not an Android SDK/NDK or dependency failure.
+- Corrected diagnostic to Kotlin string interpolation and corrected stale comment from four to up to eight bounded parts. Fix commit on canonical PR #1 branch `feature/p1-video-detection-observer`: `28579afc8ffec3e9cbe5a4ccf01b5dc0443e9e4f`.
+- CI #809 has no APK artifact; do not install or report it as a candidate. A new full Actions run is required on `28579af...`; validate APK build/artifact before device test.
+- V3 vs latest: V3 Gate B audio diagnosis is still the active user-facing runtime issue, but V4 + master spec v1.0.1 + Issue #8 + WP0/WP1 reconciliation control task ordering. #802 restored test gate passed; ADR-001..013 remain drafts, not approvals. Preserve #702; PR #10 Draft; PR #1 canonical.
+- Next: wait for full CI on the syntax fix. If green, verify APK identity and provide exact artifact; Galaxy test must capture MaglevAudioDiag and throughput. If native segmentation falls back, instrument native Range/probe/split reason before changing behavior. Keep playback/MediaSession, PiP, browser discovery/capture, Korean subtitles as separate unfinished gates.
