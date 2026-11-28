@@ -134,3 +134,11 @@ Next work is WP0/WP1 evidence only: inventory repository branches/PRs/workflows/
 - Added `docs/WP2_DIRECT_CORE_GATE_2026-11-28.md` (commit `a79ae3c5be9ce06a5064aafa54c7def4f4cb7dc4`) with the precise automated evidence and Galaxy acceptance checklist.
 - **WP2-B Galaxy acceptance: OPEN.** Need exact APK hash + Samsung device tests for real file/hash, Range resume, ignored Range restart, redirect/auth headers, failure/retry, process restore, segmented transfer and Torrent/HLS/DASH regressions. CI is not device acceptance.
 - Keep #702 baseline immutable, PR #10 Draft, and no merge/release until WP2-B passes.
+
+
+## CI #789 / #790 completion audit — 2026-11-28
+
+- CI #789 run https://github.com/dragonslayers-k/Maglev_forked/actions/runs/46120147574 completed successfully on source head `a79ae3c5be9ce06a5064aafa54c7def4f4cb7dc4`. Contract, JS/typecheck/tests, Rust, ABI plan, ARM64 native build/16 KB alignment, APK build, signing, versionCode and artifact upload passed. APK artifact ID `15254195597`; extracted ARM64 APK SHA-256: `492fe2144e4a34e9d418b83e748402157daa26ce7725e514a84170c1ed1104da`.
+- CI #790 run https://github.com/dragonslayers-k/Maglev_forked/actions/runs/46120157400 completed successfully on tracker update head `d9ee991e33387f6e0692807690eae4131a8f5b4c`. All required contract/JS/Rust/ABI/ARM64/APK/signing/version/upload jobs succeeded; PR APK reuse and Accrescent APK-set steps were skipped by workflow conditions. APK artifact ID `15253253710`; extracted ARM64 APK SHA-256: `891186de835de622e506a01e4ed9a9c79c69de2d895e2e73a15e1f42bc23e3e9`.
+- #789 and #790 APKs have the same size (63,676,983 bytes) and identical `classes.dex` and `AndroidManifest.xml` hashes. #790 head is a tracker-only follow-up to #789, not a new feature implementation; do not claim new runtime functionality from #790.
+- Both are CI candidates only. No Galaxy test evidence is attached. WP2-A remains PASS; WP2-B remains OPEN. Preserve #702 baseline, keep PR #10 Draft, and do not merge/release. Next executable gate is Galaxy acceptance of the exact APK; once accepted, proceed to WP3 Discovery per master spec/Issue #8.
