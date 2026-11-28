@@ -1559,8 +1559,8 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
     // region Fullscreen video
 
     /** Requests the page player's fullscreen video surface from the browser PiP menu. */
-    private fun requestFullscreenVideoForPipInternal(requestedAspectRatio: Double, onResult: (Boolean) -> Unit) {
-        if (destroyed || !active) { onResult(false); return }
+    private fun requestFullscreenVideoForPipInternal(requestedAspectRatio: Double, onResult: (Boolean, String?) -> Unit) {
+        if (destroyed || !active) { onResult(false, "TAB_NOT_ACTIVE"); return }
         if (requestedAspectRatio.isFinite() && requestedAspectRatio in 0.42..2.39) {
             activeVideoAspectRatio = requestedAspectRatio
             activeVideoAspectRatioKnown = true
@@ -1578,25 +1578,26 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
                 var s=window.getComputedStyle(v);return !v.paused&&!v.ended&&v.readyState>=2&&v.videoWidth>0&&v.videoHeight>0&&v.getClientRects().length>0&&s.display!=='none'&&s.visibility!=='hidden'&&v.clientWidth>0&&v.clientHeight>0;
               });
               videos.sort(function(a,b){return b.clientWidth*b.clientHeight-a.clientWidth*a.clientHeight;});
-              var v=videos[0];if(!v)return 0;var ratio=v.videoWidth/v.videoHeight;if(!isFinite(ratio)||ratio<0.42||ratio>2.39)return 0;
+              var v=videos[0];if(!v)return 'NO_VIDEO';var ratio=v.videoWidth/v.videoHeight;if(!isFinite(ratio)||ratio<0.42||ratio>2.39)return 'BAD_RATIO';
               var sels=['.ytp-fullscreen-button','[aria-label*="fullscreen" i]','[title*="fullscreen" i]','.fullscreen-button'],node=v,clicked=false;
               for(var d=0;d<10&&node&&!clicked;d++){var root=null;try{root=node.getRootNode?node.getRootNode():null;}catch(e){}
                 var scope=root&&root.querySelector?root:(node.ownerDocument||document);
                 for(var j=0;j<sels.length;j++){var b=null;try{b=scope.querySelector(sels[j]);}catch(e){}if(b&&b.getClientRects().length&&!b.disabled){try{b.click();clicked=true;break;}catch(e){}}}
                 var parent=node.parentElement;if(!parent&&root&&root.host)parent=root.host;node=parent;
               }
-              if(clicked)return ratio;
-              try{if(v.requestFullscreen){var p=v.requestFullscreen();if(p&&p.catch)p.catch(function(){});return ratio;}}catch(e){}
-              try{if(v.webkitEnterFullscreen){v.webkitEnterFullscreen();return ratio;}}catch(e){}
-              return 0;
+              if(clicked)return 'OK:'+ratio;
+              try{if(v.requestFullscreen){var p=v.requestFullscreen();if(p&&p.catch)p.catch(function(){});return 'OK:'+ratio;}}catch(e){}
+              try{if(v.webkitEnterFullscreen){v.webkitEnterFullscreen();return 'OK:'+ratio;}}catch(e){}
+              return 'FULLSCREEN_UNAVAILABLE';
             })()
         """.trimIndent()
         webView.evaluateJavascript(script) { raw ->
-            val ratio = raw?.trim()?.removeSurrounding("\"")?.toDoubleOrNull()
+            val response = raw?.trim()?.removeSurrounding("\"")
+            val ratio = response?.removePrefix("OK:")?.toDoubleOrNull()
             val accepted = ratio != null && ratio.isFinite() && ratio in 0.42..2.39
             if (!accepted) {
                 pipPendingFromBrowserMenu = false
-                onResult(false)
+                onResult(false, response ?: "NO_RESPONSE")
                 return@evaluateJavascript
             }
             activeVideoAspectRatio = ratio!!
@@ -1604,9 +1605,9 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
             val deadline = android.os.SystemClock.uptimeMillis() + 2500L
             val checkFullscreen = object : Runnable {
                 override fun run() {
-                    if (fullscreenVideoActive) onResult(true)
+                    if (fullscreenVideoActive) onResult(true, null)
                     else if (pipPendingFromBrowserMenu && android.os.SystemClock.uptimeMillis() < deadline) mainHandler.postDelayed(this, 100L)
-                    else { pipPendingFromBrowserMenu = false; onResult(false) }
+                    else { pipPendingFromBrowserMenu = false; onResult(false, "FULLSCREEN_TIMEOUT") }
                 }
             }
             mainHandler.postDelayed(checkFullscreen, 100L)
