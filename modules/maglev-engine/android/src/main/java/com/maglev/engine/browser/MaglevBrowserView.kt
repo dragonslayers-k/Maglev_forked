@@ -1664,9 +1664,13 @@ class MaglevBrowserView(context: Context, appContext: AppContext) : ExpoView(con
         if (activity != null) {
             // Fullscreen custom video is placed above the app chrome; PiP therefore captures the video surface,
             // not the browser page and its toolbar. FULL_SENSOR permits both portrait and landscape video.
+            // Attach the fullscreen media surface to the Activity content root, not the decor
+            // overlay. Surface-backed WebView video can be omitted from the PiP window when its
+            // custom view is parented directly to decorView on some Samsung/Android builds.
             val decor = activity.window.decorView as ViewGroup
-            decor.addView(container, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
-            customViewHost = decor
+            val contentRoot = activity.findViewById<ViewGroup>(android.R.id.content) ?: decor
+            contentRoot.addView(container, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
+            customViewHost = contentRoot
             previousOrientation = activity.requestedOrientation
             activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR
             val controller = WindowCompat.getInsetsController(activity.window, decor)
