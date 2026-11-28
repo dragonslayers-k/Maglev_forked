@@ -170,17 +170,27 @@ class MaglevEngineModule : Module() {
             } else if (!MaglevBrowserView.fullscreenVideoActive) {
                 activity.runOnUiThread {
                     MaglevBrowserView.requestFullscreenVideoForPip(requestedAspectRatio) { accepted, reason ->
-                        promise.resolve(if (accepted) mapOf("ok" to true, "pending" to true) else {
-                            val noVideo = reason == "NO_VIDEO"
-                            mapOf(
-                                "ok" to false,
-                                "code" to if (noVideo) "VIDEO_NOT_FOUND" else "FULLSCREEN_REQUIRED",
-                                "message" to if (noVideo)
-                                    "재생 중인 동영상을 찾지 못했습니다. 먼저 영상을 재생하세요."
-                                else
-                                    "이 웹 플레이어는 브라우저 메뉴에서 전체화면 전환을 허용하지 않습니다. 플레이어의 전체화면 버튼을 누른 뒤 화면 상단 PiP 버튼을 사용하세요."
-                            )
-                        })
+                        if (accepted) {
+                            promise.resolve(mapOf("ok" to true, "pending" to true))
+                        } else {
+                            val code = when (reason) {
+                                "TAB_NOT_ACTIVE", "NO_ACTIVE_TAB" -> "TAB_NOT_ACTIVE"
+                                "NO_VIDEO", "NO_RESPONSE" -> "VIDEO_NOT_FOUND"
+                                "BAD_RATIO" -> "BAD_VIDEO_RATIO"
+                                "FULLSCREEN_UNAVAILABLE" -> "FULLSCREEN_UNAVAILABLE"
+                                "FULLSCREEN_TIMEOUT" -> "FULLSCREEN_TIMEOUT"
+                                else -> "FULLSCREEN_HANDOFF_FAILED"
+                            }
+                            val message = when (code) {
+                                "TAB_NOT_ACTIVE" -> "현재 탭이 활성 상태가 아닙니다. 영상이 재생 중인 탭으로 돌아와 다시 시도하세요."
+                                "VIDEO_NOT_FOUND" -> "현재 페이지에서 재생 중인 동영상을 찾지 못했습니다. 먼저 영상 재생을 시작하세요."
+                                "BAD_VIDEO_RATIO" -> "영상 화면 비율을 확인할 수 없습니다. 플레이어의 전체 화면 버튼을 눌러 다시 시도하세요."
+                                "FULLSCREEN_UNAVAILABLE" -> "이 플레이어는 전체 화면 전환을 지원하지 않습니다. 플레이어의 전체 화면 버튼을 먼저 사용하세요."
+                                "FULLSCREEN_TIMEOUT" -> "전체 화면 전환 응답이 없습니다. 플레이어의 전체 화면 버튼을 누른 뒤 앱의 PiP 버튼을 다시 누르세요."
+                                else -> "브라우저에서 전체 화면 전환을 완료하지 못했습니다. 플레이어의 전체 화면 버튼을 누른 뒤 앱의 PiP 버튼을 다시 누르세요."
+                            }
+                            promise.resolve(mapOf("ok" to false, "code" to code, "message" to message))
+                        }
                     }
                 }
             } else {
