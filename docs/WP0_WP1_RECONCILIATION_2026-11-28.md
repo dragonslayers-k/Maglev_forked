@@ -76,3 +76,12 @@ Each ADR must be reviewed and completed with Context, Options, Decision, Consequ
 - WP2+ feature work: **blocked by master spec until WP0/WP1 review**.
 - Galaxy acceptance: **not recorded** for CI #781 APK.
 - Release: **not eligible**.
+
+
+## Upstream v0.33 exact SHA — verified against upstream repository
+
+- Official upstream `Kaos599/Maglev` commit `baaf83f0f3afd65d2eac135cce8b8bbabea8fbb3` exists and is titled `Release 0.33: search results stay visible`.
+- Fork `main` compared to this SHA: **identical**, ahead 0 / behind 0.
+- Fork `dev` compared to this SHA: **identical**, ahead 0 / behind 0.
+- `package.json` on both `main` and `dev` is `0.33.0`; same blob SHA `4114e632982a0a162ce02b39adcd0a7680cd3aeb`.
+- This closes the exact upstream commit / main / dev baseline identity subtask of WP0. It does not close full WP0 because the user-accepted #702 recovery baseline, PR #10 file-by-file tests, licenses/dependencies and golden device matrix still need evidence.
