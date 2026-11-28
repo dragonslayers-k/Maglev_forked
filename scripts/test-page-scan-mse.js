@@ -42,7 +42,10 @@ if ((!browser.includes('v.getClientRects().length > 0') && !browser.includes('v.
     !browser.includes('setSeamlessResizeEnabled(true)') ||
     !pipNative.includes('activity.enterPictureInPictureMode(params)') ||
     !pipNative.includes('if (!MaglevBrowserView.fullscreenVideoActive)') ||
-    !pipNative.includes('PIP_DENIED')) {
+    !pipNative.includes('MaglevBrowserView.measureActiveVideoForPip') ||
+    !pipNative.includes('PIP_DENIED') ||
+    !browser.includes('private fun measureActiveVideoForPipInternal') ||
+    !browser.includes('!v.paused&&!v.ended&&v.readyState>=2')) {
   throw new Error('Browser-menu PiP must enter the Activity directly instead of relying on a synthetic fullscreen gesture');
 }
 // Regression guard for Samsung/WebView black PiP: attach the untouched custom media
