@@ -66,3 +66,13 @@ Restore `scripts/test-page-scan-mse.js` and `scripts/test-wireguard-decoupled.js
   - `scripts/test-wireguard-decoupled.js` commit `7e64c1fe390969768c45ebbea51828a11454ae0b`
 - CI #802 started on latest PR #1 head `7e64c1fe390969768c45ebbea51828a11454ae0b`: https://github.com/dragonslayers-k/Maglev_forked/actions/runs/46134223904. At this note, Typecheck and native/contract jobs are running; no conclusion yet.
 - Important: the MSE test is a legacy #702 contract and may expose current PR #1 regression; do not weaken it just to make CI green. If source architecture intentionally changed, replace it with equivalent runtime/contract coverage, and document the reason.
+
+
+## CI #802 / #800 / #804 final audit and WP1 advancement — 2026-11-28 19:xx KST
+
+- Rechecked Actions API latest runs: #804 SUCCESS (run 46134280830, head 4c69d1347b9ea2b60d86427303ca397f1071d213); #802 SUCCESS (run 46134223904, head 7e64c1fe390969768c45ebbea51828a11454ae0b); #800 SUCCESS (run 46134178615, head 7b838450641ca1cce2fd2f38b95299ffa17d1c30). #803 and #801 CANCELLED due branch advancement; these are not failures of their tests.
+- #802 jobs verified individually: JS typecheck/tests/assistant eval, Contract tests, Rust tests, ABI plan, ARM64 native build, APK build all SUCCESS. Artifact `apks` ID `15259079950`, archive digest `sha256:38cab77b9891f97745334b0446286f43f9eeac47dbe15bee64641be2fc551765`. This digest is the artifact archive, not the extracted APK SHA-256. The APK was generated, but no new device acceptance is available.
+- WP0 regression restoration is now CI PASS: exact #702 MSE/PageScan and WireGuard-decoupled test scripts are present on canonical PR #1 and the full workflow passed. This does not by itself establish all WP0/WP1 review gates.
+- Added `docs/ADR_DRAFT_REGISTER_WP1_2026-11-28.md` (commit `03f30b3d78a831232d8ba4eb7161003e5cf7378c`) with ADR-001..013 proposed direction and explicit unapproved status. It records evidence, current device failure, and review/implementation order. No proposal is represented as user-approved.
+- Next: finish review of WP0/WP1 and selectively reconcile PR #10 vs canonical PR #1/#702; then runtime Gate B instrumentation/diagnosis of audio transfer. Do not increase segment count blindly. Preserve #702, keep PR #10 Draft, no merge/release/baseline promotion.
+- #790 Galaxy verdict remains FAIL for audio-only speed, PiP playback, background playback, and browser media detection/capture. #802/#804 are regression/documentation CI, not runtime repairs.
