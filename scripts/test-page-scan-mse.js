@@ -37,12 +37,14 @@ if (!browser.includes('youtubeAdScript') || !browser.includes('ytp-ad-skip-butto
     !browser.includes('ytd-display-ad-renderer')) {
   throw new Error('YouTube ad surface/skip-button handler is missing');
 }
-if (!browser.includes('v.getClientRects().length > 0') ||
-    !browser.includes("s.visibility !== 'hidden'") ||
+if ((!browser.includes('v.getClientRects().length > 0') && !browser.includes('v.getClientRects().length>0')) ||
+    (!browser.includes("s.visibility !== 'hidden'") && !browser.includes("s.visibility!=='hidden'")) ||
     !browser.includes('setSeamlessResizeEnabled(true)') ||
     !browser.includes('requestFullscreenVideoForPipInternal(requestedAspectRatio, onResult)') ||
-    !pipNative.includes('MaglevBrowserView.requestFullscreenVideoForPip(requestedAspectRatio)')) {
-  throw new Error('PiP does not validate visible video and pass ratio through native promotion');
+    !pipNative.includes('MaglevBrowserView.requestFullscreenVideoForPip(requestedAspectRatio)') ||
+    !browser.includes('if (fullscreenVideoActive) onResult(true)') ||
+    !browser.includes('mainHandler.postDelayed(checkFullscreen, 100L)')) {
+  throw new Error('PiP must validate visible video and wait for the native fullscreen surface before reporting success');
 }
 
 if (!pipUi.includes('videos.sort((a, b) => ((b.width ?? 0) * (b.height ?? 0))')) {
